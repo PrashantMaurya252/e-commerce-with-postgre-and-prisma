@@ -5,43 +5,112 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env(DATABASE_URL)
+}
+
+enum Category{
+  ELECTRONICS
+  CLOTHES
+  DAILY_USAGE
+}
+
+enum OrderStatus{
+  PENDING
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum FileType{
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+enum FilePurpose{
+  PROFILE
+  PRODUCT_MEDIA
+  ORDER_RECEIPT
+  OTHER
+}
+
+enum PaymentStatus{
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
 }
 
 model User{
-  id            String           @id @default(uuid())
-  name          String?
-  email         String           @unique
-  password      String
-  isAdmin       Boolean          @default(false)
-  createdAt     Date             @default(now())
-  orders        Order[]
-  cart          Cart[]
-
+  id                 String             @id @default(uuid())
+  name               String            
+  email              String              @unique
+  password           String
+  orders             Order[]
+  cart               Cart[]
+  createdAt          DateTime                @default(now())
+  isAdmin            Boolean
+  files              File[]
 }
 
 model Product{
-  id           String            @id @default(uuid())
-  title        String
-  description  String
-  category     categoriesEnum
-  files        File[]
-  price        Int
-  createdAt    Date              @default(now())
-  orderItem    OrderItem[]
+  id                  String            @id @default(uuid())
+  title               String
+  description         String
+  price               Int
+  category            Category
+  files               File[]
+  createdAt           DateTime               @default(now())
+  orderItems          OrderItem[]
+  itemLeft            Int                    @default(0)
+
+}
+
+model Order{
+  id                  String              @id @default(uuid())
+  userId              String
+  total               Int
+  createdAt           DateTime             @default(now())
+  items               OrdeerItem[]
+  user                User                @relation(fields:[userId],references:[id],onDelete:Cascade)
+  status              OrderStatus          @default(PENDING)
+  payment              Payment?
+}
+
+model OrderItem{
+  id                  String               @id @default(uuid())
+  productId           String
+  orderId             String
+  quantity            Int 
+  order               Order                @relation(fields:[orderId],references:[id],onDelete:Cascade)
+  product             Product              @relation(fields:[productId],references:[id],onDelete:Restrict)
 }
 
 model File{
-  id           String           @id @default(uuid())
-  productId    String
-  type         fileTypes
+  id                  String              @id @default(uuid())
+  type                FileType
+  url                 String
+  filePurpose         FilePurpose         @default(OTHER)
+  publicId            String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @default(now())
+
+}
+
+model Payment{
+  id                  String                  @id @default(uuid())
+  orderId             String
+  order               Order                    @relation(fields:[orderId],references:[id])
+  createdAt            DateTime               @default(now())
 }
 
 
-const categoriesEnum = ["","Electronics","Clothes","Kitchen Items"]
-const fileTypes      = ["images","videos"]
+categoriesEnums = ["","Electronics","Clothes","Daily Usage"]
+statusenums  = ["pending","shipped","out_for_delivery","delivered"]
+fileTypeEnums = ["images","videos","document"]
