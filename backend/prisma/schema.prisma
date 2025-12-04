@@ -100,17 +100,39 @@ model File{
   publicId            String
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @default(now())
+  userId              String?
+  productId           String?
+  orderId             String?
+
+  product             Product             @relation(fields:[productId],references:[id],onDelete:Cascade)
+  user                User                @relation(fields:[userId],referneces:[id],onDelete:SetNull)
+  order               Order               @references(fields:[orderId],references:[id],onDelete:Cascade)
 
 }
 
-model Payment{
-  id                  String                  @id @default(uuid())
-  orderId             String
-  order               Order                    @relation(fields:[orderId],references:[id])
-  createdAt            DateTime               @default(now())
+model Payment {
+  id                     String        @id @default(uuid())
+  orderId                String        @unique
+  amount                 Int           // amount in smallest currency unit
+  currency               String        @default("INR")
+  status                 PaymentStatus @default(PENDING)
+  stripePaymentIntentId  String?       // payment_intent id
+  stripeChargeId         String?       // charge id (if applicable)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  order                  Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
+model CartItem {
+  id         String   @id @default(uuid())
+  userId     String
+  productId  String
+  quantity   Int      @default(0)
+  createdAt  DateTime @default(now())
 
-categoriesEnums = ["","Electronics","Clothes","Daily Usage"]
-statusenums  = ["pending","shipped","out_for_delivery","delivered"]
-fileTypeEnums = ["images","videos","document"]
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, productId]) // one cart record per user-product pair
+}
