@@ -53,7 +53,7 @@ model User{
   email              String              @unique
   password           String
   orders             Order[]
-  cart               Cart[]
+  cart               Cart?
   createdAt          DateTime                @default(now())
   isAdmin            Boolean
   files              File[]
@@ -69,6 +69,8 @@ model Product{
   createdAt           DateTime               @default(now())
   orderItems          OrderItem[]
   itemLeft            Int                    @default(0)
+  @@index([title])
+  @@fulltext([title,description])
 
 }
 
@@ -77,7 +79,7 @@ model Order{
   userId              String
   total               Int
   createdAt           DateTime             @default(now())
-  items               OrdeerItem[]
+  items               OrderItem[]
   user                User                @relation(fields:[userId],references:[id],onDelete:Cascade)
   status              OrderStatus          @default(PENDING)
   payment              Payment?
@@ -99,14 +101,14 @@ model File{
   filePurpose         FilePurpose         @default(OTHER)
   publicId            String
   createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
   userId              String?
   productId           String?
   orderId             String?
 
-  product             Product             @relation(fields:[productId],references:[id],onDelete:Cascade)
-  user                User                @relation(fields:[userId],referneces:[id],onDelete:SetNull)
-  order               Order               @references(fields:[orderId],references:[id],onDelete:Cascade)
+  product             Product?             @relation(fields:[productId],references:[id],onDelete:Cascade)
+  user                User?                @relation(fields:[userId],references:[id],onDelete:SetNull)
+  order               Order?               @relation(fields:[orderId],references:[id],onDelete:Cascade)
 
 }
 
@@ -124,15 +126,25 @@ model Payment {
   order                  Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
+model Cart{
+  id                     String                  @id @default(uuid())
+  items                  CartItem[]
+  total                  Int
+  userId                 String
+  user                   User                      @relation(fields:[userId], references:[id],onDelete:Cascade)
+  updatedAt              DateTime                      @updatedAt
+}
+
+
 model CartItem {
   id         String   @id @default(uuid())
-  userId     String
+  cartId     String
   productId  String
   quantity   Int      @default(0)
   createdAt  DateTime @default(now())
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cart       Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
 
-  @@unique([userId, productId]) // one cart record per user-product pair
+  @@unique([cartId, productId]) // one cart record per user-product pair
 }
