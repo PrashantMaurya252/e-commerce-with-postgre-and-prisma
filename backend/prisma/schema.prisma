@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -69,8 +68,8 @@ model Product{
   createdAt           DateTime               @default(now())
   orderItems          OrderItem[]
   itemLeft            Int                    @default(0)
+  cartItems           CartItem[]
   @@index([title])
-  @@fulltext([title,description])
 
 }
 
@@ -82,6 +81,7 @@ model Order{
   items               OrderItem[]
   user                User                @relation(fields:[userId],references:[id],onDelete:Cascade)
   status              OrderStatus          @default(PENDING)
+  files               File[]
   payment              Payment?
 }
 
@@ -130,7 +130,7 @@ model Cart{
   id                     String                  @id @default(uuid())
   items                  CartItem[]
   total                  Int
-  userId                 String
+  userId                 String                    @unique
   user                   User                      @relation(fields:[userId], references:[id],onDelete:Cascade)
   updatedAt              DateTime                      @updatedAt
 }
