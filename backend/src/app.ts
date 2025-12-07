@@ -3,21 +3,26 @@ import cors from 'cors'
 import helmet from 'helmet'
 import hpp from 'hpp'
 import cookieParser  from 'cookie-parser'
+import authRoutes from "./routes/auth.routes.js"
 
-import dotenv from 'dotenv'
+
 
 
 const app = express()
 app.use(helmet())
 app.use(cors({
-    origin:'*',
-    credentials:true
+    origin:["http://localhost:3000"],
+    credentials:true,
+    methods:["GET","POST","PUT","PATCH","DELETE"],
+    allowedHeaders:["Content-Type","Authorization"]
 }))
 
 app.use(hpp())
 app.use(cookieParser())
 app.use(express.json({limit:'10mb'}))
 app.use(express.urlencoded({extended:true}))
+// routes
+app.use("/api/auth",authRoutes)
 
 export default app
 
