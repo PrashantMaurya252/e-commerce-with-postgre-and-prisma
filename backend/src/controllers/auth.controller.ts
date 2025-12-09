@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
 import bcrypt from "bcryptjs";
 import { success, z } from "zod";
-import { generateToken } from "../utils/jwt.js";
+import { generateAccessToken } from "../utils/jwt.js";
 
 const signupSchema = z.object({
   email: z.string(),
@@ -96,7 +96,7 @@ export const login = async(req:Request,res:Response)=>{
             isAdmin:user.isAdmin
         }
         const {password:_,...userData} =user
-        const token = generateToken(userPayload)
+        const token = generateAccessToken(userPayload)
         res.cookie("auth-token",token,{
             httpOnly:true,
             secure:process.env.NODE_ENV === 'production',

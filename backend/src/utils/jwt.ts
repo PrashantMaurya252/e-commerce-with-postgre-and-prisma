@@ -6,18 +6,36 @@ export interface User {
     isAdmin:boolean
 }
 
-export const generateToken = (data:User)=>{
+export const generateAccessToken = (data:User)=>{
     
     try {
-        const secret:string = process.env.JWT_SECRET || "Secret"
+        const secret:string = process.env.JWT_ACCESS_TOKEN_SECRET || "Secret"
         // const options:SignOptions={expiresIn:process.env.JWT_EXPIRES_IN || "1d"}
-        const expiresIn = process.env.JWT_EXPIRES_IN as any || "1d"
+        // const expiresIn = process.env.JWT_EXPIRES_IN as any || "1d"
 
     
     if (!secret) {
-    throw new Error("JWT_SECRET is not defined");
+    throw new Error("JWT_ACCESS_TOKEN_SECRET is not defined");
   }
-        return jwt.sign(data,secret,{expiresIn})
+        return jwt.sign(data,secret,{expiresIn:"15m"})
+    } catch (error) {
+        console.error("generate token error",error)
+        throw new Error("failed to generate token")
+    }
+}
+
+export const generateRefreshToken = (data:User)=>{
+    
+    try {
+        const secret:string = process.env.JWT_REFRESH_TOKEN_SECRET || "Secret"
+        // const options:SignOptions={expiresIn:process.env.JWT_EXPIRES_IN || "1d"}
+        // const expiresIn = process.env.JWT_EXPIRES_IN as any || "1d"
+
+    
+    if (!secret) {
+    throw new Error("JWT_ACCESS_TOKEN_SECRET is not defined");
+  }
+        return jwt.sign(data,secret,{expiresIn:"7d"})
     } catch (error) {
         console.error("generate token error",error)
         throw new Error("failed to generate token")
