@@ -3,6 +3,7 @@ dotenv.config()
 
 import app from './app.js'
 import connectDB from './utils/connectToDB.js'
+import "./config/cloudinary.js"
 const PORT = process.env.PORT
 
 console.log("PORT",PORT)
