@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary"
+import { uploadToCloudinaryResult } from "./types.js"
 
-export const uploadToCloudinary =async(file:Express.Multer.File)=>{
+export const uploadToCloudinary =async(file:Express.Multer.File):Promise<uploadToCloudinaryResult>=>{
     try {
         const fileType = file?.mimetype?.split('/')[0]
 
@@ -19,10 +20,11 @@ export const uploadToCloudinary =async(file:Express.Multer.File)=>{
                 })
             },(err,result)=>{
                 if(err) reject(err)
-                resolve(result)
+                resolve(result as uploadToCloudinaryResult)
             }).end(file.buffer)
         })
     } catch (error) {
         console.error("uploadToCloudinary error",error)
+        return Promise.reject(error); // important!
     }
 }

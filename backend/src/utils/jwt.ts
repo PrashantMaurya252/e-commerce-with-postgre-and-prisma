@@ -17,7 +17,7 @@ export const generateAccessToken = (data:User)=>{
     if (!secret) {
     throw new Error("JWT_ACCESS_TOKEN_SECRET is not defined");
   }
-        return jwt.sign(data,secret,{expiresIn:"15m"})
+        return jwt.sign(data,secret,{expiresIn:"15d"})
     } catch (error) {
         console.error("generate token error",error)
         throw new Error("failed to generate token")

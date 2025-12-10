@@ -97,7 +97,7 @@ export const login = async(req:Request,res:Response)=>{
         }
         const {password:_,...userData} =user
         const token = generateAccessToken(userPayload)
-        res.cookie("auth-token",token,{
+        res.cookie("access-token",token,{
             httpOnly:true,
             secure:process.env.NODE_ENV === 'production',
             maxAge:1000*60*60*24,

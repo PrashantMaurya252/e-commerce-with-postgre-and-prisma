@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import hpp from 'hpp'
 import cookieParser  from 'cookie-parser'
 import authRoutes from "./routes/auth.routes.js"
+import productRoutes from './routes/product.routes.js'
 
 
 
@@ -23,6 +24,7 @@ app.use(express.json({limit:'10mb'}))
 app.use(express.urlencoded({extended:true}))
 // routes
 app.use("/api/v1/auth",authRoutes)
+app.use("/api/v1/product",productRoutes)
 
 export default app
 

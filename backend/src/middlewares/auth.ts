@@ -15,7 +15,7 @@ export const auth= async(req:AuthRequest,res:Response,next:NextFunction)=>{
             return res.status(401).json({success:false,message:"You are unauthorized"})
         }
 
-        const decoded = jwt.verify(token,process.env.JWT_SECRET as string)
+        const decoded = jwt.verify(token,process.env.JWT_ACCESS_TOKEN_SECRET as string)
         
         req.user = decoded
         next()
