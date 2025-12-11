@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import z from "zod";
+import {z} from "zod";
 import { prisma } from "../config/prisma.js";
 import { uploadToCloudinary } from "../utils/helper.js";
 
@@ -65,6 +65,7 @@ const updateProductSchema = z.object({
 }).partial()
 export const updateProduct = async(req:Request,res:Response)=>{
     try {
+       console.log("body in update product",req.body)
         const parsed = updateProductSchema.safeParse(req.body)
         if(!parsed.success){
             return res.status(400).json({success:false,message:parsed.error})
@@ -86,6 +87,7 @@ export const updateProduct = async(req:Request,res:Response)=>{
         const dataToBeUpdate = Object.fromEntries(Object.entries(parsed.data)?.filter(([_,value])=>value !== undefined))
 
         const updateProduct = await prisma.product.update({where:{id:productId},data:dataToBeUpdate})
+        return res.status(200).json({success:true,message:"product updated successfully",data:updateProduct})
     } catch (error) {
         console.error("update product error",error)
         return res.status(500).json({success:false,message:"Internal Server Error"})

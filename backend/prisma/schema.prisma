@@ -46,6 +46,11 @@ enum PaymentStatus{
   REFUNDED
 }
 
+enum DiscountType{
+  PERCENT
+  FLAT
+}
+
 model User{
   id                 String             @id @default(uuid())
   name               String            
@@ -64,6 +69,8 @@ model Product{
   title               String
   description         String
   price               Int
+  offerPrice          Int?
+  isOfferActive       Boolean            @default(false)
   category            Category
   files               File[]
   createdAt           DateTime               @default(now())
@@ -86,7 +93,8 @@ model Address{
   pincode             Int
   city                String
   userId              String
-  user                User              @relation(fields:[userId],references:[id],onDelete:Cascade)      
+  user                User              @relation(fields:[userId],references:[id],onDelete:Cascade)
+  orders              Order[]      
 }
 
 model Order{
@@ -95,11 +103,12 @@ model Order{
   total               Int
   createdAt           DateTime             @default(now())
   items               OrderItem[]
-  user                User                @relation(fields:[userId],references:[id],onDelete:SetNull)
+  user                User?                @relation(fields:[userId],references:[id],onDelete:SetNull)
   status              OrderStatus          @default(PENDING)
   files               File[]
   addressId           String?
-  address             Address             @relation(fields:[addressId],references:[id],onDelete:SetNull)
+  address             Address?             @relation(fields:[addressId],references:[id],onDelete:SetNull)
+  payment             Payment?
 }
 
 model OrderItem{
@@ -162,4 +171,15 @@ model CartItem {
   product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@unique([cartId, productId]) // one cart record per user-product pair
+}
+
+model Coupon{
+  id                     String                   @id @default(uuid())
+  code                   String                   @unique
+  discountType           DiscountType
+  discountValue          Int
+  minCartValue           Int                      @default(0)
+  expiresAt              DateTime
+  isActive               Boolean                  @default(true)
+  createdAt              DateTime                 @default(now())
 }

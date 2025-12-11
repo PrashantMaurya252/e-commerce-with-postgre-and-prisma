@@ -5,6 +5,7 @@ import hpp from 'hpp'
 import cookieParser  from 'cookie-parser'
 import authRoutes from "./routes/auth.routes.js"
 import productRoutes from './routes/product.routes.js'
+import fileRoutes from './routes/file.routes.js'
 
 
 
@@ -25,6 +26,7 @@ app.use(express.urlencoded({extended:true}))
 // routes
 app.use("/api/v1/auth",authRoutes)
 app.use("/api/v1/product",productRoutes)
+app.use("/api/v1/file",fileRoutes)
 
 export default app
 
