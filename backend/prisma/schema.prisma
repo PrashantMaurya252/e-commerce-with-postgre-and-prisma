@@ -56,6 +56,7 @@ model User{
   createdAt          DateTime                @default(now())
   isAdmin            Boolean
   files              File[]
+  addresses           Address[]
 }
 
 model Product{
@@ -69,20 +70,36 @@ model Product{
   orderItems          OrderItem[]
   itemLeft            Int                    @default(0)
   cartItems           CartItem[]
+  disabled            Boolean                @default(false)
   @@index([title])
 
 }
 
+
+model Address{
+  id                  String             @id @default(uuid())
+  line1               String
+  line2               String?
+  landmark            String?
+  phoneNumber1        String     
+  phoneNumber2        String?
+  pincode             Int
+  city                String
+  userId              String
+  user                User              @relation(fields:[userId],references:[id],onDelete:Cascade)      
+}
+
 model Order{
   id                  String              @id @default(uuid())
-  userId              String
+  userId              String?
   total               Int
   createdAt           DateTime             @default(now())
   items               OrderItem[]
-  user                User                @relation(fields:[userId],references:[id],onDelete:Cascade)
+  user                User                @relation(fields:[userId],references:[id],onDelete:SetNull)
   status              OrderStatus          @default(PENDING)
   files               File[]
-  payment              Payment?
+  addressId           String?
+  address             Address             @relation(fields:[addressId],references:[id],onDelete:SetNull)
 }
 
 model OrderItem{
