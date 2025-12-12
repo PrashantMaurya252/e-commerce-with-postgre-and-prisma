@@ -2,7 +2,7 @@ import express from 'express'
 import { auth } from '../middlewares/auth.js'
 import { authorize } from '../middlewares/authorize.js'
 import { upload } from '../utils/multer.js'
-import { addProduct, deleteAllProducts, getAllProducts, productSeeder, updateProduct } from '../controllers/product.controller.js'
+import { addProduct, deleteAllProducts, getAllProducts, productDetails, productSeeder, updateProduct } from '../controllers/product.controller.js'
 
 const productRouter = express.Router()
 
@@ -11,5 +11,6 @@ productRouter.put("/update-product/:productId",auth,authorize,updateProduct)
 productRouter.get("/seeding-products",auth,authorize,productSeeder)
 productRouter.delete("/delete-all-products",auth,authorize,deleteAllProducts)
 productRouter.get("/all-products",getAllProducts)
+productRouter.get("/product-details/:productId",productDetails)
 
 export default productRouter

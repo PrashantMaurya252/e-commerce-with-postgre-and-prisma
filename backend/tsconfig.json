@@ -9,7 +9,8 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
   "include": ["."],
   "exclude": ["dist", "node_modules", "generated/prisma/browser.ts"]

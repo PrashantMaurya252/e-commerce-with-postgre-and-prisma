@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import {z} from "zod";
+import {includes, z} from "zod";
 import { prisma } from "../config/prisma.js";
 import { uploadToCloudinary } from "../utils/helper.js";
 import { Category } from "@prisma/client";
@@ -166,16 +166,6 @@ export const productSeeder = async(req:Request,res:Response)=>{
   }
 }
 
-export const getAllProducts = async(req:Request,res:Response)=>{
-  try {
-    const products = await prisma.product.findMany({})
-    return res.status(200).json({success:true,message:"all products are fetched",data:products})
-  } catch (error) {
-    console.error("getAllProducts Error",error)
-    return res.status(500).json({success:false,message:"Internal Server Error"})
-  }
-}
-
 export const deleteAllProducts = async(req:Request,res:Response)=>{
   try {
     const products = await prisma.product.deleteMany()
@@ -185,3 +175,91 @@ export const deleteAllProducts = async(req:Request,res:Response)=>{
     return res.status(500).json({success:false,message:"Internal Server Error"})
   }
 }
+
+export const getAllProducts = async(req:Request,res:Response)=>{
+  try {
+    const page = Number(req.query.page) || 1
+    const limit = Number(req.query.limit) || 10
+
+    const category = req.query.category as Category | undefined
+    const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined
+    const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined
+
+    const search = req.query.search as string | undefined
+    const skip = (page-1)*limit
+
+    let where : any ={}
+    if(category){
+      where.category = category
+    }
+
+    if(minPrice || maxPrice){
+      where.price={}
+      if(minPrice) where.price.gte =minPrice
+      if(maxPrice) where.price.lte = maxPrice
+    }
+
+    if(search){
+      where.title ={
+        contains:search,
+        mode:"insensitive"
+      }
+    }
+    const products = await prisma.product.findMany({
+      where,
+      skip,
+      take:limit,
+      orderBy:{createdAt:'desc'},
+      include:{files:true}
+    })
+
+    const totalProducts = await prisma.product.count({where})
+    
+    return res.status(200).json({success:true,message:"all products are fetched",page,limit,totalProducts,totalPages:Math.ceil(totalProducts/limit),data:products})
+  } catch (error) {
+    console.error("getAllProducts Error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
+
+
+export const productDetails = async(req:Request,res:Response)=>{
+  try {
+    const {productId} = req.params
+    const product = await prisma.product.findUnique({where:{id:productId},include:{files:true}})
+    if(!product){
+      return res.status(404).json({success:false,message:"No product found for given id"})
+    }
+
+    return res.status(200).json({success:true,data:product})
+  } catch (error) {
+    console.error("products details error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
+
+export const cartItems = async(req:Request,res:Response)=>{
+  try {
+    const userId = req.user?.userId
+
+    if(!userId){
+      return res.status(401).json({success:false,message:"UnAuthorize"})
+    }
+    let cart = await prisma.cart.findUnique({where:{userId},include:{items:{
+      include:{product:true},
+      orderBy:{createdAt:'desc'}
+    }}})
+
+    if(!cart){
+      return res.status(200).json({success:true,data:[],totalAmounyt:0})
+    }
+
+    return res.status(200).json({success:false,data:cart.items,totalAmount:cart.total})
+
+  } catch (error) {
+    console.error("cartItems error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
+
+

@@ -91,6 +91,7 @@ export const login = async(req:Request,res:Response)=>{
             })
         }
         const userPayload = {
+            userId:user.id,
             email:user.email,
             name:user.name,
             isAdmin:user.isAdmin

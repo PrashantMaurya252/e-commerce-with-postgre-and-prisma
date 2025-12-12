@@ -1,6 +1,7 @@
 import jwt,{SignOptions,JsonWebTokenError} from 'jsonwebtoken'
 
 export interface User {
+    userId:string,
     email:string,
     name:string,
     isAdmin:boolean
