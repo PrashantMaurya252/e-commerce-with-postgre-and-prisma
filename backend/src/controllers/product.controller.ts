@@ -251,7 +251,7 @@ export const cartItems = async(req:Request,res:Response)=>{
     }}})
 
     if(!cart){
-      return res.status(200).json({success:true,data:[],totalAmounyt:0})
+      return res.status(200).json({success:true,data:[],totalAmount:0})
     }
 
     return res.status(200).json({success:false,data:cart.items,totalAmount:cart.total})
@@ -262,4 +262,72 @@ export const cartItems = async(req:Request,res:Response)=>{
   }
 }
 
+export const addIntoCart = async(req:Request,res:Response)=>{
+  try {
+    const userId = req.user?.userId
+    const {productId} = req.params
+    if(!userId){
+      return res.status(401).json({success:false,message:"Unauthoriza"})
+    }
+
+    const product = await prisma.product.findUnique({where:{id:productId}})
+
+    if(!product || product.disabled){
+      return res.status(404).json({success:false,message:"Product not available"})
+    }
+
+    if(product.itemLeft <=0){
+      return res.status(400).json({success:false,message:"Product out of stock"})
+    }
+
+    const priceToUse = product.isOfferActive && product.offerPrice ? product.offerPrice : product.price
+
+    let cart = await prisma.cart.findUnique({where:{userId}})
+    if(!cart){
+      cart = await prisma.cart.create({data:{userId,total:0}})
+    }
+
+    const existingItem = await prisma.cartItem.findUnique({
+      where:{
+        cartId_productId:{
+          cartId:cart.id,
+          productId
+        }
+      }
+    })
+    if(existingItem){
+      await prisma.cartItem.update({
+        where:{id:existingItem.id},
+        data:{
+          quantity:existingItem.quantity+1
+        }
+      })
+    }else{
+      await prisma.cartItem.create({
+        data:{
+          cartId:cart.id,
+          productId,
+          quantity:1
+        }
+      })
+    }
+
+    const cartItems = await prisma.cartItem.findMany({where:{cartId:cart.id},include:{product:true}})
+
+    const newTotal = cartItems.reduce((sum,item)=>{
+      const price = item.product.isOfferActive && item.product.offerPrice ? item.product.offerPrice : item.product.price
+      return sum + price
+    },0)
+
+    await prisma.cart.update({
+      where:{id:cart.id},
+      data:{total:newTotal}
+    })
+
+    return res.status(200).json({success:true,message:"Item added into cart successfully"})
+  } catch (error) {
+    console.error("addInto cart error",error)
+    return res.status(500).json({success:false,message:"Internal Server error"})
+  }
+}
 
