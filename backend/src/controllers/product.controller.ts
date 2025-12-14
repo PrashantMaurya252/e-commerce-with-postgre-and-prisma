@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import {includes, z} from "zod";
+import { includes, z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { uploadToCloudinary } from "../utils/helper.js";
 import { Category } from "@prisma/client";
@@ -7,9 +7,9 @@ import { Category } from "@prisma/client";
 const productSchema = z.object({
   title: z.string(),
   description: z.string(),
-  price: z.string().transform((val)=>Number(val)),
+  price: z.string().transform((val) => Number(val)),
   category: z.enum(["ELECTRONICS", "CLOTHES", "DAILY_USAGE"]),
-  itemLeft: z.string().transform((val)=>Number(val)),
+  itemLeft: z.string().transform((val) => Number(val)),
 });
 export const addProduct = async (req: Request, res: Response) => {
   try {
@@ -41,66 +41,80 @@ export const addProduct = async (req: Request, res: Response) => {
       },
       include: { files: true },
     });
-    return res
-      .status(201)
-      .json({
-        success: true,
-        message: "Product Created successfully",
-        product,
-      });
+    return res.status(201).json({
+      success: true,
+      message: "Product Created successfully",
+      product,
+    });
   } catch (error) {
-    console.error("Add product controller error",error);
+    console.error("Add product controller error", error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
   }
 };
 
-
-const updateProductSchema = z.object({
+const updateProductSchema = z
+  .object({
     title: z.string(),
-  description: z.string(),
-  price: z.string().transform((val)=>Number(val)),
-  category: z.enum(["ELECTRONICS", "CLOTHES", "DAILY_USAGE"]),
-  itemLeft: z.string().transform((val)=>Number(val)),
-}).partial()
-export const updateProduct = async(req:Request,res:Response)=>{
-    try {
-       console.log("body in update product",req.body)
-        const parsed = updateProductSchema.safeParse(req.body)
-        if(!parsed.success){
-            return res.status(400).json({success:false,message:parsed.error})
-        }
-
-        const {title,description,price,category,itemLeft} = parsed.data
-        const {productId} = req.params
-
-        const product = await prisma.product.findUnique({where:{
-            id:productId
-        }})
-
-        if(!product){
-            return res.status(404).json({
-                success:false,message:"No product found with provided id"
-            })
-        }
-
-        const dataToBeUpdate = Object.fromEntries(Object.entries(parsed.data)?.filter(([_,value])=>value !== undefined))
-
-        const updateProduct = await prisma.product.update({where:{id:productId},data:dataToBeUpdate})
-        return res.status(200).json({success:true,message:"product updated successfully",data:updateProduct})
-    } catch (error) {
-        console.error("update product error",error)
-        return res.status(500).json({success:false,message:"Internal Server Error"})
+    description: z.string(),
+    price: z.string().transform((val) => Number(val)),
+    category: z.enum(["ELECTRONICS", "CLOTHES", "DAILY_USAGE"]),
+    itemLeft: z.string().transform((val) => Number(val)),
+  })
+  .partial();
+export const updateProduct = async (req: Request, res: Response) => {
+  try {
+    console.log("body in update product", req.body);
+    const parsed = updateProductSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error });
     }
-}
 
+    const { title, description, price, category, itemLeft } = parsed.data;
+    const { productId } = req.params;
 
-export const productSeeder = async(req:Request,res:Response)=>{
+    const product = await prisma.product.findUnique({
+      where: {
+        id: productId,
+      },
+    });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "No product found with provided id",
+      });
+    }
+
+    const dataToBeUpdate = Object.fromEntries(
+      Object.entries(parsed.data)?.filter(([_, value]) => value !== undefined)
+    );
+
+    const updateProduct = await prisma.product.update({
+      where: { id: productId },
+      data: dataToBeUpdate,
+    });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        message: "product updated successfully",
+        data: updateProduct,
+      });
+  } catch (error) {
+    console.error("update product error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+export const productSeeder = async (req: Request, res: Response) => {
   try {
     const rand = (min: number, max: number) =>
       Math.floor(Math.random() * (max - min + 1)) + min;
-    
+
     // Sample data
     const productNames = [
       "Wireless Bluetooth Speaker",
@@ -124,306 +138,438 @@ export const productSeeder = async(req:Request,res:Response)=>{
       "Electric Kettle",
       "Table Lamp",
     ];
-    
-    const descriptions = [
-  "This product is crafted with premium-quality materials, ensuring durability, reliability, and long-term performance. Its user-friendly design makes it an excellent choice for everyday use. Whether you're upgrading your essentials or adding something new to your setup, this product delivers a great balance of convenience, style, and functionality, making it suitable for a wide range of users.",
-  
-  "Designed to offer superior performance, this product combines modern engineering with practical features that enhance your daily routine. Its sturdy build and thoughtful craftsmanship provide efficiency and comfort. Ideal for both casual and professional use, it promises consistent results and long-lasting value, making it a dependable addition to your everyday lifestyle.",
-  
-  "A perfect blend of design and functionality, this product is built to handle regular use without compromising performance. It delivers smooth operation, dependable results, and a premium feel. Whether you're using it at home, work, or on the go, its long-lasting build quality and thoughtful design ensure a satisfying experience every time.",
-  
-  "This product focuses on giving users a seamless experience by combining smart design with reliable performance. Built from durable materials, it stands strong against wear and tear, making it ideal for everyday use. Its practical features and stylish aesthetic offer excellent value, making it a useful and trustworthy choice for many different applications.",
-  
-  "Offering exceptional value and dependable performance, this product is ideal for users looking for quality and convenience. The design prioritizes comfort, ease of use, and long-lasting durability. Whether used for personal needs or professional tasks, it consistently delivers a smooth and efficient experience, making it a versatile and worthwhile addition to your daily essentials."
-];
 
-    
+    const descriptions = [
+      "This product is crafted with premium-quality materials, ensuring durability, reliability, and long-term performance. Its user-friendly design makes it an excellent choice for everyday use. Whether you're upgrading your essentials or adding something new to your setup, this product delivers a great balance of convenience, style, and functionality, making it suitable for a wide range of users.",
+
+      "Designed to offer superior performance, this product combines modern engineering with practical features that enhance your daily routine. Its sturdy build and thoughtful craftsmanship provide efficiency and comfort. Ideal for both casual and professional use, it promises consistent results and long-lasting value, making it a dependable addition to your everyday lifestyle.",
+
+      "A perfect blend of design and functionality, this product is built to handle regular use without compromising performance. It delivers smooth operation, dependable results, and a premium feel. Whether you're using it at home, work, or on the go, its long-lasting build quality and thoughtful design ensure a satisfying experience every time.",
+
+      "This product focuses on giving users a seamless experience by combining smart design with reliable performance. Built from durable materials, it stands strong against wear and tear, making it ideal for everyday use. Its practical features and stylish aesthetic offer excellent value, making it a useful and trustworthy choice for many different applications.",
+
+      "Offering exceptional value and dependable performance, this product is ideal for users looking for quality and convenience. The design prioritizes comfort, ease of use, and long-lasting durability. Whether used for personal needs or professional tasks, it consistently delivers a smooth and efficient experience, making it a versatile and worthwhile addition to your daily essentials.",
+    ];
+
     const categories: Category[] = ["ELECTRONICS", "CLOTHES", "DAILY_USAGE"];
 
     for (let i = 1; i <= 40; i++) {
-        const name = productNames[rand(0, productNames.length - 1)];
-    
-        await prisma.product.create({
-          data: {
-            title: `${name} #${i}`,
-            description: descriptions[rand(0, descriptions.length - 1)],
-            price: rand(300, 3000),
-            offerPrice: rand(200, 2500),
-            isOfferActive: Math.random() > 0.5,
-            category: categories[rand(0, categories.length - 1)],
-            itemLeft: rand(10, 80),
-            disabled: false,
-          },
-        });
-    
-        console.log(`✔ Product ${i}/40 added`);
-      }
+      const name = productNames[rand(0, productNames.length - 1)];
 
-      return res.status(200).json({success:true,message:"Product seeding completed"})
-  } catch (error) {
-    console.error("productSeeder error",error)
-    return res.status(500).json({success:false,message:"Internal Server Error"})
-  }
-}
+      await prisma.product.create({
+        data: {
+          title: `${name} #${i}`,
+          description: descriptions[rand(0, descriptions.length - 1)],
+          price: rand(300, 3000),
+          offerPrice: rand(200, 2500),
+          isOfferActive: Math.random() > 0.5,
+          category: categories[rand(0, categories.length - 1)],
+          itemLeft: rand(10, 80),
+          disabled: false,
+        },
+      });
 
-export const deleteAllProducts = async(req:Request,res:Response)=>{
-  try {
-    const products = await prisma.product.deleteMany()
-    return res.status(200).json({success:true,message:"all products are deleted"})
-  } catch (error) {
-    console.error("getAllProducts Error",error)
-    return res.status(500).json({success:false,message:"Internal Server Error"})
-  }
-}
-
-export const getAllProducts = async(req:Request,res:Response)=>{
-  try {
-    const page = Number(req.query.page) || 1
-    const limit = Number(req.query.limit) || 10
-
-    const category = req.query.category as Category | undefined
-    const minPrice = req.query.minPrice ? Number(req.query.minPrice) : undefined
-    const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined
-
-    const search = req.query.search as string | undefined
-    const skip = (page-1)*limit
-
-    let where : any ={}
-    if(category){
-      where.category = category
+      console.log(`✔ Product ${i}/40 added`);
     }
 
-    if(minPrice || maxPrice){
-      where.price={}
-      if(minPrice) where.price.gte =minPrice
-      if(maxPrice) where.price.lte = maxPrice
+    return res
+      .status(200)
+      .json({ success: true, message: "Product seeding completed" });
+  } catch (error) {
+    console.error("productSeeder error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+export const deleteAllProducts = async (req: Request, res: Response) => {
+  try {
+    const products = await prisma.product.deleteMany();
+    return res
+      .status(200)
+      .json({ success: true, message: "all products are deleted" });
+  } catch (error) {
+    console.error("getAllProducts Error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+export const getAllProducts = async (req: Request, res: Response) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const category = req.query.category as Category | undefined;
+    const minPrice = req.query.minPrice
+      ? Number(req.query.minPrice)
+      : undefined;
+    const maxPrice = req.query.maxPrice
+      ? Number(req.query.maxPrice)
+      : undefined;
+
+    const search = req.query.search as string | undefined;
+    const skip = (page - 1) * limit;
+
+    let where: any = {};
+    if (category) {
+      where.category = category;
     }
 
-    if(search){
-      where.title ={
-        contains:search,
-        mode:"insensitive"
-      }
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = minPrice;
+      if (maxPrice) where.price.lte = maxPrice;
+    }
+
+    if (search) {
+      where.title = {
+        contains: search,
+        mode: "insensitive",
+      };
     }
     const products = await prisma.product.findMany({
       where,
       skip,
-      take:limit,
-      orderBy:{createdAt:'desc'},
-      include:{files:true}
-    })
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: { files: true },
+    });
 
-    const totalProducts = await prisma.product.count({where})
-    
-    return res.status(200).json({success:true,message:"all products are fetched",page,limit,totalProducts,totalPages:Math.ceil(totalProducts/limit),data:products})
+    const totalProducts = await prisma.product.count({ where });
+
+    return res
+      .status(200)
+      .json({
+        success: true,
+        message: "all products are fetched",
+        page,
+        limit,
+        totalProducts,
+        totalPages: Math.ceil(totalProducts / limit),
+        data: products,
+      });
   } catch (error) {
-    console.error("getAllProducts Error",error)
-    return res.status(500).json({success:false,message:"Internal Server Error"})
+    console.error("getAllProducts Error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
-}
+};
 
-
-export const productDetails = async(req:Request,res:Response)=>{
+export const productDetails = async (req: Request, res: Response) => {
   try {
-    const {productId} = req.params
-    const product = await prisma.product.findUnique({where:{id:productId},include:{files:true}})
-    if(!product){
-      return res.status(404).json({success:false,message:"No product found for given id"})
+    const { productId } = req.params;
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: { files: true },
+    });
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No product found for given id" });
     }
 
-    return res.status(200).json({success:true,data:product})
+    return res.status(200).json({ success: true, data: product });
   } catch (error) {
-    console.error("products details error",error)
-    return res.status(500).json({success:false,message:"Internal Server Error"})
+    console.error("products details error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
-}
+};
 
-export const cartItems = async(req:Request,res:Response)=>{
+export const cartItems = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId
+    const userId = req.user?.userId;
 
-    if(!userId){
-      return res.status(401).json({success:false,message:"UnAuthorize"})
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "UnAuthorize" });
     }
-    let cart = await prisma.cart.findUnique({where:{userId},include:{items:{
-      include:{product:true},
-      orderBy:{createdAt:'desc'}
-    }}})
+    let cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        items: {
+          include: { product: true },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
 
-    if(!cart){
-      return res.status(200).json({success:true,data:[],totalAmount:0})
+    if (!cart) {
+      return res.status(200).json({ success: true, data: [], totalAmount: 0 });
     }
 
-    return res.status(200).json({success:false,data:cart.items,totalAmount:cart.total})
-
+    return res
+      .status(200)
+      .json({ success: false, data: cart.items, totalAmount: cart.total });
   } catch (error) {
-    console.error("cartItems error",error)
-    return res.status(500).json({success:false,message:"Internal Server Error"})
+    console.error("cartItems error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
-}
+};
 
-export const addIntoCart = async(req:Request,res:Response)=>{
+export const addIntoCart = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId
-    const {productId} = req.params
-    if(!userId){
-      return res.status(401).json({success:false,message:"Unauthoriza"})
+    const userId = req.user?.userId;
+    const { productId } = req.params;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthoriza" });
     }
 
-    const product = await prisma.product.findUnique({where:{id:productId}})
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
 
-    if(!product || product.disabled){
-      return res.status(404).json({success:false,message:"Product not available"})
+    if (!product || product.disabled) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not available" });
     }
 
-    if(product.itemLeft <=0){
-      return res.status(400).json({success:false,message:"Product out of stock"})
+    if (product.itemLeft <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Product out of stock" });
     }
 
-    const priceToUse = product.isOfferActive && product.offerPrice ? product.offerPrice : product.price
+    const priceToUse =
+      product.isOfferActive && product.offerPrice
+        ? product.offerPrice
+        : product.price;
 
-    let cart = await prisma.cart.findUnique({where:{userId}})
-    if(!cart){
-      cart = await prisma.cart.create({data:{userId,total:0}})
+    let cart = await prisma.cart.findUnique({ where: { userId } });
+    if (!cart) {
+      cart = await prisma.cart.create({ data: { userId, total: 0 } });
     }
 
     const existingItem = await prisma.cartItem.findUnique({
-      where:{
-        cartId_productId:{
-          cartId:cart.id,
-          productId
-        }
-      }
-    })
-    if(existingItem){
-      await prisma.cartItem.update({
-        where:{id:existingItem.id},
-        data:{
-          quantity:existingItem.quantity+1
-        }
-      })
-    }else{
-      await prisma.cartItem.create({
-        data:{
-          cartId:cart.id,
+      where: {
+        cartId_productId: {
+          cartId: cart.id,
           productId,
-          quantity:1
-        }
-      })
+        },
+      },
+    });
+    if (existingItem) {
+      await prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: {
+          quantity: existingItem.quantity + 1,
+        },
+      });
+    } else {
+      await prisma.cartItem.create({
+        data: {
+          cartId: cart.id,
+          productId,
+          quantity: 1,
+        },
+      });
     }
 
-    const cartItems = await prisma.cartItem.findMany({where:{cartId:cart.id},include:{product:true}})
+    const cartItems = await prisma.cartItem.findMany({
+      where: { cartId: cart.id },
+      include: { product: true },
+    });
 
-    const newTotal = cartItems.reduce((sum,item)=>{
-      const price = item.product.isOfferActive && item.product.offerPrice ? item.product.offerPrice : item.product.price
-      return sum + price
-    },0)
+    const newTotal = cartItems.reduce((sum, item) => {
+      const price =
+        item.product.isOfferActive && item.product.offerPrice
+          ? item.product.offerPrice
+          : item.product.price;
+      return sum + price;
+    }, 0);
 
     await prisma.cart.update({
-      where:{id:cart.id},
-      data:{total:newTotal}
-    })
+      where: { id: cart.id },
+      data: { total: newTotal },
+    });
 
-    return res.status(200).json({success:true,message:"Item added into cart successfully"})
+    return res
+      .status(200)
+      .json({ success: true, message: "Item added into cart successfully" });
   } catch (error) {
-    console.error("addInto cart error",error)
-    return res.status(500).json({success:false,message:"Internal Server error"})
+    console.error("addInto cart error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server error" });
   }
-}
+};
 
-
-export const decreaseFromCart = async(req:Request,res:Response)=>{
+export const decreaseFromCart = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId
-    if(!userId){
-      return res.status(401).json({success:false,message:"Unauthorize"})
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorize" });
     }
 
-    const {productId} = req.params
+    const { productId } = req.params;
 
-    await prisma.$transaction(async(tx)=>{
-      const cart = await tx.cart.findUnique({where:{userId}})
-    if(!cart){
-      throw new Error("CART_NOT_FOUND")
-    }
-
-    const cartItem = await tx.cartItem.findUnique({where:{
-      cartId_productId:{
-        cartId:cart.id,
-        productId
+    await prisma.$transaction(async (tx) => {
+      const cart = await tx.cart.findUnique({ where: { userId } });
+      if (!cart) {
+        throw new Error("CART_NOT_FOUND");
       }
-    },include:{product:true}})
-    if(!cartItem){
-      throw new Error("ITEM_NOT_FOUND")
-    }
 
-    const price = cartItem.product.isOfferActive && cartItem.product.offerPrice ? cartItem.product.offerPrice : cartItem.product.price
-    if(cartItem.quantity > 1){
-      await tx.cartItem.update({where:{id:cartItem.id},data:{
+      const cartItem = await tx.cartItem.findUnique({
+        where: {
+          cartId_productId: {
+            cartId: cart.id,
+            productId,
+          },
+        },
+        include: { product: true },
+      });
+      if (!cartItem) {
+        throw new Error("ITEM_NOT_FOUND");
+      }
 
-        quantity:cartItem.quantity-1
-      }})
-      await tx.cart.update({where:{id:cart.id},data:{total:Math.max(0,cart.total-price)}})
-    }else{
-      await tx.cartItem.delete({where:{id:cartItem.id}})
-      await tx.cart.update({where:{id:cart.id},data:{total:Math.max(0,cart.total-price*cartItem.quantity)}})
-    }
-    })
-    
+      const price =
+        cartItem.product.isOfferActive && cartItem.product.offerPrice
+          ? cartItem.product.offerPrice
+          : cartItem.product.price;
+      if (cartItem.quantity > 1) {
+        await tx.cartItem.update({
+          where: { id: cartItem.id },
+          data: {
+            quantity: cartItem.quantity - 1,
+          },
+        });
+        await tx.cart.update({
+          where: { id: cart.id },
+          data: { total: Math.max(0, cart.total - price) },
+        });
+      } else {
+        await tx.cartItem.delete({ where: { id: cartItem.id } });
+        await tx.cart.update({
+          where: { id: cart.id },
+          data: { total: Math.max(0, cart.total - price * cartItem.quantity) },
+        });
+      }
+    });
 
-    return res.status(200).json({success:true,message:"Cart item removed successfully"})
-  } catch (error:any) {
+    return res
+      .status(200)
+      .json({ success: true, message: "Cart item removed successfully" });
+  } catch (error: any) {
     if (error.message === "CART_NOT_FOUND") {
-      return res.status(404).json({ success: false, message: "Cart not found" })
+      return res
+        .status(404)
+        .json({ success: false, message: "Cart not found" });
     }
     if (error.message === "ITEM_NOT_FOUND") {
-      return res.status(404).json({ success: false, message: "Item not in cart" })
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not in cart" });
     }
-    console.error("removeFromCart error",error)
-    return res.status(500).json({success:false,message:"Internal Server Error"})
+    console.error("removeFromCart error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
-}
+};
 
-export const deleteCartItem = async(req:Request,res:Response)=>{
+export const deleteCartItem = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.userId
-    const {productId} = req.params
+    const userId = req.user?.userId;
+    const { productId } = req.params;
 
-    await prisma.$transaction((async(tx)=>{
-      
-
-    const cart = await tx.cart.findUnique({where:{userId:userId}})
-    if(!cart){
-      throw new Error("CART_NOT_FOUND")
-    }
-
-    const cartItem =await tx.cartItem.findUnique({where:{
-      cartId_productId:{
-        cartId:cart.id,
-        productId
+    await prisma.$transaction(async (tx) => {
+      const cart = await tx.cart.findUnique({ where: { userId: userId } });
+      if (!cart) {
+        throw new Error("CART_NOT_FOUND");
       }
-    },include:{product:true}})
-    if(!cartItem){
-      throw new Error("ITEM_NOT_FOUND")
-    }
 
-    await tx.cartItem.delete({where:{id:cartItem.id}})
-    const price = cartItem.product.isOfferActive && cartItem.product.offerPrice ? cartItem.product.offerPrice : cartItem.product.price
+      const cartItem = await tx.cartItem.findUnique({
+        where: {
+          cartId_productId: {
+            cartId: cart.id,
+            productId,
+          },
+        },
+        include: { product: true },
+      });
+      if (!cartItem) {
+        throw new Error("ITEM_NOT_FOUND");
+      }
 
-    await tx.cart.update({where:{id:cart.id},data:{total:Math.max(0,cart.total-price*cartItem.quantity)}})
-    }))
+      await tx.cartItem.delete({ where: { id: cartItem.id } });
+      const price =
+        cartItem.product.isOfferActive && cartItem.product.offerPrice
+          ? cartItem.product.offerPrice
+          : cartItem.product.price;
 
-    
-    return res.status(200).json({success:true,message:"This product deleted from your cart successfully"})
-  } catch (error:any) {
+      await tx.cart.update({
+        where: { id: cart.id },
+        data: { total: Math.max(0, cart.total - price * cartItem.quantity) },
+      });
+    });
+
+    return res
+      .status(200)
+      .json({
+        success: true,
+        message: "This product deleted from your cart successfully",
+      });
+  } catch (error: any) {
     if (error.message === "CART_NOT_FOUND") {
-      return res.status(404).json({ success: false, message: "Cart not found" })
+      return res
+        .status(404)
+        .json({ success: false, message: "Cart not found" });
     }
     if (error.message === "ITEM_NOT_FOUND") {
-      return res.status(404).json({ success: false, message: "Item not in cart" })
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not in cart" });
     }
-    console.error("deleteCart Item Error",error)
-    return res.status(500).json({success:false,message:"Internal Server Error"})
+    console.error("deleteCart Item Error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+export const getCartItems = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "UnAuthorize" });
+    }
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        items: {
+          include: { product: true },
+        },
+      },
+    });
+    if (!cart) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+    return res
+      .status(200)
+      .json({ success: true, data: { items: cart.items, total: cart.total } });
+  } catch (error) {
+    console.error("getCartItems Error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server Error" });
+  }
+};
+
+export const getAllCoupons = async(req:Request,res:Response)=>{
+  try {
+    const coupons = await prisma.coupon.findMany({where:{isActive:true}})
+    if(!coupons){
+      return res.status(200).json({success:true,data:[]})
+    }
+  } catch (error) {
+    console.error("getAllCoupons error",error)
+    return res.status(500).json({success:false,message:"Internal server error"})
   }
 }
-

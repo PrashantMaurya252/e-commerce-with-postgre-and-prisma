@@ -101,6 +101,10 @@ model Order{
   id                  String              @id @default(uuid())
   userId              String?
   total               Int
+  subTotal            Int
+  discountAmount      Int                 @default(0)
+  couponId            String?
+  couponCode          String?
   createdAt           DateTime             @default(now())
   items               OrderItem[]
   user                User?                @relation(fields:[userId],references:[id],onDelete:SetNull)
@@ -153,9 +157,11 @@ model Payment {
 model Cart{
   id                     String                  @id @default(uuid())
   items                  CartItem[]
-  total                  Int
+  total                  Int                       @default(0)
   userId                 String                    @unique
   user                   User                      @relation(fields:[userId], references:[id],onDelete:Cascade)
+  locked                 Boolean                   @default(false)
+  lockedAt               DateTime?                 
   updatedAt              DateTime                      @updatedAt
 }
 
@@ -177,9 +183,22 @@ model Coupon{
   id                     String                   @id @default(uuid())
   code                   String                   @unique
   discountType           DiscountType
-  discountValue          Int
+  discountValue          Int                       @default(0)
+  maxDiscount            Int?
+  usageLimit             Int?
   minCartValue           Int                      @default(0)
   expiresAt              DateTime
   isActive               Boolean                  @default(true)
   createdAt              DateTime                 @default(now())
+  usages                 CouponUsage[]
+}
+
+model CouponUsage{
+  id                      String                  @id @default(uuid())
+  userId                  String
+  couponId                String
+  usedAt                  DateTime                @default(now())
+  user                    User                    @relation(fields:[userId],references:[id],onDelete:Cascade)
+  coupon                  Coupon                  @relation(fields:[couponId],references:[id],onDelete:Cascade)
+  @@unique([couponId,userId])
 }
