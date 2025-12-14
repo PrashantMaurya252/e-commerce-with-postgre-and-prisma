@@ -331,3 +331,99 @@ export const addIntoCart = async(req:Request,res:Response)=>{
   }
 }
 
+
+export const decreaseFromCart = async(req:Request,res:Response)=>{
+  try {
+    const userId = req.user?.userId
+    if(!userId){
+      return res.status(401).json({success:false,message:"Unauthorize"})
+    }
+
+    const {productId} = req.params
+
+    await prisma.$transaction(async(tx)=>{
+      const cart = await tx.cart.findUnique({where:{userId}})
+    if(!cart){
+      throw new Error("CART_NOT_FOUND")
+    }
+
+    const cartItem = await tx.cartItem.findUnique({where:{
+      cartId_productId:{
+        cartId:cart.id,
+        productId
+      }
+    },include:{product:true}})
+    if(!cartItem){
+      throw new Error("ITEM_NOT_FOUND")
+    }
+
+    const price = cartItem.product.isOfferActive && cartItem.product.offerPrice ? cartItem.product.offerPrice : cartItem.product.price
+    if(cartItem.quantity > 1){
+      await tx.cartItem.update({where:{id:cartItem.id},data:{
+
+        quantity:cartItem.quantity-1
+      }})
+      await tx.cart.update({where:{id:cart.id},data:{total:Math.max(0,cart.total-price)}})
+    }else{
+      await tx.cartItem.delete({where:{id:cartItem.id}})
+      await tx.cart.update({where:{id:cart.id},data:{total:Math.max(0,cart.total-price*cartItem.quantity)}})
+    }
+    })
+    
+
+    return res.status(200).json({success:true,message:"Cart item removed successfully"})
+  } catch (error:any) {
+    if (error.message === "CART_NOT_FOUND") {
+      return res.status(404).json({ success: false, message: "Cart not found" })
+    }
+    if (error.message === "ITEM_NOT_FOUND") {
+      return res.status(404).json({ success: false, message: "Item not in cart" })
+    }
+    console.error("removeFromCart error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
+
+export const deleteCartItem = async(req:Request,res:Response)=>{
+  try {
+    const userId = req.user?.userId
+    const {productId} = req.params
+
+    await prisma.$transaction((async(tx)=>{
+      
+
+    const cart = await tx.cart.findUnique({where:{userId:userId}})
+    if(!cart){
+      throw new Error("CART_NOT_FOUND")
+    }
+
+    const cartItem =await tx.cartItem.findUnique({where:{
+      cartId_productId:{
+        cartId:cart.id,
+        productId
+      }
+    },include:{product:true}})
+    if(!cartItem){
+      throw new Error("ITEM_NOT_FOUND")
+    }
+
+    await tx.cartItem.delete({where:{id:cartItem.id}})
+    const price = cartItem.product.isOfferActive && cartItem.product.offerPrice ? cartItem.product.offerPrice : cartItem.product.price
+
+    await tx.cart.update({where:{id:cart.id},data:{total:Math.max(0,cart.total-price*cartItem.quantity)}})
+    }))
+
+    
+    return res.status(200).json({success:true,message:"This product deleted from your cart successfully"})
+  } catch (error:any) {
+    if (error.message === "CART_NOT_FOUND") {
+      return res.status(404).json({ success: false, message: "Cart not found" })
+    }
+    if (error.message === "ITEM_NOT_FOUND") {
+      return res.status(404).json({ success: false, message: "Item not in cart" })
+    }
+    console.error("deleteCart Item Error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
+
