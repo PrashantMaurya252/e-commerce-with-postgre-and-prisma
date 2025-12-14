@@ -28,3 +28,16 @@ export const uploadToCloudinary =async(file:Express.Multer.File):Promise<uploadT
         return Promise.reject(error); // important!
     }
 }
+
+export const cartTotal =(items:any[])=>{
+    try {
+        let subTotal =0
+        for(const item of items){
+            const price = item?.product?.isOfferActive && item?.product.offerPrice ? item?.product.offerPrice : item?.product.price
+            subTotal += price*item.quantity
+        }
+        return subTotal
+    } catch (error) {
+        console.error("cart totals error",error)
+    }
+}
