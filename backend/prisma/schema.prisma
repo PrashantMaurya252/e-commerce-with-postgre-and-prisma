@@ -12,6 +12,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum OtpType{
+  EMAIL_VERIFICATION
+  FORGOT_PASSWORD
+}
+
 enum Category{
   ELECTRONICS
   CLOTHES
@@ -59,11 +64,24 @@ model User{
   orders             Order[]
   cart               Cart?
   createdAt          DateTime                @default(now())
-  isAdmin            Boolean
+  isAdmin            Boolean            @default(false)
   files              File[]
   addresses           Address[]
   couponUsages                 CouponUsage[]
+  isVerified        Boolean             @default(false)
   
+}
+
+model Otp{
+  id                  String                @id @default(uuid())
+  email               String
+  code                String
+  type                OtpType
+  isUsed              Boolean               @default(false)
+  expiresAt           DateTime
+  createdAt           DateTime              @default(now())
+
+  @@index([email,type])
 }
 
 model Product{

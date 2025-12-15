@@ -3,6 +3,7 @@ import { prisma } from "../config/prisma.js";
 import bcrypt from "bcryptjs";
 import { success, z } from "zod";
 import { generateAccessToken } from "../utils/jwt.js";
+import { generateOtp, sendOtpMail } from "../utils/mailer.js";
 
 const signupSchema = z.object({
   email: z.string(),
@@ -114,4 +115,26 @@ export const login = async(req:Request,res:Response)=>{
             message:"Server not working"
         })
     }
+}
+
+
+export const sendEmailVerificationOtp = async(req:Request,res:Response)=>{
+  try {
+    const userId = req.user?.userId
+    const {email} = req.body
+
+    const otp = generateOtp()
+    await prisma.otp.create({data:{
+      email,
+      code:otp,
+      type:"EMAIL_VERIFICATION",
+      expiresAt:new Date(Date.now()+5*60*1000)
+    }})
+
+    await sendOtpMail(email,otp,"Verify Email")
+    return res.status(200).json({success:true,message:"Verification Otp Send to your mail and it is valid for 5 minutes"})
+  } catch (error) {
+    console.error("sendEmailVerificationOtp error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
 }
