@@ -138,3 +138,38 @@ export const sendEmailVerificationOtp = async(req:Request,res:Response)=>{
     return res.status(500).json({success:false,message:"Internal Server Error"})
   }
 }
+
+
+export const verifyEmailOtp = async(req:Request,res:Response)=>{
+  try {
+    const {email,otp} = req.body
+    const record = await prisma.otp.findFirst({
+      where:{
+        email,
+        code:otp,
+        type:"EMAIL_VERIFICATION",
+        isUsed:false,
+        expiresAt:{gt:new Date()}
+      }
+    })
+
+    if(!record){
+      return res.status(400).json({success:false,message:"invalid OTP"})
+    }
+
+    await prisma.$transaction([
+      prisma.otp.update({
+        where:{id:record.id},
+        data:{isUsed:true}
+      }),
+      prisma.user.update({
+        where:{email},
+        data:{isVerified:true}
+      })
+    ])
+    return res.json({success:true,message:"Email Verified"})
+  } catch (error) {
+    console.error("verify email otp error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
