@@ -97,7 +97,7 @@ export const login = async(req:Request,res:Response)=>{
             name:user.name,
             isAdmin:user.isAdmin
         }
-        const {password:_,...userData} =user
+        const {password:_,createdAt,...userData} =user
         const token = generateAccessToken(userPayload)
         res.cookie("access-token",token,{
             httpOnly:true,
