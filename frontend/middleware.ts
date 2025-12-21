@@ -1,43 +1,50 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-export function middleware(req: NextRequest) {
-  const token = req.cookies.get("token")?.value
-  const role = req.cookies.get("role")?.value
-  const { pathname } = req.nextUrl
+export async function middleware(req: NextRequest) {
+  const token = req.cookies.get("access-token")?.value;
+  const { pathname } = req.nextUrl;
+  console.log("🔥 MIDDLEWARE HIT:", req.nextUrl.pathname,token);
 
-  if (req.nextUrl.pathname === "/") {
-    return NextResponse.redirect(new URL("/login", req.url))
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  /* 1️⃣ Not logged in */
   if (!token) {
-    if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin")) {
-      return NextResponse.redirect(new URL("/login", req.url))
+    if (pathname.startsWith("/user") || pathname.startsWith("/admin")) {
+      return NextResponse.redirect(new URL("/login", req.url));
     }
+    return NextResponse.next();
   }
 
-  /* 2️⃣ Logged in but NOT admin */
-  if (token && role !== "Admin") {
-    if (pathname.startsWith("/admin")) {
-      return NextResponse.redirect(new URL("/dashboard", req.url))
-    }
-  }
+  try {
+    const secret = new TextEncoder().encode(
+      process.env.JWT_SECRET!
+    );
 
-  /* 3️⃣ Admin trying to access user pages (optional rule) */
-  if (token && role === "Admin") {
-    if (pathname.startsWith("/user")) {
-      return NextResponse.redirect(new URL("/admin"))
-    }
-  }
+    const { payload } = await jwtVerify(token, secret);
 
-  return NextResponse.next()
+    console.log("Decoded JWT payload:", payload);
+
+    const isAdmin = payload.isAdmin as boolean;
+
+    if (pathname.startsWith("/admin") && !isAdmin) {
+      return NextResponse.redirect(new URL("/user/home", req.url));
+    }
+
+    if (pathname.startsWith("/user") && isAdmin) {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
+
+    return NextResponse.next();
+  } catch (err) {
+    const res = NextResponse.redirect(new URL("/login", req.url));
+    res.cookies.delete("access-token");
+    return res;
+  }
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/user/:path*",
-    "/admin/:path*",
-  ],
-}
+  matcher: ["/", "/user/:path*", "/admin/:path*"],
+};

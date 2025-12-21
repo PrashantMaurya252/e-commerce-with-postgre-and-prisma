@@ -2,7 +2,7 @@ import { loginPayload, loginResponse, sendOTPResponse, signupPayload, signupResp
 import axios from "axios"
 
 
-const BACKEND_URL = process.env.NEXT_BACKEND_API_URL
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
 
 export const signupAPI = async(payload:signupPayload):Promise<signupResponse>=>{
@@ -17,11 +17,17 @@ export const signupAPI = async(payload:signupPayload):Promise<signupResponse>=>{
 
 export const loginAPI = async(payload:loginPayload):Promise<loginResponse>=>{
     try {
-        const response = await axios.post(`${BACKEND_URL}/api/auth/login`,payload)
+        const response = await axios.post(`${BACKEND_URL}/auth/login`,payload,{
+        withCredentials: true, // ✅ REQUIRED
+      })
         return response.data
     } catch (error:any) {
         console.log("login api error",error)
-        throw new Error(error?.response.data.message || "Login Error")
+        return {
+      success: false,
+      message:
+        error?.response?.data?.message || "Login Error",
+    };
     }
 }
 

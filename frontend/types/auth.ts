@@ -1,3 +1,5 @@
+import { User } from "@/redux/slices/authSlice"
+
 export interface signupPayload{
     email:string,
     username:string,
@@ -16,7 +18,6 @@ export interface signupResponse{
 
 export interface loginPayload{
     email:string,
-    username:string,
     password:string
 }
 
@@ -24,14 +25,8 @@ export interface loginResponse{
     success:boolean,
     message:string,
     data?:{
-        userData:{
-        id:string,
-        name:string,
-        email:string,
-        isAdmin:false,
-        isVerified:false
-    },
-    token:string
+        userData:User,
+        token:string
     }
 }
 
