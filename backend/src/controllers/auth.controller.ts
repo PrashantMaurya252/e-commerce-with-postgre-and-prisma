@@ -105,6 +105,12 @@ export const login = async(req:Request,res:Response)=>{
             maxAge:1000*60*60*24,
             sameSite:process.env.NODE_ENV === 'production' ? "strict" : "lax"
         })
+        res.cookie("role",user?.isAdmin ? "Admin":"User",{
+            httpOnly:true,
+            secure:process.env.NODE_ENV === 'production',
+            maxAge:1000*60*60*24,
+            sameSite:process.env.NODE_ENV === 'production' ? "strict" : "lax"
+        })
         return res.status(200).json({success:true,data:{
             userData,token
         }})
