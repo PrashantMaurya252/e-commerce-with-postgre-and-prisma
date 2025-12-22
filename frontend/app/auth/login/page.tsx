@@ -11,11 +11,12 @@ import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/redux/store";
 import { login } from "@/redux/slices/authSlice";
+import { useAppDispatch } from "@/redux/hooks";
 
 // import { Icon } from "@iconify/react";
 
 export default function LoginPage() {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
