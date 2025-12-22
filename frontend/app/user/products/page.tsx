@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import ProductFilters from "@/components/products/ProductFilters";
 // import ProductsGrid from "@/components/products/ProductsGrid";
 import { Category, Product } from "@/types/product";
 import ProductsGrid from "@/components/products/ProductsGrid";
+import { useDebounce } from "@/hooks/useDebounce";
+import { fetchAllProducts } from "@/utils/api";
 
 const PRODUCTS: Product[] = [
   {
@@ -41,21 +43,40 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [price, setPrice] = useState(100000);
+  const debouncedSearch = useDebounce(search);
+  const [products,setProducts] = useState([])
 
-  const filteredProducts = useMemo(() => {
-    return PRODUCTS.filter((p) => {
-      const matchSearch = p.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
+  const [page,setPage] = useState(1)
+  const [limit,setLimit] = useState(10)
 
-      const matchCategory =
-        category === "ALL" || p.category === category;
+  const fetchProducts = async()=>{
+    const response = await fetchAllProducts({search,category,price,page,limit})
+    if(response?.success){
+         setProducts(response?.data)
+    }
+  }
 
-      const matchPrice = p.price <= price;
+  console.log(products)
 
-      return matchSearch && matchCategory && matchPrice;
-    });
-  }, [search, category, price]);
+  useEffect(()=>{
+    fetchProducts()
+  },[])
+
+ const filteredProducts = useMemo(() => {
+  return PRODUCTS.filter((p) => {
+    const matchSearch = p.name
+      .toLowerCase()
+      .includes(debouncedSearch.toLowerCase());
+
+    const matchCategory =
+      category === "ALL" || p.category === category;
+
+    const matchPrice = p.price <= price;
+
+    return matchSearch && matchCategory && matchPrice;
+  });
+}, [debouncedSearch, category, price]);
+
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">

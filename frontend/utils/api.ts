@@ -1,4 +1,5 @@
 import { loginPayload, loginResponse, sendOTPResponse, signupPayload, signupResponse, verifyForgotPasswordOtpPayload, verifyForgotPasswordOtpResponse } from "@/types/auth"
+import { ProductAPIResponse, ProductFilter } from "@/types/product";
 import axios from "axios"
 
 
@@ -48,5 +49,19 @@ export const verifyForgotPasswordOtp = async(payload:verifyForgotPasswordOtpPayl
     } catch (error:any) {
         console.log("verify forgot password otp api error",error)
         throw new Error(error?.response.data.message || "Verify OTP Error")
+    }
+}
+
+
+export const fetchAllProducts = async(filter:ProductFilter):Promise<ProductAPIResponse>=>{
+    try {
+        const response = await axios.get(`${BACKEND_URL}/product/all-products?page=${filter?.page}&limit=${filter.limit}`,{withCredentials:true})
+        return response.data
+    } catch (error:any) {
+        return {
+            success:false,
+            message:error.response.data.message,
+            data:[]
+        }
     }
 }
