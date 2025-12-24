@@ -55,6 +55,8 @@ export default function LoginPage() {
           login({
             user: response.data.userData,
             token: response.data.token,
+            isAdmin:response.data.isAdmin
+            
           })
         );
         router.push("/user/home");
