@@ -5,6 +5,7 @@ import { success, z } from "zod";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.js";
 import { generateOtp, sendOtpMail } from "../utils/mailer.js";
 import jwt from "jsonwebtoken";
+import { AuthRequest } from "../middlewares/auth.js";
 
 const signupSchema = z.object({
   email: z.string(),
@@ -276,6 +277,55 @@ export const refreshToken = async(req:Request,res:Response)=>{
     return res.status(200).json({success:true,accessToken:newAccessToken})
   } catch (error) {
     console.error("refresh token error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
+
+
+export const me = async(req:AuthRequest,res:Response)=>{
+  try {
+
+    if(!req.user?.userId){
+      return res.status(401).json({success:false,message:"Unauthorized"})
+    }
+    const user = await prisma.user.findUnique({where:{id:req.user?.userId},select:{id:true,email:true,name:true,isAdmin:true}})
+
+    if(!user){
+      return res.status(404).json({success:false,message:"User not found"})
+    }
+
+    return res.status(200).json({success:true,user})
+
+  } catch (error) {
+    console.error("me controller error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
+
+export const logout = async(req:AuthRequest,res:Response)=>{
+  try {
+    const userId = req.user?.userId
+    if(!userId){
+      return res.status(401).json({success:false,message:"Unauthorized"})
+    }
+    const user = await prisma.user.findUnique({where:{id:userId}})
+    if(!user){
+      return res.status(401).json({success:false,message:"Unauthorized"})
+    }
+
+    await prisma.refreshToken.deleteMany({
+      where:{userId:userId}
+    })
+    res.clearCookie("refresh-token",{
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    })
+
+    return res.status(200).json({success:true,message:"User logout successfully"})
+
+  } catch (error) {
+    console.error("logout error",error)
     return res.status(500).json({success:false,message:"Internal Server Error"})
   }
 }
