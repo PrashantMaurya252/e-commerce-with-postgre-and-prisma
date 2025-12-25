@@ -18,14 +18,14 @@ export const generateAccessToken = (data:User)=>{
     if (!secret) {
     throw new Error("JWT_ACCESS_TOKEN_SECRET is not defined");
   }
-        return jwt.sign(data,secret,{expiresIn:"15d"})
+        return jwt.sign(data,secret,{expiresIn:"15m"})
     } catch (error) {
         console.error("generate token error",error)
         throw new Error("failed to generate token")
     }
 }
 
-export const generateRefreshToken = (data:User)=>{
+export const generateRefreshToken = ({userId}:any)=>{
     
     try {
         const secret:string = process.env.JWT_REFRESH_TOKEN_SECRET || "Secret"
@@ -36,7 +36,7 @@ export const generateRefreshToken = (data:User)=>{
     if (!secret) {
     throw new Error("JWT_ACCESS_TOKEN_SECRET is not defined");
   }
-        return jwt.sign(data,secret,{expiresIn:"7d"})
+        return jwt.sign({userId},secret,{expiresIn:"7d"})
     } catch (error) {
         console.error("generate token error",error)
         throw new Error("failed to generate token")

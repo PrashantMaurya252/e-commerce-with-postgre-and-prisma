@@ -2,8 +2,9 @@ import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
 import bcrypt from "bcryptjs";
 import { success, z } from "zod";
-import { generateAccessToken } from "../utils/jwt.js";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwt.js";
 import { generateOtp, sendOtpMail } from "../utils/mailer.js";
+import jwt from "jsonwebtoken";
 
 const signupSchema = z.object({
   email: z.string(),
@@ -98,21 +99,36 @@ export const login = async(req:Request,res:Response)=>{
             isAdmin:user.isAdmin
         }
         const {password:_,createdAt,...userData} =user
-        const token = generateAccessToken(userPayload)
-        res.cookie("access-token",token,{
-            httpOnly:true,
-            secure:process.env.NODE_ENV === 'production',
-            maxAge:1000*60*60*24,
-            sameSite:process.env.NODE_ENV === 'production' ? "strict" : "lax"
+        const accessToken = generateAccessToken(userPayload)
+        const refreshToken = generateRefreshToken({userId:user.id})
+
+        await prisma.refreshToken.create({
+          data:{
+            token:refreshToken,
+            userId:user.id,
+            expiresAt:new Date(Date.now() + 7*24*60*60*1000)
+          }
         })
-        res.cookie("role",user?.isAdmin ? "Admin":"User",{
-            httpOnly:true,
+
+        
+        // res.cookie("access-token",accessToken,{
+        //     httpOnly:true,
+        //     secure:process.env.NODE_ENV === 'production',
+        //     sameSite:process.env.NODE_ENV === 'production' ? "strict" : "lax"
+        // })
+        // res.cookie("role",user?.isAdmin ? "Admin":"User",{
+        //     httpOnly:true,
+        //     secure:process.env.NODE_ENV === 'production',
+        //     sameSite:process.env.NODE_ENV === 'production' ? "strict" : "lax"
+        // })
+
+        res.cookie("refresh-token",refreshToken,{
+          httpOnly:true,
             secure:process.env.NODE_ENV === 'production',
-            maxAge:1000*60*60*24,
             sameSite:process.env.NODE_ENV === 'production' ? "strict" : "lax"
         })
         return res.status(200).json({success:true,data:{
-            userData,token
+            userData,accessToken
         }})
     } catch (error) {
         console.error("login error",error)
@@ -229,6 +245,37 @@ export const verifyForgotPasswordOtp = async(req:Request,res:Response)=>{
     return res.status(200).json({success:true,message:"Password Updated Successfully"})
   } catch (error) {
     console.error("verify forgot password otp",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
+
+
+export const refreshToken = async(req:Request,res:Response)=>{
+  try {
+    const token = req.cookies["refresh-token"];
+    if(!token) return res.status(401).json({success:false,message:"Unauthorized"})
+    
+    const stored = await prisma.refreshToken.findUnique({where:{token}})
+    if(!stored || stored.expiresAt < new Date()){
+      return res.status(401).json({success:false,message:"Unauthorized"})
+    }
+
+    const payload = jwt.verify(token,process.env.JWT_REFRESH_TOKEN_SECRET!) as any
+    const user = await prisma.user.findUnique({where:{id:payload.userId}})
+    if(!user){
+      return res.status(401).json({success:false,message:"Unauthorized"})
+    }
+
+    const userPayload = {
+            userId:user.id,
+            email:user.email,
+            name:user.name,
+            isAdmin:user.isAdmin
+        }
+    const newAccessToken = generateAccessToken(userPayload)
+    return res.status(200).json({success:true,accessToken:newAccessToken})
+  } catch (error) {
+    console.error("refresh token error",error)
     return res.status(500).json({success:false,message:"Internal Server Error"})
   }
 }
