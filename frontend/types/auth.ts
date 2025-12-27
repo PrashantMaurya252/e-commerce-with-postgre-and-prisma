@@ -26,7 +26,7 @@ export interface loginResponse{
     message:string,
     data?:{
         userData:User,
-        token:string,
+        accessToken:string,
         isAdmin:boolean
     }
 }

@@ -1,4 +1,8 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { fetchMe } from "../thunks/authThunk";
+
+
+
 
 export interface User {
   id: string;
@@ -10,16 +14,14 @@ export interface User {
 
 interface AuthState {
   user: User | null;
-  token: string | null;
-  isLoggedIn: boolean;
-  isAdmin:boolean;
+  accessToken: string | null;
+  isAuthenticated: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
-  token: null,
-  isLoggedIn: false,
-  isAdmin:false,
+  accessToken: null,
+  isAuthenticated: false,
 };
 
 const authSlice = createSlice({
@@ -31,18 +33,33 @@ const authSlice = createSlice({
       action: PayloadAction<{ user: User; token: string,isAdmin:boolean }>
     ) => {
       state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.isLoggedIn = true;
-      state.isLoggedIn = action.payload.isAdmin
+      state.accessToken = action.payload.token;
+      state.isAuthenticated = true;
     },
     logout: (state) => {
       state.user = null;
-      state.token = null;
-      state.isLoggedIn = false;
-      state.isAdmin = false
+      state.accessToken = null;
+      state.isAuthenticated = false;
     },
+    updateAccessToken:(state,action:PayloadAction<string>)=>{
+      state.accessToken = action.payload
+    },
+
+    
+    
+
   },
+  extraReducers:(builder)=>{
+      builder.addCase(fetchMe.fulfilled,(state,action)=>{
+        state.user = action.payload
+        state.isAuthenticated = true
+      })
+      builder.addCase(fetchMe.rejected,(state)=>{
+        state.user = null,
+        state.isAuthenticated = false
+      })
+    }
 });
 
-export const { login, logout } = authSlice.actions;
+export const { login, logout,updateAccessToken } = authSlice.actions;
 export default authSlice.reducer;

@@ -54,7 +54,7 @@ export default function LoginPage() {
         dispatch(
           login({
             user: response.data.userData,
-            token: response.data.token,
+            token: response.data.accessToken,
             isAdmin:response.data.isAdmin
             
           })

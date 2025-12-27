@@ -5,11 +5,12 @@ import { RootState } from '@/redux/store';
 import React from 'react'
 
 const ComputerNavbar = () => {
-  const { user, isLoggedIn, token,isAdmin } = useAppSelector(
+  const { user, isAuthenticated, accessToken } = useAppSelector(
       (state: RootState) => state.auth
     );
 
-    console.log(user,isLoggedIn,token,isAdmin)
+    // console.log(user,isLoggedIn,token)
+    
     const userOptions = [
         {id:1,label:"Home",route:"/user/home",icon:""},
         {id:2,label:"Products",route:"/user/products",icon:""}
@@ -24,7 +25,7 @@ const ComputerNavbar = () => {
 
 
 
-    if(isLoggedIn && user && !user.isAdmin){
+    if(isAuthenticated && user && !user.isAdmin){
       userOptions.push({id:3,label:"Orders",route:"/user/orders",icon:""})
       userOptions.push({id:3,label:"Carts",route:"/user/carts",icon:""}) 
     }
