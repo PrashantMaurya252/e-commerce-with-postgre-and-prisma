@@ -11,34 +11,71 @@ const api = axios.create({
     withCredentials:true
 })
 
-api.interceptors.request.use((config)=>{
-    const state = store.getState()
-    const token = state.auth.accessToken
+let isRefreshing = false;
+let failedQueue: any[] = [];
 
-    if(token){
-        config.headers.Authorization = `${token}`
+const processQueue = (error: any, token: string | null) => {
+  failedQueue.forEach(prom => {
+    if (error) prom.reject(error);
+    else prom.resolve(token);
+  });
+  failedQueue = [];
+};
+
+api.interceptors.response.use(
+  res => res,
+  async error => {
+    const originalRequest = error.config;
+
+    // ❌ Do NOT refresh for refresh-token API itself
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes("/auth/refresh-token")
+    ) {
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        const res = await axios.post(
+          `${BACKEND_URL}/auth/refresh-token`,
+          {},
+          { withCredentials: true }
+        );
+
+        const newAccessToken = res.data.accessToken;
+
+        store.dispatch(updateAccessToken(newAccessToken));
+
+        api.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${newAccessToken}`;
+
+        processQueue(null, newAccessToken);
+
+        return api(originalRequest);
+      } catch (err) {
+        processQueue(err, null);
+        store.dispatch(logout());
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
-    return config
-})
-
-api.interceptors.response.use((response)=>response,async(error)=>{
-    const originalRequest = error.config
-    if(error?.response?.status === 401 && !originalRequest._retry){
-        originalRequest._retry = true
-
-        try {
-            const res = await api.post(`/auth/refresh-token`)
-            const newAccessToken = await res.data.accessToken
-            store.dispatch(updateAccessToken(newAccessToken))
-            originalRequest.headers.Authorization = `${newAccessToken}`
-            return api(originalRequest)
-        } catch (err) {
-            store.dispatch(logout())
-        }
-    }
-    return Promise.reject(error)
-})
+    return Promise.reject(error);
+  }
+);
 
 
 export default api

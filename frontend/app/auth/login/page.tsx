@@ -55,11 +55,15 @@ export default function LoginPage() {
           login({
             user: response.data.userData,
             token: response.data.accessToken,
-            isAdmin:response.data.isAdmin
+        
             
           })
         );
-        router.push("/user/home");
+        if(response.data.userData.isAdmin){
+          router.push("/admin/dashboard");
+        }else{
+          router.push("/user/home")
+        }
       } else {
         toast.error(response?.message || "Something went wrong while login");
       }

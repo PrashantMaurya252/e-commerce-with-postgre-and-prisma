@@ -7,11 +7,11 @@ import { useAppSelector } from '@/redux/hooks'
 
 const Dashboard = () => {
 
-  const { user, isLoggedIn, token } = useAppSelector(
+  const { user, isAuthenticated, accessToken } = useAppSelector(
     (state: RootState) => state.auth
   );
 
-  // console.log(user,isLoggedIn,token)
+  console.log(user,isAuthenticated,accessToken)
   return (
     <div>Dashboard</div>
   )
