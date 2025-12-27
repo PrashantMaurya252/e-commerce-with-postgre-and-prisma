@@ -3,7 +3,6 @@ import { useAppSelector } from "@/redux/hooks";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-
 type Role = "ADMIN" | "USER";
 
 export default function RoleGuard({
@@ -16,13 +15,19 @@ export default function RoleGuard({
   const router = useRouter();
   const { user } = useAppSelector((state) => state.auth);
 
+  const role: Role | null = user
+    ? user.isAdmin
+      ? "ADMIN"
+      : "USER"
+    : null;
+
   useEffect(() => {
-    if (user && !allowedRoles.includes(user.role)) {
+    if (role && !allowedRoles.includes(role)) {
       router.replace("/unauthorized");
     }
-  }, [user, allowedRoles, router]);
+  }, [role, allowedRoles, router]);
 
-  if (!user || !allowedRoles.includes(user.role)) return null;
+  if (!role || !allowedRoles.includes(role)) return null;
 
   return <>{children}</>;
 }
