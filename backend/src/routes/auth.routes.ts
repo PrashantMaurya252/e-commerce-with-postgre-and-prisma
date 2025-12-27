@@ -16,7 +16,7 @@ authRouter.post("/verify-forgot-password-otp",rateLimiter,verifyForgotPasswordOt
 
 authRouter.get("/me",auth,me)
 authRouter.post("/logout",auth,logout)
-authRouter.post("/refresh-token",refreshToken)
+authRouter.get("/refresh-token",refreshToken)
 
 
 export default authRouter
