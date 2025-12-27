@@ -73,6 +73,12 @@ export const fetchAllProducts = async(filter:ProductFilter):Promise<ProductAPIRe
 }
 
 export const meAPI = async()=>{
+
     const res = await api.get("/auth/me",{withCredentials:true})
+    return res.data
+}
+
+export const refreshAPI = async()=>{
+    const res = await api.get("/auth/refresh-token",{withCredentials:true})
     return res.data
 }
