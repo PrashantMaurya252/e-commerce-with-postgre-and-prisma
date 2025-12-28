@@ -79,7 +79,7 @@ export default function Products() {
   /* -------------------- Main Fetch -------------------- */
   useEffect(() => {
     fetchProducts();
-  }, [debouncedSearch, category, price, page]);
+  }, [ category, price, page]);
 
   /* -------------------- Search Dropdown -------------------- */
   useEffect(() => {
