@@ -59,18 +59,34 @@ export const verifyForgotPasswordOtp = async(payload:verifyForgotPasswordOtpPayl
 }
 
 
-export const fetchAllProducts = async(filter:ProductFilter):Promise<ProductAPIResponse>=>{
-    try {
-        const response = await api.get(`${BACKEND_URL}/product/all-products?page=${filter?.page}&limit=${filter.limit}`,{withCredentials:true})
-        return response.data
-    } catch (error:any) {
-        return {
-            success:false,
-            message:error.response.data.message,
-            data:[]
-        }
-    }
-}
+export const fetchAllProducts = async (
+  filter: ProductFilter
+): Promise<ProductAPIResponse> => {
+  try {
+    const response = await api.get(
+      `${BACKEND_URL}/product/all-products`,
+      {
+        params: {
+          page: filter.page,
+          limit: filter.limit,
+          search: filter.search,
+          category: filter.category !== "ALL" ? filter.category : undefined,
+          price: filter.price,
+        },
+        withCredentials: true,
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Something went wrong",
+      data: [],
+    };
+  }
+};
+
 
 export const meAPI = async()=>{
 

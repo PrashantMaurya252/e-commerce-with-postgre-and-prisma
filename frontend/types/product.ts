@@ -43,3 +43,26 @@ export interface ProductAPIResponse{
     totalPages?:number,
     data:Product2[]
 }
+
+// types/product.ts
+export interface ApiProduct {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  offerPrice: number;
+  isOfferActive: boolean;
+  category: Category;
+  files: { url: string; type: "IMAGE" | "VIDEO" }[];
+}
+
+export interface UIProduct {
+  id: string;
+  name: string;
+  price: number;
+  category: Category;
+  image: string;
+  isOfferActive: boolean;
+  offerPrice?: number;
+}
+

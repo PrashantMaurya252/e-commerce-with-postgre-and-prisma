@@ -1,88 +1,117 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
+
 import ProductFilters from "@/components/products/ProductFilters";
-// import ProductsGrid from "@/components/products/ProductsGrid";
-import { Category, Product } from "@/types/product";
 import ProductsGrid from "@/components/products/ProductsGrid";
+import ProductSkeleton from "@/components/products/ProductSkeleton";
+
+import { Category } from "@/types/product";
 import { useDebounce } from "@/hooks/useDebounce";
 import { fetchAllProducts } from "@/utils/api";
+import { getProductImage } from "@/utils/product";
 
-const PRODUCTS: Product[] = [
-  {
-    id: 1,
-    name: "Laptop",
-    price: 60000,
-    category: Category.ELECTRONICS,
-    image: "/products/electronics-1.png",
-  },
-  {
-    id: 2,
-    name: "Wireless Headphones",
-    price: 3000,
-    category: Category.ELECTRONICS,
-    image: "/products/electronics-2.png",
-  },
-  {
-    id: 3,
-    name: "Ethnic Kurta",
-    price: 2000,
-    category: Category.CLOTHES,
-    image: "/products/clothes-1.png",
-  },
-  {
-    id: 4,
-    name: "Kitchen Essentials",
-    price: 1200,
-    category: Category.DAILY_USAGE,
-    image: "/products/daily-1.png",
-  },
-];
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export default function Products() {
+  const router = useRouter();
+
+  /* -------------------- React Transition -------------------- */
+  const [isPending, startTransition] = useTransition();
+
+  /* -------------------- Filters -------------------- */
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [price, setPrice] = useState(100000);
   const debouncedSearch = useDebounce(search);
-  const [products,setProducts] = useState([])
 
-  const [page,setPage] = useState(1)
-  const [limit,setLimit] = useState(10)
+  /* -------------------- Data -------------------- */
+  const [products, setProducts] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchProducts = async()=>{
-    const response = await fetchAllProducts({search,category,price,page,limit})
-    if(response?.success){
-         setProducts(response?.data)
+  /* -------------------- Search Suggestions -------------------- */
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  /* -------------------- Fetch Products -------------------- */
+  const fetchProducts = async () => {
+    const response = await fetchAllProducts({
+      search: debouncedSearch,
+      category,
+      price,
+      page,
+      limit,
+    });
+
+    if (response?.success) {
+      const mapped = response.data.map((p: any) => ({
+        id: p.id,
+        name: p.title,
+        price: p.isOfferActive ? p.offerPrice : p.price,
+        category: p.category,
+        image: getProductImage(p.files),
+        isOfferActive: p.isOfferActive,
+        offerPrice: p.offerPrice,
+      }));
+
+      startTransition(() => {
+        setProducts(mapped);
+        setTotalPages(response.totalPages || 1);
+      });
+    } else {
+      startTransition(() => {
+        setProducts([]);
+        setTotalPages(1);
+      });
     }
-  }
+  };
 
-  console.log(products)
+  /* -------------------- Main Fetch -------------------- */
+  useEffect(() => {
+    fetchProducts();
+  }, [debouncedSearch, category, price, page]);
 
-  useEffect(()=>{
-    fetchProducts()
-  },[])
+  /* -------------------- Search Dropdown -------------------- */
+  useEffect(() => {
+    if (!debouncedSearch) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
 
- const filteredProducts = useMemo(() => {
-  return PRODUCTS.filter((p) => {
-    const matchSearch = p.name
-      .toLowerCase()
-      .includes(debouncedSearch.toLowerCase());
+    const fetchSearchResults = async () => {
+      const res = await fetchAllProducts({
+        search: debouncedSearch,
+        page: 1,
+        limit: 5,
+      });
 
-    const matchCategory =
-      category === "ALL" || p.category === category;
+      if (res?.success) {
+        setSearchResults(res.data);
+        setShowDropdown(true);
+      }
+    };
 
-    const matchPrice = p.price <= price;
+    fetchSearchResults();
+  }, [debouncedSearch]);
 
-    return matchSearch && matchCategory && matchPrice;
-  });
-}, [debouncedSearch, category, price]);
-
-
+  /* -------------------- UI -------------------- */
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">All Products</h1>
 
       <div className="grid md:grid-cols-[280px_1fr] gap-6">
+        {/* Filters */}
         <ProductFilters
           search={search}
           setSearch={setSearch}
@@ -90,9 +119,76 @@ export default function Products() {
           setCategory={setCategory}
           price={price}
           setPrice={setPrice}
+          searchResults={searchResults}
+          showDropdown={showDropdown}
+          setShowDropdown={setShowDropdown}
+          onSelectProduct={(id: string) =>
+            router.push(`/user/products/${id}`)
+          }
         />
 
-        <ProductsGrid products={filteredProducts} />
+        {/* Products */}
+        <div className="relative">
+          {/* Skeleton Overlay */}
+          {isPending && (
+            <div className="absolute inset-0 z-10 animate-fade-in">
+              <ProductSkeleton />
+            </div>
+          )}
+
+          {/* Product Grid */}
+          <div
+            className={`transition-opacity duration-300 ${
+              isPending ? "opacity-30" : "opacity-100"
+            }`}
+          >
+            {products.length > 0 ? (
+              <ProductsGrid products={products} />
+            ) : (
+              !isPending && (
+                <p className="text-center text-muted-foreground">
+                  No products found
+                </p>
+              )
+            )}
+          </div>
+
+          {/* Sticky Pagination */}
+          {products.length > 0 && totalPages > 1 && (
+            <div className="sticky bottom-0 bg-background pt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      aria-disabled={page === 1}
+                    />
+                  </PaginationItem>
+
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        isActive={page === i + 1}
+                        onClick={() => setPage(i + 1)}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      aria-disabled={page === totalPages}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
