@@ -7,6 +7,7 @@ export const uploadToCloudinary =async(file:Express.Multer.File):Promise<uploadT
 
         return new Promise((resolve,reject)=>{
             cloudinary.uploader.upload_stream({
+                folder:"Desi Market",
                 resource_type:fileType === 'video' ? 'video' :'image',
                 ...(fileType === 'image' && {
                     quality:"auto:low",
