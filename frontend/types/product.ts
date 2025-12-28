@@ -66,3 +66,19 @@ export interface UIProduct {
   offerPrice?: number;
 }
 
+// types/product.ts
+export interface ProductFile {
+  id: string
+  url: string
+  type: "IMAGE"
+}
+
+export interface ProductDetails {
+  id: string
+  title: string
+  description: string
+  price: number
+  offerPrice: number
+  isOfferActive: boolean
+  files: ProductFile[]
+}

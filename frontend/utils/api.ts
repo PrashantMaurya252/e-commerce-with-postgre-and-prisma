@@ -1,5 +1,5 @@
 
-import { loginPayload, loginResponse, sendOTPResponse, signupPayload, signupResponse, verifyForgotPasswordOtpPayload, verifyForgotPasswordOtpResponse } from "@/types/auth"
+import { loginPayload, loginResponse, normalAPIResponse, sendOTPResponse, signupPayload, signupResponse, verifyForgotPasswordOtpPayload, verifyForgotPasswordOtpResponse } from "@/types/auth"
 import { ProductAPIResponse, ProductFilter } from "@/types/product";
 import axios from "axios"
 import api from "./interceptor";
@@ -97,4 +97,18 @@ export const meAPI = async()=>{
 export const refreshAPI = async()=>{
     const res = await api.get("/auth/refresh-token",{withCredentials:true})
     return res.data
+}
+
+
+export const productDetails = async(productId:string):Promise<normalAPIResponse>=>{
+    try {
+      const response = await api.get(`${BACKEND_URL}/product/product-details/${productId}`)
+      return response.data
+    } catch (error:any) {
+      console.error("product details error",error)
+      return {
+        success:false,
+        message:error.response?.data.message || "Internal Server Error"
+      }
+    }
 }

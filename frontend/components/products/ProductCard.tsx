@@ -3,9 +3,11 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Product } from "@/types/product";
+import { useRouter } from "next/navigation";
 
 export default function ProductCard({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
+  const router = useRouter()
 
   const handleAdd = () => {
     setAdded(true);
@@ -32,7 +34,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
       <button
         onClick={handleAdd}
-        className="mt-2 w-full bg-orange-600 text-white py-2 rounded-md text-sm hover:bg-orange-700"
+        className="mt-2 w-full bg-orange-600 text-white py-2 rounded-md text-sm hover:bg-orange-700 cursor-pointer"
       >
         {added ? "Added ✓" : "Add to Cart"}
       </button>
@@ -43,6 +45,13 @@ export default function ProductCard({ product }: { product: Product }) {
           Added
         </span>
       )}
+
+      <span
+        onClick={()=>router.push(`/user/products/${product.id}`)}
+        className="text-sm font-semibold mt-2 self-center cursor-pointer"
+      >
+        Click Here to see Details
+      </span>
     </div>
   );
 }

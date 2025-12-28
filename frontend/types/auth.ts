@@ -47,3 +47,9 @@ export interface verifyForgotPasswordOtpResponse{
     success:boolean,
     message:string
 }
+
+export interface normalAPIResponse{
+    success:boolean,
+    message?:string,
+    data?:any
+}
