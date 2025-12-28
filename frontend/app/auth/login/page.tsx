@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/redux/store";
 import { login } from "@/redux/slices/authSlice";
-import { useAppDispatch } from "@/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 
 // import { Icon } from "@iconify/react";
 
@@ -27,6 +27,8 @@ export default function LoginPage() {
     password: "",
   });
   const router = useRouter();
+  const {user,isAuthenticated,accessToken} = useAppSelector((state:RootState)=>state.auth)
+  console.log(user,isAuthenticated,accessToken)
 
   const handleSubmit = async () => {
     try {
@@ -64,6 +66,8 @@ export default function LoginPage() {
         }else{
           router.push("/user/home")
         }
+
+        toast.success("You logged In Successfully")
       } else {
         toast.error(response?.message || "Something went wrong while login");
       }

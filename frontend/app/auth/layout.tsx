@@ -1,19 +1,27 @@
-import { Metadata } from "next";
+"use client"
 
-export const metadata: Metadata = {
-  title: "Desi Market | Auth",
-  description: "Authenticate to your Desi Market account",
-  robots: "noindex, nofollow",
-};
+import { useAppSelector } from "@/redux/hooks";
+import { RootState } from "@/redux/store";
+import { Metadata } from "next";
+import { useRouter } from "next/navigation";
+
+
 
 export default function LoginLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
+
+  const {user,isAuthenticated} = useAppSelector((state:RootState)=>state.auth)
+  const router = useRouter()
+
+  if(isAuthenticated && user){
+    if(user.isAdmin){
+       router.push("/admin/dashboard")
+    }else{
+       router.push("/user/home")
+    }
+  }
+  return <>{children}</>
 }

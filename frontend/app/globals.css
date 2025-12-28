@@ -2,3 +2,22 @@
 @import "tw-animate-css";
 @plugin "@iconify/tailwind4";
 
+/* Reset box model */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Prevent horizontal overflow */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Optional: smooth font rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+}
