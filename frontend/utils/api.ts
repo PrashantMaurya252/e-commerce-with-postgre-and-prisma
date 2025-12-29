@@ -114,9 +114,10 @@ export const productDetails = async(productId:string):Promise<normalAPIResponse>
 }
 
 
-export const addToCart= async(productId:string)=>{
+export const addToCart= async(productId:string):Promise<normalAPIResponse>=>{
   try {
     const response = await api.post(`${BACKEND_URL}/cart/add-to-cart/${productId}`)
+    return response.data
   } catch (error:any) {
     console.error("Add to cart Error",error)
     return {
@@ -126,9 +127,10 @@ export const addToCart= async(productId:string)=>{
   }
 }
 
-export const decreaseFromCart= async(productId:string)=>{
+export const decreaseFromCart= async(productId:string):Promise<normalAPIResponse>=>{
   try {
     const response = await api.post(`${BACKEND_URL}/cart/decrease-from-cart/${productId}`)
+    return response.data
   } catch (error:any) {
     console.error("decrease from cart Error",error)
     return {
@@ -138,9 +140,10 @@ export const decreaseFromCart= async(productId:string)=>{
   }
 }
 
-export const deleteFromCart= async(productId:string)=>{
+export const deleteFromCart= async(productId:string):Promise<normalAPIResponse>=>{
   try {
-    const response = await api.post(`${BACKEND_URL}/cart/delete-cart-item`)
+    const response = await api.post(`${BACKEND_URL}/cart/delete-cart-item/${productId}`)
+    return response.data
   } catch (error:any) {
     console.error("Delete from cart Error",error)
     return {
@@ -150,9 +153,10 @@ export const deleteFromCart= async(productId:string)=>{
   }
 }
 
-export const getCartItems= async(productId:string)=>{
+export const getCartItems= async():Promise<normalAPIResponse>=>{
   try {
     const response = await api.post(`${BACKEND_URL}/cart/cartItems`)
+    return response.data
   } catch (error:any) {
     console.error("decrease from cart Error",error)
     return {

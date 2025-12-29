@@ -19,7 +19,13 @@ export const auth= async(req:AuthRequest,res:Response,next:NextFunction)=>{
         
         req.user = decoded
         next()
-    } catch (error) {
+    } catch (error:any) {
+        if (error.name === "TokenExpiredError") {
+    return res.status(401).json({
+      success: false,
+      message: "Access token expired",
+    });
+  }
         console.error("Something went wrong with auth middleware",error)
         return res.status(500).json({success:false,message:"You are unauthoried"})
     }

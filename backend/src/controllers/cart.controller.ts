@@ -222,20 +222,19 @@ export const addIntoCart = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthoriza" });
     }
 
-    const product = await prisma.product.findUnique({
+    await prisma.$transaction(async (tx)=>{
+      const product = await tx.product.findUnique({
       where: { id: productId },
     });
 
     if (!product || product.disabled) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Product not available" });
+      throw new Error("PRODUCT_NOT_AVAILABLE")
+      
     }
 
     if (product.itemLeft <= 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Product out of stock" });
+      throw new Error("OUT_OF_STOCK")
+      
     }
 
     const priceToUse =
@@ -243,12 +242,12 @@ export const addIntoCart = async (req: Request, res: Response) => {
         ? product.offerPrice
         : product.price;
 
-    let cart = await prisma.cart.findUnique({ where: { userId } });
+    let cart = await tx.cart.findUnique({ where: { userId } });
     if (!cart) {
-      cart = await prisma.cart.create({ data: { userId, total: 0 } });
+      cart = await tx.cart.create({ data: { userId } });
     }
 
-    const existingItem = await prisma.cartItem.findUnique({
+    const existingItem = await tx.cartItem.findUnique({
       where: {
         cartId_productId: {
           cartId: cart.id,
@@ -257,14 +256,14 @@ export const addIntoCart = async (req: Request, res: Response) => {
       },
     });
     if (existingItem) {
-      await prisma.cartItem.update({
+      await tx.cartItem.update({
         where: { id: existingItem.id },
         data: {
-          quantity: existingItem.quantity + 1,
+          quantity: { increment: 1 },
         },
       });
     } else {
-      await prisma.cartItem.create({
+      await tx.cartItem.create({
         data: {
           cartId: cart.id,
           productId,
@@ -273,28 +272,33 @@ export const addIntoCart = async (req: Request, res: Response) => {
       });
     }
 
-    const cartItems = await prisma.cartItem.findMany({
-      where: { cartId: cart.id },
-      include: { product: true },
-    });
+    
 
-    const newTotal = cartItems.reduce((sum, item) => {
-      const price =
-        item.product.isOfferActive && item.product.offerPrice
-          ? item.product.offerPrice
-          : item.product.price;
-      return sum + price;
-    }, 0);
+    
 
-    await prisma.cart.update({
-      where: { id: cart.id },
-      data: { total: newTotal },
-    });
+    await tx.cart.update({
+        where: { id: cart.id },
+        data: {
+          total: { increment: priceToUse },
+        },
+      });
+    })
+    
 
     return res
       .status(200)
       .json({ success: true, message: "Item added into cart successfully" });
-  } catch (error) {
+  } catch (error:any) {
+    if(error.message === "PRODUCT_NOT_AVAILABLE"){
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not available" });
+    }
+    if(error.message === "OUT_OF_STOCK"){
+      return res
+        .status(400)
+        .json({ success: false, message: "Product out of stock" });
+    }
     console.error("addInto cart error", error);
     return res
       .status(500)
