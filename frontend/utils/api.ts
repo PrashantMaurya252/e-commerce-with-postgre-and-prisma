@@ -112,3 +112,52 @@ export const productDetails = async(productId:string):Promise<normalAPIResponse>
       }
     }
 }
+
+
+export const addToCart= async(productId:string)=>{
+  try {
+    const response = await api.post(`${BACKEND_URL}/cart/add-to-cart/${productId}`)
+  } catch (error:any) {
+    console.error("Add to cart Error",error)
+    return {
+      success:false,
+      message:error.response?.data.message || "Internal Server Error"
+    }
+  }
+}
+
+export const decreaseFromCart= async(productId:string)=>{
+  try {
+    const response = await api.post(`${BACKEND_URL}/cart/decrease-from-cart/${productId}`)
+  } catch (error:any) {
+    console.error("decrease from cart Error",error)
+    return {
+      success:false,
+      message:error.response?.data.message || "Internal Server Error"
+    }
+  }
+}
+
+export const deleteFromCart= async(productId:string)=>{
+  try {
+    const response = await api.post(`${BACKEND_URL}/cart/delete-cart-item`)
+  } catch (error:any) {
+    console.error("Delete from cart Error",error)
+    return {
+      success:false,
+      message:error.response?.data.message || "Internal Server Error"
+    }
+  }
+}
+
+export const getCartItems= async(productId:string)=>{
+  try {
+    const response = await api.post(`${BACKEND_URL}/cart/cartItems`)
+  } catch (error:any) {
+    console.error("decrease from cart Error",error)
+    return {
+      success:false,
+      message:error.response?.data.message || "Internal Server Error"
+    }
+  }
+}

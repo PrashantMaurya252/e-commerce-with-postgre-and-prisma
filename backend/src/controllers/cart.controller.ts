@@ -450,7 +450,7 @@ export const getCartItems = async (req: Request, res: Response) => {
       },
     });
     if (!cart) {
-      return res.status(200).json({ success: true, data: [] });
+      return res.status(200).json({ success: true, data: [] , total:0});
     }
     return res
       .status(200)
