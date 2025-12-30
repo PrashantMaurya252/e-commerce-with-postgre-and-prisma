@@ -5,7 +5,7 @@ import axios from "axios"
 import api from "./interceptor";
 
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
 
 
