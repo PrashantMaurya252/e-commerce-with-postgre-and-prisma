@@ -6,6 +6,7 @@ import { Category, FilePurpose, FileType } from "@prisma/client";
 import { getRandomImagesFromFolder } from "../utils/localImageUploader.js";
 import path from "path";
 
+
 const productSchema = z.object({
   title: z.string(),
   description: z.string(),
@@ -273,6 +274,7 @@ export const deleteAllProducts = async (req: Request, res: Response) => {
 
 export const getAllProducts = async (req: Request, res: Response) => {
   try {
+    const userId = req.user?.userId
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
@@ -309,10 +311,27 @@ export const getAllProducts = async (req: Request, res: Response) => {
       skip,
       take: limit,
       orderBy: { createdAt: "desc" },
-      include: { files: true },
+      include: { files: true,
+        cartItems:userId ?{
+          where:{
+            cart:{
+              userId
+            }
+          },
+          select:{
+            quantity:true
+          }
+        }:false
+       },
     });
 
     const totalProducts = await prisma.product.count({ where });
+    const formattedProducts = products?.map((item)=>({
+      ...item,
+      isInCart:item.cartItems.length > 0,
+      cartQuantity:item.cartItems[0]?.quantity || 0,
+      cartItems:undefined
+    }))
 
     return res
       .status(200)
@@ -323,7 +342,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
         limit,
         totalProducts,
         totalPages: Math.ceil(totalProducts / limit),
-        data: products,
+        data: formattedProducts,
       });
   } catch (error) {
     console.error("getAllProducts Error", error);
@@ -335,10 +354,22 @@ export const getAllProducts = async (req: Request, res: Response) => {
 
 export const productDetails = async (req: Request, res: Response) => {
   try {
+    const userId = req.user?.userId
     const { productId } = req.params;
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      include: { files: true },
+      include: { files: true,
+        cartItems:userId ? {
+          where:{
+            cart:{
+              userId
+            }
+          },
+          select:{
+            quantity:true
+          }
+        }:false
+       },
     });
     if (!product) {
       return res
@@ -346,7 +377,13 @@ export const productDetails = async (req: Request, res: Response) => {
         .json({ success: false, message: "No product found for given id" });
     }
 
-    return res.status(200).json({ success: true, data: product });
+    const formattedProducts = {
+      ...product,
+      isInCart:product.cartItems.length > 0,
+      cartQuantity:product.cartItems[0]?.quantity || 0,
+      cartItems:undefined
+    }
+    return res.status(200).json({ success: true, data: formattedProducts });
   } catch (error) {
     console.error("products details error", error);
     return res

@@ -4,14 +4,19 @@ import Image from "next/image";
 import { useState } from "react";
 import { Product } from "@/types/product";
 import { useRouter } from "next/navigation";
+import { useAddToCartMutation } from "@/redux/services/cartApi";
 
 export default function ProductCard({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
   const router = useRouter()
+  const [addToCart] = useAddToCartMutation()
+  console.log("Product",product)
+  
 
-  const handleAdd = () => {
+  const handleAdd = async (productId:string) => {
     setAdded(true);
     setTimeout(() => setAdded(false), 600);
+    await addToCart(productId).unwrap()
     // dispatch(addToCart(product)) ← later
   };
 
@@ -33,14 +38,28 @@ export default function ProductCard({ product }: { product: Product }) {
       <p className="text-orange-600 font-semibold">₹{product.price}</p>
 
       <button
-        onClick={handleAdd}
+        disabled={product.isInCart}
+        onClick={()=>handleAdd(product.id)}
         className="mt-2 w-full bg-orange-600 text-white py-2 rounded-md text-sm hover:bg-orange-700 cursor-pointer"
       >
-        {added ? "Added ✓" : "Add to Cart"}
+        {product.isInCart ? "Added ✓" : "Add to Cart"}
       </button>
 
+     {
+      product.isInCart && (
+        <button
+        
+        onClick={()=>router.push("/user/cart")}
+        className="mt-2 w-full bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 cursor-pointer"
+      >
+        Go To Cart
+      </button>
+      )
+     }
+      
+
       {/* Floating animation badge */}
-      {added && (
+      {product.isInCart && (
         <span className="absolute top-2 right-2 text-xs bg-orange-600 text-white px-2 py-1 rounded-full animate-bounce">
           Added
         </span>

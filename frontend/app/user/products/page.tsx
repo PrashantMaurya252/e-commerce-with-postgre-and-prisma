@@ -20,6 +20,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useAddToCartMutation } from "@/redux/services/cartApi";
 
 export default function Products() {
   const router = useRouter();
@@ -42,6 +43,7 @@ export default function Products() {
   /* -------------------- Search Suggestions -------------------- */
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [addToCart] = useAddToCartMutation()
 
   /* -------------------- Fetch Products -------------------- */
   const fetchProducts = async () => {
@@ -62,6 +64,8 @@ export default function Products() {
         image: getProductImage(p.files),
         isOfferActive: p.isOfferActive,
         offerPrice: p.offerPrice,
+        isInCart:p.isInCart,
+        cartQuantity:p.cartQuantity
       }));
 
       startTransition(() => {
@@ -166,7 +170,7 @@ export default function Products() {
                   </PaginationItem>
 
                   {Array.from({ length: totalPages }).map((_, i) => (
-                    <PaginationItem key={i}>
+                    <PaginationItem key={i} className="cursor-pointer">
                       <PaginationLink
                         isActive={page === i + 1}
                         onClick={() => setPage(i + 1)}

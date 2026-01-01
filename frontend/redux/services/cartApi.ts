@@ -1,6 +1,6 @@
 import {createApi,fetchBaseQuery} from "@reduxjs/toolkit/query/react"
 import { BACKEND_URL } from "@/utils/api"
-import { headers } from "next/headers"
+
 
 export const cartApi = createApi({
     reducerPath:"cartApi",
@@ -24,21 +24,21 @@ export const cartApi = createApi({
         addToCart:builder.mutation<any,string>({
             query:(productId)=>({
                 url:`/cart/add-to-cart/${productId}`,
-                method:"POST"
+                method:"PUT"
             }),
             invalidatesTags:["Cart"]
         }),
         decreaseFromCart:builder.mutation<any,string>({
             query:(productId)=>({
                 url:`/cart/decrease-from-cart/${productId}`,
-                method:"POST"
+                method:"PUT"
             }),
             invalidatesTags:["Cart"]
         }),
         deleteFromCart:builder.mutation<any,string>({
             query:(productId)=>({
                 url:`/cart/delete-cart-item/${productId}`,
-                method:"POST"
+                method:"PUT"
             }),
             invalidatesTags:["Cart"]
         })

@@ -5,11 +5,12 @@ export enum Category {
 }
 
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   price: number;
   category: Category;
   image: string;
+  isInCart:boolean
 }
 
 export interface ProductFilter{
