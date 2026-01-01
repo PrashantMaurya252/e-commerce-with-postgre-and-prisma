@@ -21,18 +21,21 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useAddToCartMutation } from "@/redux/services/cartApi";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Products() {
   const router = useRouter();
 
   /* -------------------- React Transition -------------------- */
-  const [isPending, startTransition] = useTransition();
+  // const [loading, startTransition] = useTransition();
 
   /* -------------------- Filters -------------------- */
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category | "ALL">("ALL");
   const [price, setPrice] = useState(100000);
   const debouncedSearch = useDebounce(search);
+  const [loading,setLoading] = useState(true)
 
   /* -------------------- Data -------------------- */
   const [products, setProducts] = useState<any[]>([]);
@@ -47,6 +50,7 @@ export default function Products() {
 
   /* -------------------- Fetch Products -------------------- */
   const fetchProducts = async () => {
+    setLoading(true)
     const response = await fetchAllProducts({
       search: debouncedSearch,
       category,
@@ -67,19 +71,47 @@ export default function Products() {
         isInCart:p.isInCart,
         cartQuantity:p.cartQuantity
       }));
+      setProducts(mapped);
+      setTotalPages(response.totalPages || 1);
 
-      startTransition(() => {
-        setProducts(mapped);
-        setTotalPages(response.totalPages || 1);
-      });
+      // startTransition(() => {
+      //   setProducts(mapped);
+      //   setTotalPages(response.totalPages || 1);
+      // });
     } else {
-      startTransition(() => {
-        setProducts([]);
-        setTotalPages(1);
-      });
+      // startTransition(() => {
+      //   setProducts([]);
+      //   setTotalPages(1);
+      // });
+      setProducts([])
+      toast("Something went wrong while fetching products")
     }
+    setLoading(false)
   };
 
+  const handleProductAddedToCart = (productId:string)=>{
+    setProducts((prev)=>prev.map((product)=>product.id ===productId ? {...product,isInCart:true,quantity:(product.quantity ?? 0)+1}:product))
+  }
+
+  const handleProductDecreaseFromCart = (productId:string)=>{
+    setProducts((prev)=> prev.map((product)=>
+      {
+        if(product.id === productId){
+          if(product.quantity === 1){
+            return {...product,isInCart:false,quantity:0}
+          }else{
+            return {...product,isInCart:true,quantity:(product.quantity ?? 1)-1}
+          }
+
+        }else{
+          return product
+        }
+      }))
+  }
+
+  const handleProductDeleteFromCart = (productId:string)=>{
+    setProducts((prev)=>prev.map((product)=>product.id ===productId ? {...product,isInCart:false,quantity:0}:product))
+  }
   /* -------------------- Main Fetch -------------------- */
   useEffect(() => {
     fetchProducts();
@@ -109,6 +141,8 @@ export default function Products() {
     fetchSearchResults();
   }, [debouncedSearch]);
 
+  console.log("loading",loading)
+
   /* -------------------- UI -------------------- */
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
@@ -134,8 +168,9 @@ export default function Products() {
         {/* Products */}
         <div className="relative">
           {/* Skeleton Overlay */}
-          {isPending && (
-            <div className="absolute inset-0 z-10 animate-fade-in">
+          {loading && (
+            <div className="">
+               {/* <Skeleton className="h-[300px] w-[300px] rounded-full bg-amber-500" /> */}
               <ProductSkeleton />
             </div>
           )}
@@ -143,13 +178,13 @@ export default function Products() {
           {/* Product Grid */}
           <div
             className={`transition-opacity duration-300 ${
-              isPending ? "opacity-30" : "opacity-100"
+              loading ? "opacity-30" : "opacity-100"
             }`}
           >
-            {products.length > 0 ? (
-              <ProductsGrid products={products} />
+            {products?.length > 0 ? (
+              <ProductsGrid products={products} handleProductAddedToCart={handleProductAddedToCart} handleProductDecreaseFromCart={handleProductDecreaseFromCart}/>
             ) : (
-              !isPending && (
+              !loading && (
                 <p className="text-center text-muted-foreground">
                   No products found
                 </p>
