@@ -434,7 +434,11 @@ export const getCartItems = async (req: Request, res: Response) => {
       where: { userId },
       include: {
         items: {
-          include: { product: true },
+          include: { product:{
+            include:{
+              files:true
+            }
+          } },
         },
       },
     });

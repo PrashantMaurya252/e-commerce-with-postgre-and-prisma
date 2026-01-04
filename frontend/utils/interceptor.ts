@@ -47,9 +47,8 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await axios.post(
+        const res = await axios.get(
           `${BACKEND_URL}/auth/refresh-token`,
-          {},
           { withCredentials: true }
         );
 
