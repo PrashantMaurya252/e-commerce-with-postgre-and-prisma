@@ -142,7 +142,7 @@ export const decreaseFromCart= async(productId:string):Promise<normalAPIResponse
 
 export const deleteFromCart= async(productId:string):Promise<normalAPIResponse>=>{
   try {
-    const response = await api.post(`${BACKEND_URL}/cart/delete-cart-item/${productId}`)
+    const response = await api.delete(`${BACKEND_URL}/cart/delete-cart-item/${productId}`)
     return response.data
   } catch (error:any) {
     console.error("Delete from cart Error",error)

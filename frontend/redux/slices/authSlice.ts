@@ -31,10 +31,10 @@ const authSlice = createSlice({
   reducers: {
     login: (
       state,
-      action: PayloadAction<{ user: User; token: string }>
+      action: PayloadAction<{ user: User; accessToken: string }>
     ) => {
       state.user = action.payload.user;
-      state.accessToken = action.payload.token;
+      state.accessToken = action.payload.accessToken;
       state.isAuthenticated = true;
     },
     logout: (state) => {

@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { Product } from "@/types/product";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
+import { Product } from "@/types/product";
 import {
   useAddToCartMutation,
   useDecreaseFromCartMutation,
@@ -14,12 +15,12 @@ export default function ProductCard({
   product,
   handleProductAddedToCart,
   handleProductDecreaseFromCart,
-  handleProductRemovedFromCart,
+  handleProductDeleteFromCart,
 }: {
   product: Product;
   handleProductAddedToCart: (id: string) => void;
   handleProductDecreaseFromCart: (id: string) => void;
-  handleProductRemovedFromCart: (id: string) => void;
+  handleProductDeleteFromCart: (id: string) => void;
 }) {
   const router = useRouter();
 
@@ -29,34 +30,91 @@ export default function ProductCard({
   const [removeFromCart, { isLoading: removing }] =
     useDeleteFromCartMutation();
 
-  /* ---------- Handlers ---------- */
+  const isProcessing = adding || decreasing || removing;
 
+  /* ================= HANDLERS ================= */
+
+  /* ADD */
   const handleAdd = async () => {
-    await addToCart(product.id).unwrap();
-    handleProductAddedToCart(product.id);
+    handleProductAddedToCart(product.id); // optimistic
+
+    try {
+      await addToCart(product.id).unwrap();
+      toast.success("Added to cart");
+    } catch (error: any) {
+      handleProductDecreaseFromCart(product.id); // rollback
+      toast.error(error?.data?.message || "Failed to add item");
+    }
   };
 
+  /* DECREASE */
   const handleDecrease = async () => {
     if (product.cartQuantity === 1) {
-      await removeFromCart(product.id).unwrap();
-      handleProductRemovedFromCart(product.id);
+      handleProductDeleteFromCart(product.id); // optimistic remove
+
+      try {
+        await removeFromCart(product.id).unwrap();
+        toast.success("Item removed from cart");
+      } catch (error: any) {
+        handleProductAddedToCart(product.id); // rollback
+        toast.error(error?.data?.message || "Failed to remove item");
+      }
       return;
     }
 
-    await decreaseFromCart(product.id).unwrap();
-    handleProductQuantityChange(product.id, "DEC");
+    handleProductDecreaseFromCart(product.id); // optimistic decrease
+
+    try {
+      await decreaseFromCart(product.id).unwrap();
+      toast.success("Quantity updated");
+    } catch (error: any) {
+      handleProductAddedToCart(product.id); // rollback
+      toast.error(error?.data?.message || "Failed to update quantity");
+    }
   };
 
+  /* INCREASE */
   const handleIncrease = async () => {
-    await addToCart(product.id).unwrap();
-    handleProductQuantityChange(product.id, "INC");
+    handleProductAddedToCart(product.id); // optimistic
+
+    try {
+      await addToCart(product.id).unwrap();
+      toast.success("Quantity increased");
+    } catch (error: any) {
+      handleProductDecreaseFromCart(product.id); // rollback
+      toast.error(error?.data?.message || "Failed to increase quantity");
+    }
   };
 
-  /* ---------- UI ---------- */
+  /* REMOVE */
+  const handleRemove = async () => {
+    handleProductDeleteFromCart(product.id); // optimistic
+
+    try {
+      await removeFromCart(product.id).unwrap();
+      toast.success("Item removed");
+    } catch (error: any) {
+      handleProductAddedToCart(product.id); // rollback
+      toast.error(error?.data?.message || "Failed to remove item");
+    }
+  };
+
+  /* ================= UI ================= */
 
   return (
-    <div className="border rounded-xl p-4 hover:shadow-lg transition relative">
-      {/* Image */}
+    <div
+      className={`border rounded-xl p-4 transition relative
+        ${isProcessing ? "opacity-60 pointer-events-none" : "hover:shadow-lg"}
+      `}
+    >
+      {/* LOADING OVERLAY */}
+      {isProcessing && (
+        <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-xl z-10">
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* IMAGE */}
       <div
         className="relative h-40 mb-3 cursor-pointer"
         onClick={() => router.push(`/user/products/${product.id}`)}
@@ -69,25 +127,21 @@ export default function ProductCard({
         />
       </div>
 
-      {/* Info */}
+      {/* INFO */}
       <h3 className="font-medium text-sm line-clamp-1">{product.name}</h3>
       <p className="text-orange-600 font-semibold">₹{product.price}</p>
 
-      {/* ---------- ACTIONS ---------- */}
+      {/* ACTIONS */}
       {!product.isInCart ? (
-        /* ADD TO CART */
         <button
-          disabled={adding}
           onClick={handleAdd}
-          className="mt-3 w-full bg-orange-600 text-white py-2 rounded-md text-sm hover:bg-orange-700 disabled:opacity-60"
+          className="mt-3 w-full bg-orange-600 text-white py-2 rounded-md text-sm hover:bg-orange-700"
         >
           Add to Cart
         </button>
       ) : (
-        /* QUANTITY CONTROLS */
         <div className="mt-3 flex items-center justify-between gap-2">
           <button
-            disabled={decreasing}
             onClick={handleDecrease}
             className="w-9 h-9 rounded-md border text-lg font-bold hover:bg-gray-100"
           >
@@ -99,7 +153,6 @@ export default function ProductCard({
           </span>
 
           <button
-            disabled={adding}
             onClick={handleIncrease}
             className="w-9 h-9 rounded-md border text-lg font-bold hover:bg-gray-100"
           >
@@ -112,11 +165,7 @@ export default function ProductCard({
       {product.isInCart && (
         <div className="mt-2 flex gap-2">
           <button
-            disabled={removing}
-            onClick={() => {
-              removeFromCart(product.id);
-              handleProductRemovedFromCart(product.id);
-            }}
+            onClick={handleRemove}
             className="flex-1 border border-red-500 text-red-600 py-2 rounded-md text-sm hover:bg-red-50"
           >
             Remove
@@ -139,7 +188,7 @@ export default function ProductCard({
         View Details
       </button>
 
-      {/* Badge */}
+      {/* BADGE */}
       {product.isInCart && (
         <span className="absolute top-2 right-2 text-xs bg-green-600 text-white px-2 py-1 rounded-full">
           In Cart

@@ -90,17 +90,17 @@ export default function Products() {
   };
 
   const handleProductAddedToCart = (productId:string)=>{
-    setProducts((prev)=>prev.map((product)=>product.id ===productId ? {...product,isInCart:true,quantity:(product.quantity ?? 0)+1}:product))
+    setProducts((prev)=>prev.map((product)=>product.id ===productId ? {...product,isInCart:true,cartQuantity:(product.cartQuantity ?? 0)+1}:product))
   }
 
   const handleProductDecreaseFromCart = (productId:string)=>{
     setProducts((prev)=> prev.map((product)=>
       {
         if(product.id === productId){
-          if(product.quantity === 1){
-            return {...product,isInCart:false,quantity:0}
+          if(product.cartQuantity === 1){
+            return {...product,isInCart:false,cartQuantity:0}
           }else{
-            return {...product,isInCart:true,quantity:(product.quantity ?? 1)-1}
+            return {...product,isInCart:true,cartQuantity:(product.cartQuantity ?? 1)-1}
           }
 
         }else{
@@ -110,7 +110,7 @@ export default function Products() {
   }
 
   const handleProductDeleteFromCart = (productId:string)=>{
-    setProducts((prev)=>prev.map((product)=>product.id ===productId ? {...product,isInCart:false,quantity:0}:product))
+    setProducts((prev)=>prev.map((product)=>product.id ===productId ? {...product,isInCart:false,cartQuantity:0}:product))
   }
   /* -------------------- Main Fetch -------------------- */
   useEffect(() => {
@@ -141,7 +141,6 @@ export default function Products() {
     fetchSearchResults();
   }, [debouncedSearch]);
 
-  console.log("loading",loading)
 
   /* -------------------- UI -------------------- */
   return (
@@ -182,7 +181,7 @@ export default function Products() {
             }`}
           >
             {products?.length > 0 ? (
-              <ProductsGrid products={products} handleProductAddedToCart={handleProductAddedToCart} handleProductDecreaseFromCart={handleProductDecreaseFromCart}/>
+              <ProductsGrid products={products} handleProductAddedToCart={handleProductAddedToCart} handleProductDecreaseFromCart={handleProductDecreaseFromCart} handleProductDeleteFromCart={handleProductDeleteFromCart}/>
             ) : (
               !loading && (
                 <p className="text-center text-muted-foreground">

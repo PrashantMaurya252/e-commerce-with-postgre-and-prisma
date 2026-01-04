@@ -10,7 +10,8 @@ export interface Product {
   price: number;
   category: Category;
   image: string;
-  isInCart:boolean
+  isInCart:boolean,
+  cartQuantity:number
 }
 
 export interface ProductFilter{
