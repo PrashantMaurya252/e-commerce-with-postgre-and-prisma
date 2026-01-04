@@ -2,26 +2,28 @@
 
 import { useAppSelector } from "@/redux/hooks";
 import { RootState } from "@/redux/store";
-import { Metadata } from "next";
 import { useRouter } from "next/navigation";
-
-
+import { useEffect } from "react";
 
 export default function LoginLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const { user, isAuthenticated } = useAppSelector(
+    (state: RootState) => state.auth
+  );
+  const router = useRouter();
 
-  const {user,isAuthenticated} = useAppSelector((state:RootState)=>state.auth)
-  const router = useRouter()
-
-  if(isAuthenticated && user){
-    if(user.isAdmin){
-       router.push("/admin/dashboard")
-    }else{
-       router.push("/user/home")
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.isAdmin) {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/user/home");
+      }
     }
-  }
-  return <>{children}</>
+  }, [isAuthenticated, user, router]);
+
+  return <>{children}</>;
 }

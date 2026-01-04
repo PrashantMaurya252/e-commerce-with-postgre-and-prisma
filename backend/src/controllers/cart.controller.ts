@@ -462,6 +462,8 @@ export const getAllCoupons = async(req:Request,res:Response)=>{
     if(!coupons){
       return res.status(200).json({success:true,data:[]})
     }
+
+    return res.status(200).json({success:true,data:coupons})
   } catch (error) {
     console.error("getAllCoupons error",error)
     return res.status(500).json({success:false,message:"Internal server error"})

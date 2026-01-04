@@ -14,6 +14,7 @@ const productSchema = z.object({
   category: z.enum(["ELECTRONICS", "CLOTHES", "DAILY_USAGE"]),
   itemLeft: z.string().transform((val) => Number(val)),
 });
+
 export const addProduct = async (req: Request, res: Response) => {
   try {
     const parsed = productSchema.safeParse(req.body);
@@ -112,80 +113,6 @@ export const updateProduct = async (req: Request, res: Response) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
-
-// export const productSeeder = async (req: Request, res: Response) => {
-//   try {
-//     const rand = (min: number, max: number) =>
-//       Math.floor(Math.random() * (max - min + 1)) + min;
-
-//     // Sample data
-//     const productNames = [
-//       "Wireless Bluetooth Speaker",
-//       "Smart LED Bulb",
-//       "USB-C Fast Charger",
-//       "Laptop Cooling Pad",
-//       "Portable Power Bank",
-//       "Noise Cancelling Earphones",
-//       "Smartwatch Fitness Tracker",
-//       "Wireless Keyboard",
-//       "Gaming Mouse",
-//       "HD Webcam",
-//       "Men Cotton T-Shirt",
-//       "Casual Men Shirt",
-//       "Women Stylish Top",
-//       "Women Elegant Kurti",
-//       "Sports Running Shoes",
-//       "Premium Hoodie",
-//       "Daily Use Steel Bottle",
-//       "Lunch Box Set",
-//       "Electric Kettle",
-//       "Table Lamp",
-//     ];
-
-//     const descriptions = [
-//       "This product is crafted with premium-quality materials, ensuring durability, reliability, and long-term performance. Its user-friendly design makes it an excellent choice for everyday use. Whether you're upgrading your essentials or adding something new to your setup, this product delivers a great balance of convenience, style, and functionality, making it suitable for a wide range of users.",
-
-//       "Designed to offer superior performance, this product combines modern engineering with practical features that enhance your daily routine. Its sturdy build and thoughtful craftsmanship provide efficiency and comfort. Ideal for both casual and professional use, it promises consistent results and long-lasting value, making it a dependable addition to your everyday lifestyle.",
-
-//       "A perfect blend of design and functionality, this product is built to handle regular use without compromising performance. It delivers smooth operation, dependable results, and a premium feel. Whether you're using it at home, work, or on the go, its long-lasting build quality and thoughtful design ensure a satisfying experience every time.",
-
-//       "This product focuses on giving users a seamless experience by combining smart design with reliable performance. Built from durable materials, it stands strong against wear and tear, making it ideal for everyday use. Its practical features and stylish aesthetic offer excellent value, making it a useful and trustworthy choice for many different applications.",
-
-//       "Offering exceptional value and dependable performance, this product is ideal for users looking for quality and convenience. The design prioritizes comfort, ease of use, and long-lasting durability. Whether used for personal needs or professional tasks, it consistently delivers a smooth and efficient experience, making it a versatile and worthwhile addition to your daily essentials.",
-//     ];
-
-//     const categories: Category[] = ["ELECTRONICS", "CLOTHES", "DAILY_USAGE"];
-
-//     for (let i = 1; i <= 40; i++) {
-//       const name = productNames[rand(0, productNames.length - 1)];
-
-//       await prisma.product.create({
-//         data: {
-//           title: `${name} `,
-//           description: descriptions[rand(0, descriptions.length - 1)],
-//           price: rand(300, 3000),
-//           offerPrice: rand(200, 2500),
-//           isOfferActive: Math.random() > 0.5,
-//           category: categories[rand(0, categories.length - 1)],
-//           itemLeft: rand(10, 80),
-//           disabled: false,
-//         },
-//       });
-
-//       console.log(`✔ Product ${i}/40 added`);
-//     }
-
-//     return res
-//       .status(200)
-//       .json({ success: true, message: "Product seeding completed" });
-//   } catch (error) {
-//     console.error("productSeeder error", error);
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "Internal Server Error" });
-//   }
-// };
-
 
 
 export const productSeeder = async (req: Request, res: Response) => {

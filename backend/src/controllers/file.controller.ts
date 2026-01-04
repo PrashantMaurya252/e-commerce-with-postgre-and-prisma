@@ -25,6 +25,8 @@ export const deleteFileAPI = async(req:Request,res:Response)=>{
      }
 }
 
+
+
 export const updateFile = async(req:Request,res:Response)=>{
     try {
         const {fileId} = req.params
@@ -32,9 +34,6 @@ export const updateFile = async(req:Request,res:Response)=>{
             return res.status(400).json({success:false,message:"No file is provided to upload"})
         }
         const receivedFile = req.file
-
-        
-
         const file = await prisma.file.findUnique({where:{id:fileId}})
         if(!file){
             return res.status(404).json({success:false,message:"No File found with provided fileId"})
