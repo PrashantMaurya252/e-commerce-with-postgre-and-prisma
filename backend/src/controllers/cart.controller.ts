@@ -6,43 +6,45 @@ export const applyCoupon = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
     const { code } = req.body;
+
     if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorize" });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     const cart = await prisma.cart.findUnique({
       where: { userId },
-      include: { items: { include: { product: true } } },
+      include: {
+        items: { include: { product: true } },
+      },
     });
+
     if (!cart || cart.items.length === 0) {
-      return res.status(400).json({ success: false, message: "Cart Empty" });
+      return res.status(400).json({ success: false, message: "Cart is empty" });
     }
+
     if (cart.locked) {
       return res.status(400).json({
         success: false,
-        message: "Cart is already locked for checkout",
+        message: "Cart is locked for checkout",
       });
     }
 
     const coupon = await prisma.coupon.findUnique({
       where: { code },
-      include: { couponUsages: true },
     });
+
     if (!coupon || !coupon.isActive) {
-      return res
-        .status(400)
-        .json({ success: false, message: "coupon usage limit exceeded" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid coupon",
+      });
     }
 
     if (coupon.expiresAt < new Date()) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Coupon has expired" });
-    }
-    if (coupon.usageLimit && coupon.couponUsages.length > coupon.usageLimit) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Usage limit exceeded" });
+      return res.status(400).json({
+        success: false,
+        message: "Coupon expired",
+      });
     }
 
     const usedByUser = await prisma.couponUsage.findUnique({
@@ -53,74 +55,143 @@ export const applyCoupon = async (req: Request, res: Response) => {
         },
       },
     });
+
     if (usedByUser) {
-      return res
-        .status(400)
-        .json({ success: false, message: "This token already used by you" });
+      return res.status(400).json({
+        success: false,
+        message: "Coupon already used by you",
+      });
     }
 
-    const subtotal = cartTotal(cart.items) || 0;
-    if (subtotal < coupon.minCartValue) {
-      return res
-        .status(400)
-        .json({ success: false, message: "You cart value is too low" });
+    if (coupon.usageLimit) {
+      const usedCount = await prisma.couponUsage.count({
+        where: { couponId: coupon.id },
+      });
+
+      if (usedCount >= coupon.usageLimit) {
+        return res.status(400).json({
+          success: false,
+          message: "Coupon usage limit exceeded",
+        });
+      }
+    }
+
+    const subTotal = cartTotal(cart.items);
+
+    if (subTotal && subTotal < coupon.minCartValue) {
+      return res.status(400).json({
+        success: false,
+        message: "Cart value too low for this coupon",
+      });
     }
 
     let discount =
       coupon.discountType === "PERCENT"
-        ? Math.floor((subtotal * coupon.discountValue) / 100)
+        ? Math.floor((subTotal * coupon.discountValue) / 100)
         : coupon.discountValue;
+
     if (coupon.maxDiscount) {
-      discount = Math.min(coupon.maxDiscount, discount);
+      discount = Math.min(discount, coupon.maxDiscount);
     }
 
     return res.status(200).json({
       success: true,
-      subtotal,
+      subTotal,
       discount,
-      total: Math.max(subtotal - discount, 0),
+      total: Math.max(subTotal  - discount, 0),
       coupon: coupon.code,
     });
   } catch (error) {
-    console.error("apply coupon error", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    console.error("Apply coupon error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 };
+
+
 
 export const checkout = async (req: Request, res: Response) => {
   const userId = req.user?.userId;
   const { couponCode } = req.body;
+
   if (!userId) {
-    return res.status(401).json({ success: false, messge: "Unauthorize" });
+    return res.status(401).json({ success: false, message: "Unauthorized" });
   }
+
   try {
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const cart = await tx.cart.findUnique({
         where: { userId },
-        include: { items: { include: { product: true } } },
+        include: {
+          items: { include: { product: true } },
+        },
       });
+
       if (!cart || cart.items.length === 0) {
-        throw new Error("CART_IS_EMPTY");
+        throw new Error("CART_EMPTY");
       }
 
-      const lockedCart = await tx.cart.updateMany({
-        where: { userId, locked: false },
-        data: { locked: true, lockedAt: new Date() },
+      const lock = await tx.cart.updateMany({
+        where: {
+          userId,
+          OR: [
+            { locked: false },
+            {
+              locked: true,
+              lockedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
+            },
+          ],
+        },
+        data: {
+          locked: true,
+          lockedAt: new Date(),
+        },
       });
-      if (lockedCart.count === 0) {
-        throw new Error("Checkout already in progress");
+
+      if (lock.count === 0) {
+        throw new Error("CHECKOUT_IN_PROGRESS");
       }
 
-      let coupon = null;
+      const subTotal = cartTotal(cart.items);
       let discount = 0;
-      const subTotal = cartTotal(cart.items) || 0;
+      let coupon = null;
+
       if (couponCode) {
-        coupon = await tx.coupon.findUnique({ where: { code: couponCode } });
+        coupon = await tx.coupon.findUnique({
+          where: { code: couponCode },
+        });
 
         if (!coupon || !coupon.isActive || coupon.expiresAt < new Date()) {
-          throw new Error("Invalid coupon");
+          throw new Error("INVALID_COUPON");
+        }
+
+        if (subTotal < coupon.minCartValue) {
+          throw new Error("MIN_CART_NOT_MET");
+        }
+
+        const usedByUser = await tx.couponUsage.findUnique({
+          where: {
+            couponId_userId: {
+              couponId: coupon.id,
+              userId,
+            },
+          },
+        });
+
+        if (usedByUser) {
+          throw new Error("COUPON_ALREADY_USED");
+        }
+
+        if (coupon.usageLimit) {
+          const usedCount = await tx.couponUsage.count({
+            where: { couponId: coupon.id },
+          });
+
+          if (usedCount >= coupon.usageLimit) {
+            throw new Error("COUPON_LIMIT_EXCEEDED");
+          }
         }
 
         discount =
@@ -129,13 +200,23 @@ export const checkout = async (req: Request, res: Response) => {
             : coupon.discountValue;
 
         if (coupon.maxDiscount) {
-          discount = Math.min(coupon.maxDiscount, discount);
+          discount = Math.min(discount, coupon.maxDiscount);
         }
       }
 
       for (const item of cart.items) {
-        if (item.product.itemLeft < item.quantity) {
-          throw new Error("Out of Stock");
+        const updated = await tx.product.updateMany({
+          where: {
+            id: item.productId,
+            itemLeft: { gte: item.quantity },
+          },
+          data: {
+            itemLeft: { decrement: item.quantity },
+          },
+        });
+
+        if (updated.count === 0) {
+          throw new Error("OUT_OF_STOCK");
         }
       }
 
@@ -144,40 +225,58 @@ export const checkout = async (req: Request, res: Response) => {
           userId,
           subTotal,
           discountAmount: discount,
-          couponCode: coupon?.code,
+          total: Math.max(subTotal - discount, 0),
           couponId: coupon?.id,
-          total: subTotal - discount,
+          couponCode: coupon?.code,
           items: {
-            create: cart.items.map((i) => ({
-              productId: i.productId,
-              quantity: i.quantity,
+            create: cart.items.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
             })),
           },
         },
       });
 
-      for (const item of cart.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { itemLeft: { decrement: item.quantity } },
-        });
-      }
       if (coupon) {
         await tx.couponUsage.create({
-          data: { couponId: coupon.id, userId },
+          data: {
+            userId,
+            couponId: coupon.id,
+          },
         });
       }
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+
+      await tx.cartItem.deleteMany({
+        where: { cartId: cart.id },
+      });
+
       await tx.cart.update({
         where: { id: cart.id },
-        data: { total: 0, locked: false, lockedAt: null },
+        data: {
+          total: 0,
+          locked: false,
+          lockedAt: null,
+        },
       });
+
+      return order;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Order placed successfully",
+      orderId: result.id,
     });
   } catch (error: any) {
-    console.error("Error in checkout", error);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Checkout error:", error.message);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
+
 
 
 

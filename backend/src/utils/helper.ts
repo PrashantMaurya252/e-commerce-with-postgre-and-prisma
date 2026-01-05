@@ -30,7 +30,7 @@ export const uploadToCloudinary =async(file:Express.Multer.File):Promise<uploadT
     }
 }
 
-export const cartTotal =(items:any[])=>{
+export const cartTotal =(items:any[]):number=>{
     try {
         let subTotal =0
         for(const item of items){
@@ -40,5 +40,6 @@ export const cartTotal =(items:any[])=>{
         return subTotal
     } catch (error) {
         console.error("cart totals error",error)
+        return 0
     }
 }
