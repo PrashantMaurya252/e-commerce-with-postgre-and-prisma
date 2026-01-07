@@ -114,7 +114,7 @@ export const applyCoupon = async (req: Request, res: Response) => {
 
 export const checkout = async (req: Request, res: Response) => {
   const userId = req.user?.userId;
-  const { couponCode } = req.body;
+  const { couponCode,paymentIntent } = req.body;
 
   if (!userId) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -228,6 +228,7 @@ export const checkout = async (req: Request, res: Response) => {
           total: Math.max(subTotal - discount, 0),
           couponId: coupon?.id,
           couponCode: coupon?.code,
+          status:"PENDING",
           items: {
             create: cart.items.map((item) => ({
               productId: item.productId,
@@ -236,6 +237,14 @@ export const checkout = async (req: Request, res: Response) => {
           },
         },
       });
+
+      await tx.payment.create({data:{
+        orderId:order.id,
+        amount:order.total,
+        currency:"INR",
+        status:"PENDING",
+        stripePaymentIntentId:paymentIntent.id
+      }})
 
       if (coupon) {
         await tx.couponUsage.create({

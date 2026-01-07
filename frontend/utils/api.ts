@@ -165,3 +165,17 @@ export const getCartItems= async():Promise<normalAPIResponse>=>{
     }
   }
 }
+
+
+export const createPaymentIntent = async(payload:any):Promise<normalAPIResponse>=>{
+  try {
+    const response = await api.post(`${BACKEND_URL}/payment/create-payment-intent`,payload,{withCredentials:true})
+    return response.data
+  } catch (error:any) {
+    console.error("Create Payment Intent",error)
+    return {
+      success:false,
+      message:error.response?.data.message || "Internal Server Error"
+    }
+  }
+}

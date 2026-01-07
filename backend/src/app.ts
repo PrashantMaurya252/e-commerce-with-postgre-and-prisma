@@ -8,6 +8,8 @@ import productRoutes from './routes/product.routes.js'
 import fileRoutes from './routes/file.routes.js'
 import cartRoutes  from './routes/cart.routes.js'
 import adminRoutes from './routes/admin.routes.js'
+import paymentRoutes from './routes/payment.routes.js'
+import stripeRoutes from './routes/webhook.routes.js'
 
 
 
@@ -31,6 +33,8 @@ app.use("/api/v1/product",productRoutes)
 app.use("/api/v1/file",fileRoutes)
 app.use("/api/v1/cart",cartRoutes)
 app.use("/api/v1/admin",adminRoutes)
+app.use("/api/v1/payment",paymentRoutes)
+app.use("/api/stripe",stripeRoutes)
 
 export default app
 
