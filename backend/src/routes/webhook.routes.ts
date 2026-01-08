@@ -71,7 +71,7 @@ const handlePaymentSucceeded =async(paymentIntent:Stripe.PaymentIntent)=>{
 
             await tx.order.update({where:{id:orderId},
             data:{
-                status:'SHIPPED'
+                status:'PAID'
             }})
         })
 

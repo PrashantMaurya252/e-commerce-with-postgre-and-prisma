@@ -166,6 +166,19 @@ export const getCartItems= async():Promise<normalAPIResponse>=>{
   }
 }
 
+export const applyCoupon = async(payload:any):Promise<normalAPIResponse>=>{
+  try {
+    const response = await api.post(`${BACKEND_URL}/cart/apply-coupon`,payload,{withCredentials:true})
+    return response.data
+  } catch (error:any) {
+    console.error("Apply Coupon Error",error)
+    return {
+      success:false,
+      message:error.response?.data.message || "Internal Server Error"
+    }
+  }
+}
+
 
 export const createPaymentIntent = async(payload:any):Promise<normalAPIResponse>=>{
   try {

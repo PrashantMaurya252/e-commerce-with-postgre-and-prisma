@@ -6,13 +6,13 @@ import { createPaymentIntent } from '@/utils/api'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
-const CheckoutForm = ({orderId,amount,couponCode}:{orderId:string,amount:number,couponCode?:string}) => {
+const CheckoutForm = ({orderId}:{orderId:string}) => {
     const [clientSecret,setClientSecret] = useState<string | null>(null)
     const [loading,setLoading] = useState(true)
 
     const fetchClientSecret = async()=>{
         try {
-            const payload={orderId,amount,couponCode}
+            const payload={orderId}
         const response = await createPaymentIntent(payload)
         if(response.success){
             setClientSecret(response.data.clientSecret)
