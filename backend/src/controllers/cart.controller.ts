@@ -96,10 +96,12 @@ export const applyCoupon = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      subTotal,
-      discount,
-      total: Math.max(subTotal  - discount, 0),
-      coupon: coupon.code,
+      data: {
+        subTotal,
+        discount,
+        total: Math.max(subTotal - discount, 0),
+        coupon: coupon.code,
+      },
     });
   } catch (error) {
     console.error("Apply coupon error:", error);
@@ -110,11 +112,9 @@ export const applyCoupon = async (req: Request, res: Response) => {
   }
 };
 
-
-
 export const checkout = async (req: Request, res: Response) => {
   const userId = req.user?.userId;
-  const { couponCode,paymentIntent } = req.body;
+  const { couponCode, paymentIntent } = req.body;
 
   if (!userId) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -228,7 +228,7 @@ export const checkout = async (req: Request, res: Response) => {
           total: Math.max(subTotal - discount, 0),
           couponId: coupon?.id,
           couponCode: coupon?.code,
-          status:"PENDING",
+          status: "PENDING",
           items: {
             create: cart.items.map((item) => ({
               productId: item.productId,
@@ -238,13 +238,15 @@ export const checkout = async (req: Request, res: Response) => {
         },
       });
 
-      await tx.payment.create({data:{
-        orderId:order.id,
-        amount:order.total,
-        currency:"INR",
-        status:"PENDING",
-        stripePaymentIntentId:paymentIntent.id
-      }})
+      await tx.payment.create({
+        data: {
+          orderId: order.id,
+          amount: order.total,
+          currency: "INR",
+          status: "PENDING",
+          stripePaymentIntentId: paymentIntent.id,
+        },
+      });
 
       if (coupon) {
         await tx.couponUsage.create({
@@ -285,10 +287,6 @@ export const checkout = async (req: Request, res: Response) => {
     });
   }
 };
-
-
-
-
 
 export const cartItems = async (req: Request, res: Response) => {
   try {
@@ -397,7 +395,6 @@ export const addIntoCart = async (req: Request, res: Response) => {
   }
 };
 
-
 export const decreaseFromCart = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -469,7 +466,6 @@ export const decreaseFromCart = async (req: Request, res: Response) => {
   }
 };
 
-
 export const deleteCartItem = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -531,7 +527,6 @@ export const deleteCartItem = async (req: Request, res: Response) => {
   }
 };
 
-
 export const getCartItems = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -542,16 +537,18 @@ export const getCartItems = async (req: Request, res: Response) => {
       where: { userId },
       include: {
         items: {
-          include: { product:{
-            include:{
-              files:true
-            }
-          } },
+          include: {
+            product: {
+              include: {
+                files: true,
+              },
+            },
+          },
         },
       },
     });
     if (!cart) {
-      return res.status(200).json({ success: true, data: [] , total:0});
+      return res.status(200).json({ success: true, data: [], total: 0 });
     }
     return res
       .status(200)
@@ -564,17 +561,18 @@ export const getCartItems = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllCoupons = async(req:Request,res:Response)=>{
+export const getAllCoupons = async (req: Request, res: Response) => {
   try {
-    const coupons = await prisma.coupon.findMany({where:{isActive:true}})
-    if(!coupons){
-      return res.status(200).json({success:true,data:[]})
+    const coupons = await prisma.coupon.findMany({ where: { isActive: true } });
+    if (!coupons) {
+      return res.status(200).json({ success: true, data: [] });
     }
 
-    return res.status(200).json({success:true,data:coupons})
+    return res.status(200).json({ success: true, data: coupons });
   } catch (error) {
-    console.error("getAllCoupons error",error)
-    return res.status(500).json({success:false,message:"Internal server error"})
+    console.error("getAllCoupons error", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
-}
-
+};

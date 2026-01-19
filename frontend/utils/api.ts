@@ -166,6 +166,19 @@ export const getCartItems= async():Promise<normalAPIResponse>=>{
   }
 }
 
+export const getAllCoupons = async():Promise<normalAPIResponse>=>{
+  try {
+    const response = await api.get(`${BACKEND_URL}/cart/get-all-coupons`,{withCredentials:true})
+    return response.data
+  } catch (error:any) {
+    console.error("get all coupons error",error)
+    return {
+      success:false,
+      message:error.response.data.message || "Internal Server error"
+    }
+  }
+}
+
 export const applyCoupon = async(payload:any):Promise<normalAPIResponse>=>{
   try {
     const response = await api.post(`${BACKEND_URL}/cart/apply-coupon`,payload,{withCredentials:true})

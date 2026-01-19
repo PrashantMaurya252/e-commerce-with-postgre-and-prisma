@@ -30,6 +30,10 @@ export default function CartPage() {
 
   /* ================= HANDLERS ================= */
 
+  const fetchAllCoupons = async()=>{
+    
+  }
+
   const handleIncrease = async (productId: string) => {
     try {
       await addToCart(productId).unwrap();
@@ -218,7 +222,7 @@ export default function CartPage() {
 
         {/* CHECKOUT */}
         <button
-          onClick={() => router.push("/checkout")}
+          onClick={() => router.push("/user/cart/checkout")}
           className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700"
         >
           Proceed to Checkout
