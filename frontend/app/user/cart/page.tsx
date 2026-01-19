@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   useGetCartItemsQuery,
@@ -11,6 +11,9 @@ import {
   useDecreaseFromCartMutation,
   useDeleteFromCartMutation,
 } from "@/redux/services/cartApi";
+
+import { getAllCoupons, applyCoupon } from "@/utils/api";
+import { Coupon, CouponListItem } from "@/types/cart";
 
 export default function CartPage() {
   const router = useRouter();
@@ -23,70 +26,72 @@ export default function CartPage() {
     useDeleteFromCartMutation();
 
   const [coupon, setCoupon] = useState("");
-  const isProcessing = adding || decreasing || removing;
+  const [allCoupons, setAllCoupons] = useState<CouponListItem[]>([]);
+  const [showCouponsModal, setShowCouponsModal] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
 
+  const isProcessing = adding || decreasing || removing;
   const items = data?.data?.items || [];
   const total = data?.data?.total || 0;
 
-  /* ================= HANDLERS ================= */
+  /* ================= COUPONS ================= */
 
-  const fetchAllCoupons = async()=>{
-    
-  }
-
-  const handleIncrease = async (productId: string) => {
-    try {
-      await addToCart(productId).unwrap();
-      toast.success("Quantity increased");
-      refetch();
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to increase quantity");
-    }
+  const fetchAllCoupons = async () => {
+    const res = await getAllCoupons();
+    res.success ? setAllCoupons(res.data) : setAllCoupons([]);
   };
 
-  const handleDecrease = async (productId: string, quantity: number) => {
-    try {
-      if (quantity === 1) {
-        await removeFromCart(productId).unwrap();
-        toast.success("Item removed");
-      } else {
-        await decreaseFromCart(productId).unwrap();
-        toast.success("Quantity decreased");
-      }
-      refetch();
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to update cart");
-    }
-  };
+  const handleApplyCoupon = async (code?: string) => {
+    const couponCode = code || coupon;
 
-  const handleRemove = async (productId: string) => {
-    try {
-      await removeFromCart(productId).unwrap();
-      toast.success("Item removed from cart");
-      refetch();
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to remove item");
-    }
-  };
-
-  const handleApplyCoupon = () => {
-    if (!coupon) {
+    if (!couponCode) {
       toast.error("Please enter a coupon code");
       return;
     }
-    // Hook backend later
-    toast.success(`Coupon "${coupon}" applied`);
+
+    const res = await applyCoupon({ code: couponCode });
+
+    if (!res.success) {
+      toast.error(res.message);
+      return;
+    }
+
+    setAppliedCoupon(res.data);
+    setCoupon(res.data.coupon);
+    setShowCouponsModal(false);
+    toast.success(`Coupon ${res.data.coupon} applied`);
   };
+
+  /* ================= CART ================= */
+
+  const handleIncrease = async (productId: string) => {
+    await addToCart(productId).unwrap();
+    refetch();
+  };
+
+  const handleDecrease = async (productId: string, quantity: number) => {
+    quantity === 1
+      ? await removeFromCart(productId).unwrap()
+      : await decreaseFromCart(productId).unwrap();
+    refetch();
+  };
+
+  const handleRemove = async (productId: string) => {
+    await removeFromCart(productId).unwrap();
+    refetch();
+  };
+
+  useEffect(() => {
+    fetchAllCoupons();
+  }, []);
 
   /* ================= UI ================= */
 
-  if (isLoading) {
-    return <div className="p-10 text-center">Loading cart...</div>;
-  }
+  if (isLoading) return <div className="p-10 text-center">Loading cart...</div>;
 
   if (!items.length) {
     return (
-      <div className="max-w-4xl mx-auto p-10 text-center">
+      <div className="p-10 text-center">
         <h2 className="text-xl font-semibold">Your cart is empty</h2>
         <button
           onClick={() => router.push("/")}
@@ -99,135 +104,144 @@ export default function CartPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
-      {/* LOADING OVERLAY */}
+    <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
       {(isFetching || isProcessing) && (
         <div className="absolute inset-0 bg-white/70 z-20 flex items-center justify-center">
           <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
-      {/* ================= LEFT: CART ITEMS ================= */}
+      {/* LEFT */}
       <div className="lg:col-span-2 space-y-6">
         <h1 className="text-2xl font-semibold">Shopping Cart</h1>
 
         {items.map((item: any) => {
-          const product = item.product;
-          const price = product.isOfferActive
-            ? product.offerPrice
-            : product.price;
+          const p = item.product;
+          const price = p.isOfferActive ? p.offerPrice : p.price;
 
           return (
-            <div
-              key={item.id}
-              className="flex gap-4 border rounded-xl p-4"
-            >
-              {/* IMAGE */}
+            <div key={item.id} className="flex gap-4 border rounded-xl p-4">
               <div className="relative w-24 h-24">
-                <Image
-                  src={product.files[0]?.url}
-                  alt={product.title}
-                  fill
-                  className="object-cover rounded-md"
-                />
+                <Image src={p.files[0]?.url} alt={p.title} fill />
               </div>
 
-              {/* DETAILS */}
               <div className="flex-1">
-                <h3 className="font-medium">{product.title}</h3>
-                <p className="text-sm text-gray-500 line-clamp-1">
-                  {product.description}
-                </p>
+                <h3>{p.title}</h3>
+                <p className="text-sm text-gray-500">{p.description}</p>
+                <p className="font-semibold">₹{price}</p>
 
-                <p className="mt-1 font-semibold">₹{price}</p>
-
-                {/* QUANTITY */}
-                <div className="mt-3 flex items-center gap-3">
+                <div className="flex gap-3 mt-3">
+                  <button onClick={() => handleDecrease(p.id, item.quantity)}>−</button>
+                  <span>{item.quantity}</span>
+                  <button onClick={() => handleIncrease(p.id)}>+</button>
                   <button
-                    onClick={() =>
-                      handleDecrease(product.id, item.quantity)
-                    }
-                    className="w-8 h-8 border rounded-md font-bold"
-                  >
-                    −
-                  </button>
-
-                  <span className="font-semibold">
-                    {item.quantity}
-                  </span>
-
-                  <button
-                    onClick={() => handleIncrease(product.id)}
-                    className="w-8 h-8 border rounded-md font-bold"
-                  >
-                    +
-                  </button>
-
-                  <button
-                    onClick={() => handleRemove(product.id)}
-                    className="ml-4 text-red-600 text-sm hover:underline"
+                    onClick={() => handleRemove(p.id)}
+                    className="text-red-600 ml-4"
                   >
                     Remove
                   </button>
                 </div>
               </div>
 
-              {/* ITEM TOTAL */}
-              <div className="font-semibold">
-                ₹{price * item.quantity}
-              </div>
+              <div className="font-semibold">₹{price * item.quantity}</div>
             </div>
           );
         })}
       </div>
 
-      {/* ================= RIGHT: SUMMARY ================= */}
-      <div className="border rounded-xl p-6 space-y-6 h-fit">
+      {/* RIGHT */}
+      <div className="border rounded-xl p-6 space-y-6">
         <h2 className="text-lg font-semibold">Order Summary</h2>
 
-        {/* COUPON */}
-        <div>
-          <label className="text-sm font-medium">Apply Coupon</label>
-          <div className="mt-2 flex gap-2">
-            <input
-              value={coupon}
-              onChange={(e) => setCoupon(e.target.value)}
-              placeholder="Enter coupon code"
-              className="flex-1 border rounded-md px-3 py-2 text-sm"
-            />
-            <button
-              onClick={handleApplyCoupon}
-              className="bg-black text-white px-4 rounded-md text-sm"
-            >
-              Apply
-            </button>
-          </div>
+        <span
+          onClick={() => setShowCouponsModal(true)}
+          className="text-blue-600 cursor-pointer"
+        >
+          Show All Coupons
+        </span>
+
+        <div className="flex gap-2">
+          <input
+            value={coupon}
+            onChange={(e) => setCoupon(e.target.value)}
+            placeholder="Enter coupon"
+            className="flex-1 border px-3 py-2"
+          />
+          <button
+            onClick={() => handleApplyCoupon()}
+            className="bg-black text-white px-4"
+          >
+            Apply
+          </button>
         </div>
 
-        {/* PRICE DETAILS */}
-        <div className="space-y-2 text-sm">
+        <div className="text-sm space-y-2">
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span>₹{total}</span>
+            <span>₹{appliedCoupon?.subTotal ?? total}</span>
           </div>
-          <div className="flex justify-between text-gray-500">
-            <span>Shipping</span>
-            <span>Free</span>
-          </div>
+
+          {appliedCoupon && (
+            <>
+              <div className="flex justify-between text-gray-500">
+                <span>Coupon</span>
+                <span>{appliedCoupon.coupon}</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Discount</span>
+                <span>-₹{appliedCoupon.discount}</span>
+              </div>
+            </>
+          )}
+
           <div className="border-t pt-2 flex justify-between font-semibold">
             <span>Total</span>
-            <span>₹{total}</span>
+            <span>₹{appliedCoupon?.total ?? total}</span>
           </div>
         </div>
 
-        {/* CHECKOUT */}
         <button
           onClick={() => router.push("/user/cart/checkout")}
-          className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700"
+          className="w-full bg-blue-600 text-white py-3 rounded-md"
         >
           Proceed to Checkout
         </button>
       </div>
+
+      {/* COUPON MODAL */}
+      {showCouponsModal && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+          <div className="bg-white w-full max-w-md p-5 rounded-xl">
+            <h2 className="font-semibold mb-4">Available Coupons</h2>
+
+            {allCoupons.map(c => (
+              <div key={c.id} className="border p-4 mb-3">
+                <p className="font-semibold text-blue-600">{c.code}</p>
+                <p className="text-sm">
+                  {c.discountType === "FLAT"
+                    ? `₹${c.discountValue} OFF`
+                    : `${c.discountValue}% OFF (Max ₹${c.maxDiscount})`}
+                </p>
+                <p className="text-xs">Min Cart ₹{c.minCartValue}</p>
+
+                <button
+                  onClick={() => handleApplyCoupon(c.code)}
+                  className="text-green-600 text-sm mt-2"
+                >
+                  Apply
+                </button>
+              </div>
+            ))}
+
+            <button
+              onClick={() => setShowCouponsModal(false)}
+              className="w-full text-sm text-gray-500"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

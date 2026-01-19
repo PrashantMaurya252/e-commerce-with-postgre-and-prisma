@@ -13,3 +13,21 @@ export interface CartState{
     loading:boolean;
     error:string;
 }
+
+export interface Coupon{
+    total:number,
+    coupon:string,
+    subTotal:number,
+    discount:number,
+    success:boolean
+}
+
+export interface CouponListItem {
+  id: string;
+  code: string;
+  discountType: "FLAT" | "PERCENT";
+  discountValue: number;
+  maxDiscount: number;
+  minCartValue: number;
+  expiresAt: string;
+}
