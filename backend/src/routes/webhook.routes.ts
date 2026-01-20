@@ -62,6 +62,8 @@ const handlePaymentSucceeded =async(paymentIntent:Stripe.PaymentIntent)=>{
                     stripePaymentIntentId:paymentIntent.id,
                     stripeChargeId:paymentIntent.latest_charge as string,
                 },
+
+                
                 update:{
                     status:"SUCCEEDED",
                     stripePaymentIntentId:paymentIntent.id,

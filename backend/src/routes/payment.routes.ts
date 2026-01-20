@@ -1,11 +1,12 @@
 import express, { Request, Response } from 'express'
 import Stripe from 'stripe'
 import {prisma} from '../config/prisma.js'
+import { auth } from '../middlewares/auth.js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
 const router = express.Router()
 
-router.post('/create-payment-intent', async (req:Request, res:Response) => {
+router.post('/create-payment-intent',auth, async (req:Request, res:Response) => {
   try {
     const { orderId } = req.body; 
     // amount should be in paise (e.g. ₹499 = 49900)

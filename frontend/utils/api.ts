@@ -205,3 +205,16 @@ export const createPaymentIntent = async(payload:any):Promise<normalAPIResponse>
     }
   }
 }
+
+export const checkout = async(payload:any):Promise<normalAPIResponse>=>{
+  try {
+    const response = await api.post(`${BACKEND_URL}/cart/checkout`,payload,{withCredentials:true})
+    return response.data
+  } catch (error:any) {
+    console.error("checkout error",error)
+    return {
+      success:false,
+      message:error.response?.data.message || "Internal Server Error"
+    }
+  }
+}

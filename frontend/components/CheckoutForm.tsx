@@ -1,4 +1,6 @@
-import React from 'react'
+"use client"
+
+import React, { useEffect } from 'react'
 import {useState} from 'react'
 import {EmbeddedCheckoutProvider,EmbeddedCheckout} from '@stripe/react-stripe-js'
 import {loadStripe} from '@stripe/stripe-js'
@@ -25,9 +27,9 @@ const CheckoutForm = ({orderId}:{orderId:string}) => {
         
     }
 
-    if(!clientSecret && loading){
-        fetchClientSecret()
-    }
+    useEffect(()=>{
+     fetchClientSecret()
+    },[])
 
     if(loading){
         return (

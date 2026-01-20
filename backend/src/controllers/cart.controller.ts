@@ -112,114 +112,292 @@ export const applyCoupon = async (req: Request, res: Response) => {
   }
 };
 
+// export const checkout = async (req: Request, res: Response) => {
+//   const userId = req.user?.userId;
+//   const { couponCode} = req.body;
+
+//   if (!userId) {
+//     return res.status(401).json({ success: false, message: "Unauthorized" });
+//   }
+
+//   try {
+//     const result = await prisma.$transaction(async (tx) => {
+//       const cart = await tx.cart.findUnique({
+//         where: { userId },
+//         include: {
+//           items: { include: { product: true } },
+//         },
+//       });
+
+//       if (!cart || cart.items.length === 0) {
+//         throw new Error("CART_EMPTY");
+//       }
+
+//       const lock = await tx.cart.updateMany({
+//         where: {
+//           userId,
+//           OR: [
+//             { locked: false },
+//             {
+//               locked: true,
+//               lockedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
+//             },
+//           ],
+//         },
+//         data: {
+//           locked: true,
+//           lockedAt: new Date(),
+//         },
+//       });
+
+//       if (lock.count === 0) {
+//         throw new Error("CHECKOUT_IN_PROGRESS");
+//       }
+
+//       const subTotal = cartTotal(cart.items);
+//       let discount = 0;
+//       let coupon = null;
+
+//       if (couponCode) {
+//         coupon = await tx.coupon.findUnique({
+//           where: { code: couponCode },
+//         });
+
+//         if (!coupon || !coupon.isActive || coupon.expiresAt < new Date()) {
+//           throw new Error("INVALID_COUPON");
+//         }
+
+//         if (subTotal < coupon.minCartValue) {
+//           throw new Error("MIN_CART_NOT_MET");
+//         }
+
+//         const usedByUser = await tx.couponUsage.findUnique({
+//           where: {
+//             couponId_userId: {
+//               couponId: coupon.id,
+//               userId,
+//             },
+//           },
+//         });
+
+//         if (usedByUser) {
+//           throw new Error("COUPON_ALREADY_USED");
+//         }
+
+//         if (coupon.usageLimit) {
+//           const usedCount = await tx.couponUsage.count({
+//             where: { couponId: coupon.id },
+//           });
+
+//           if (usedCount >= coupon.usageLimit) {
+//             throw new Error("COUPON_LIMIT_EXCEEDED");
+//           }
+//         }
+
+//         discount =
+//           coupon.discountType === "PERCENT"
+//             ? Math.floor((subTotal * coupon.discountValue) / 100)
+//             : coupon.discountValue;
+
+//         if (coupon.maxDiscount) {
+//           discount = Math.min(discount, coupon.maxDiscount);
+//         }
+//       }
+
+//       for (const item of cart.items) {
+//         const updated = await tx.product.updateMany({
+//           where: {
+//             id: item.productId,
+//             itemLeft: { gte: item.quantity },
+//           },
+//           data: {
+//             itemLeft: { decrement: item.quantity },
+//           },
+//         });
+
+//         if (updated.count === 0) {
+//           throw new Error("OUT_OF_STOCK");
+//         }
+//       }
+
+//       const order = await tx.order.create({
+//         data: {
+//           userId,
+//           subTotal,
+//           discountAmount: discount,
+//           total: Math.max(subTotal - discount, 0),
+//           couponId: coupon?.id,
+//           couponCode: coupon?.code,
+//           status: "PENDING",
+//           items: {
+//             create: cart.items.map((item) => ({
+//               productId: item.productId,
+//               quantity: item.quantity,
+//             })),
+//           },
+//         },
+//       });
+
+//       if (coupon) {
+//         await tx.couponUsage.create({
+//           data: {
+//             userId,
+//             couponId: coupon.id,
+//           },
+//         });
+//       }
+
+//       await tx.cartItem.deleteMany({
+//         where: { cartId: cart.id },
+//       });
+
+//       await tx.cart.update({
+//         where: { id: cart.id },
+//         data: {
+//           total: 0,
+//           locked: false,
+//           lockedAt: null,
+//         },
+//       });
+
+//       return order;
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Order placed successfully",
+//       data:{orderId: result.id}
+//     });
+//   } catch (error: any) {
+//     console.error("Checkout error:", error.message);
+
+//     return res.status(400).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 export const checkout = async (req: Request, res: Response) => {
-  const userId = req.user?.userId;
-  const { couponCode, paymentIntent } = req.body;
+  const userId = req.user?.userId
+  const { couponCode } = req.body
 
   if (!userId) {
-    return res.status(401).json({ success: false, message: "Unauthorized" });
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized",
+    })
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      const cart = await tx.cart.findUnique({
-        where: { userId },
-        include: {
-          items: { include: { product: true } },
-        },
-      });
+    /* ----------------------------------
+       1️⃣ READ CART (OUTSIDE TRANSACTION)
+    ---------------------------------- */
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        items: { include: { product: true } },
+      },
+    })
 
-      if (!cart || cart.items.length === 0) {
-        throw new Error("CART_EMPTY");
+    if (!cart || cart.items.length === 0) {
+      throw new Error("CART_EMPTY")
+    }
+
+    const subTotal = cartTotal(cart.items)
+
+    /* ----------------------------------
+       2️⃣ COUPON VALIDATION (OUTSIDE TX)
+    ---------------------------------- */
+    let coupon: any = null
+    let discount = 0
+
+    if (couponCode) {
+      coupon = await prisma.coupon.findUnique({
+        where: { code: couponCode },
+      })
+
+      if (!coupon || !coupon.isActive || coupon.expiresAt < new Date()) {
+        throw new Error("INVALID_COUPON")
       }
 
-      const lock = await tx.cart.updateMany({
+      if (subTotal < coupon.minCartValue) {
+        throw new Error("MIN_CART_NOT_MET")
+      }
+
+      const usedByUser = await prisma.couponUsage.findUnique({
+        where: {
+          couponId_userId: {
+            couponId: coupon.id,
+            userId,
+          },
+        },
+      })
+
+      if (usedByUser) {
+        throw new Error("COUPON_ALREADY_USED")
+      }
+
+      if (coupon.usageLimit) {
+        const usedCount = await prisma.couponUsage.count({
+          where: { couponId: coupon.id },
+        })
+
+        if (usedCount >= coupon.usageLimit) {
+          throw new Error("COUPON_LIMIT_EXCEEDED")
+        }
+      }
+
+      discount =
+        coupon.discountType === "PERCENT"
+          ? Math.floor((subTotal * coupon.discountValue) / 100)
+          : coupon.discountValue
+
+      if (coupon.maxDiscount) {
+        discount = Math.min(discount, coupon.maxDiscount)
+      }
+    }
+
+    /* ----------------------------------
+       3️⃣ SHORT & FAST TRANSACTION
+    ---------------------------------- */
+    const order = await prisma.$transaction(async (tx) => {
+      // 🔒 Lock cart
+      const locked = await tx.cart.updateMany({
         where: {
           userId,
-          OR: [
-            { locked: false },
-            {
-              locked: true,
-              lockedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
-            },
-          ],
+          locked: false,
         },
         data: {
           locked: true,
           lockedAt: new Date(),
         },
-      });
+      })
 
-      if (lock.count === 0) {
-        throw new Error("CHECKOUT_IN_PROGRESS");
+      if (locked.count === 0) {
+        throw new Error("CHECKOUT_IN_PROGRESS")
       }
 
-      const subTotal = cartTotal(cart.items);
-      let discount = 0;
-      let coupon = null;
-
-      if (couponCode) {
-        coupon = await tx.coupon.findUnique({
-          where: { code: couponCode },
-        });
-
-        if (!coupon || !coupon.isActive || coupon.expiresAt < new Date()) {
-          throw new Error("INVALID_COUPON");
-        }
-
-        if (subTotal < coupon.minCartValue) {
-          throw new Error("MIN_CART_NOT_MET");
-        }
-
-        const usedByUser = await tx.couponUsage.findUnique({
-          where: {
-            couponId_userId: {
-              couponId: coupon.id,
-              userId,
+      // 📦 Update stock (PARALLEL)
+      const stockUpdates = await Promise.all(
+        cart.items.map((item) =>
+          tx.product.updateMany({
+            where: {
+              id: item.productId,
+              itemLeft: { gte: item.quantity },
             },
-          },
-        });
+            data: {
+              itemLeft: { decrement: item.quantity },
+            },
+          })
+        )
+      )
 
-        if (usedByUser) {
-          throw new Error("COUPON_ALREADY_USED");
-        }
-
-        if (coupon.usageLimit) {
-          const usedCount = await tx.couponUsage.count({
-            where: { couponId: coupon.id },
-          });
-
-          if (usedCount >= coupon.usageLimit) {
-            throw new Error("COUPON_LIMIT_EXCEEDED");
-          }
-        }
-
-        discount =
-          coupon.discountType === "PERCENT"
-            ? Math.floor((subTotal * coupon.discountValue) / 100)
-            : coupon.discountValue;
-
-        if (coupon.maxDiscount) {
-          discount = Math.min(discount, coupon.maxDiscount);
-        }
+      if (stockUpdates.some((u) => u.count === 0)) {
+        throw new Error("OUT_OF_STOCK")
       }
 
-      for (const item of cart.items) {
-        const updated = await tx.product.updateMany({
-          where: {
-            id: item.productId,
-            itemLeft: { gte: item.quantity },
-          },
-          data: {
-            itemLeft: { decrement: item.quantity },
-          },
-        });
-
-        if (updated.count === 0) {
-          throw new Error("OUT_OF_STOCK");
-        }
-      }
-
+      // 🧾 Create order
       const order = await tx.order.create({
         data: {
           userId,
@@ -236,30 +414,22 @@ export const checkout = async (req: Request, res: Response) => {
             })),
           },
         },
-      });
+      })
 
-      await tx.payment.create({
-        data: {
-          orderId: order.id,
-          amount: order.total,
-          currency: "INR",
-          status: "PENDING",
-          stripePaymentIntentId: paymentIntent.id,
-        },
-      });
-
+      // 🏷️ Mark coupon as used
       if (coupon) {
         await tx.couponUsage.create({
           data: {
             userId,
             couponId: coupon.id,
           },
-        });
+        })
       }
 
+      // 🧹 Clear cart
       await tx.cartItem.deleteMany({
         where: { cartId: cart.id },
-      });
+      })
 
       await tx.cart.update({
         where: { id: cart.id },
@@ -268,25 +438,29 @@ export const checkout = async (req: Request, res: Response) => {
           locked: false,
           lockedAt: null,
         },
-      });
+      })
 
-      return order;
-    });
+      return order
+    })
 
+    /* ----------------------------------
+       4️⃣ RESPONSE
+    ---------------------------------- */
     return res.status(200).json({
       success: true,
       message: "Order placed successfully",
-      orderId: result.id,
-    });
+      data: { orderId: order.id },
+    })
   } catch (error: any) {
-    console.error("Checkout error:", error.message);
+    console.error("Checkout error:", error.message)
 
     return res.status(400).json({
       success: false,
       message: error.message,
-    });
+    })
   }
-};
+}
+
 
 export const cartItems = async (req: Request, res: Response) => {
   try {

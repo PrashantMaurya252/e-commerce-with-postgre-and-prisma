@@ -12,7 +12,7 @@ import {
   useDeleteFromCartMutation,
 } from "@/redux/services/cartApi";
 
-import { getAllCoupons, applyCoupon } from "@/utils/api";
+import { getAllCoupons, applyCoupon, checkout } from "@/utils/api";
 import { Coupon, CouponListItem } from "@/types/cart";
 
 export default function CartPage() {
@@ -101,6 +101,14 @@ export default function CartPage() {
         </button>
       </div>
     );
+  }
+
+  const handleCheckout = async()=>{
+    // console.log("appleied coupon",appliedCoupon)
+    const response = await checkout({couponCode:appliedCoupon?.coupon || ""})
+    if(response.success){
+      router.push(`/user/cart/checkout/${response.data.orderId}`)
+    }
   }
 
   return (
@@ -201,7 +209,7 @@ export default function CartPage() {
         </div>
 
         <button
-          onClick={() => router.push("/user/cart/checkout")}
+          onClick={handleCheckout}
           className="w-full bg-blue-600 text-white py-3 rounded-md"
         >
           Proceed to Checkout
