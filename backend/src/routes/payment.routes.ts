@@ -29,9 +29,24 @@ router.post('/create-payment-intent',auth, async (req:Request, res:Response) => 
       return res.status(400).json({ success:false,message:"Invalid Amount" });
     }
 
+    const customer = await stripe.customers.create({
+  name: "Prashant Maurya",
+  email: "mauryaprashant202@gmail.com",
+  address: {
+    line1: "Vindhyavasini Nagar",
+    city: "Gorakhpur",
+    state: "Uttar Pradesh",
+    postal_code: "273001",
+    country: "IN",
+  },
+})
+
+
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: order.total, // paise
+      amount: order.total*100, // paise
       currency: 'inr',
+      description:`Order ${orderId} purchase`,
+      customer:customer.id,
       automatic_payment_methods: {
         enabled: true,
       },

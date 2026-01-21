@@ -15,6 +15,7 @@ import stripeRoutes from './routes/webhook.routes.js'
 
 
 const app = express()
+app.use("/api/stripe",stripeRoutes)
 app.use(helmet())
 app.use(cors({
     origin:["http://localhost:3000"],
@@ -34,7 +35,7 @@ app.use("/api/v1/file",fileRoutes)
 app.use("/api/v1/cart",cartRoutes)
 app.use("/api/v1/admin",adminRoutes)
 app.use("/api/v1/payment",paymentRoutes)
-app.use("/api/stripe",stripeRoutes)
+
 
 export default app
 

@@ -111,6 +111,8 @@ export default function CartPage() {
     }
   }
 
+  console.log("Publishable key",process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+
   return (
     <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
       {(isFetching || isProcessing) && (
