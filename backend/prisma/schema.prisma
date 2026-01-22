@@ -68,8 +68,8 @@ model User{
   createdAt          DateTime                @default(now())
   isAdmin            Boolean            @default(false)
   files              File[]
-  addresses           Address[]
-  couponUsages                 CouponUsage[]
+  addresses          Address[]
+  couponUsages       CouponUsage[]
   refreshTokens      RefreshToken[]
   isVerified        Boolean             @default(false)
   

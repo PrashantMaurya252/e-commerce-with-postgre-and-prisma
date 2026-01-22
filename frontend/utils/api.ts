@@ -218,3 +218,16 @@ export const checkout = async(payload:any):Promise<normalAPIResponse>=>{
     }
   }
 }
+
+export const getAllOrders = async():Promise<normalAPIResponse>=>{
+  try {
+    const response = await api.get(`${BACKEND_URL}/orders/all-orders`,{withCredentials:true})
+    return response.data
+  } catch (error:any) {
+    console.error("get all orders error",error)
+    return {
+      success:false,
+      message:error.response.data.message || "Internal Server error"
+    }
+  }
+}
