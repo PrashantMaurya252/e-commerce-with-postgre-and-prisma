@@ -13,9 +13,9 @@ export default function RoleGuard({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user,isAuthenticated } = useAppSelector((state) => state.auth);
+  const { user,isAuthenticated,authInitialized } = useAppSelector((state) => state.auth);
 
-  if(!isAuthenticated) return null
+  if(!isAuthenticated || !authInitialized) return null
 
   const role: Role | null = user
     ? user.isAdmin

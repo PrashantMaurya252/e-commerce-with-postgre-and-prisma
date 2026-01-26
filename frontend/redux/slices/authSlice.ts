@@ -17,12 +17,14 @@ interface AuthState {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  authInitialized:boolean;
 }
 
 const initialState: AuthState = {
   user: null,
   accessToken: null,
   isAuthenticated: false,
+  authInitialized:false
 };
 
 const authSlice = createSlice({
@@ -35,13 +37,14 @@ const authSlice = createSlice({
     ) => {
       state.user = action.payload.user;
       state.accessToken = action.payload.accessToken;
-      state.isAuthenticated = true;
+      state.isAuthenticated = true; 
     },
     logout: (state) => {
       state.user = null;
       state.accessToken = null;
       state.isAuthenticated = false;
     },
+
     updateAccessToken:(state,action:PayloadAction<string>)=>{
       state.accessToken = action.payload
     },
@@ -62,11 +65,13 @@ const authSlice = createSlice({
       builder.addCase(refreshMe.fulfilled,(state,action)=>{
         state.accessToken = action.payload
         state.isAuthenticated = true
+        state.authInitialized = true
         api.defaults.headers.common["Authorization"] = `Bearer ${action.payload}`
       })
       builder.addCase(refreshMe.rejected,(state)=>{
         state.accessToken=null
         state.isAuthenticated = false
+        state.authInitialized = true
       })
     }
 });
