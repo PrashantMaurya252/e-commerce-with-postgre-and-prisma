@@ -5,10 +5,59 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { signupAPI } from "@/utils/api";
 // import { Icon } from "@iconify/react";
 
 
 export default function SignupPage() {
+  const [formData,setFormData] = useState({
+    username:"",
+    email:"",
+    password:""
+  })
+  const [formError,setFormError] = useState({
+    username:"",
+    email:"",
+    password:""
+  })
+
+  const [loading,setLoading] = useState(false)
+  const router = useRouter()
+  const handleChange = (e:React.ChangeEvent<HTMLInputElement>)=>{
+    try {
+      const name = e.target.name
+      const value = e.target.value
+      setFormData((prev)=>({
+        ...prev,
+        [name]:value
+      }))
+    } catch (error) {
+      console.error("Handle Change Error",error)
+    }
+  }
+  const handleSignup = async()=>{
+    for(const [key,value] of Object.entries(formData)){
+      if(value.trim() === ""){
+        toast.error(`${key} must not be empty`)
+        return
+      }
+    }
+    try {
+      const response = await signupAPI(formData)
+      if(response.success){
+        toast.success("Signup Successful")
+        router.push("/auth/login")
+      }else{
+        toast.error(response.message)
+      }
+    } catch (error) {
+      console.error("Handle signup error",error)
+      toast.error("Internal Server Error")
+    }
+  }
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 px-4">
       <Card className="w-full max-w-md shadow-xl rounded-2xl">
@@ -26,7 +75,7 @@ export default function SignupPage() {
             <label className="text-sm font-medium">Full Name</label>
             <div className="relative">
               <span className="icon-[mdi-light--account] absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></span>
-              <Input placeholder="Your name" className="pl-10" />
+              <Input name="username" value={formData.username} placeholder="Your name" className="pl-10" />
             </div>
           </div>
 
@@ -34,7 +83,7 @@ export default function SignupPage() {
             <label className="text-sm font-medium">Email</label>
             <div className="relative">
               <span className="icon-[mdi-light--email] absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></span>
-              <Input type="email" placeholder="you@example.com" className="pl-10" />
+              <Input name="email" value={formData.username} type="email" placeholder="you@example.com" className="pl-10" />
             </div>
           </div>
 
@@ -42,7 +91,7 @@ export default function SignupPage() {
             <label className="text-sm font-medium">Password</label>
             <div className="relative">
               <span className="icon-[mdi-light--lock] absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></span>
-              <Input type="password" placeholder="Create password" className="pl-10" />
+              <Input name="password" value={formData.password} type="password" placeholder="Create password" className="pl-10" />
             </div>
           </div>
 

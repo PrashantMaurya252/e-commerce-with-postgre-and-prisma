@@ -1,18 +1,29 @@
 "use client"
 
+import { useAppSelector } from "@/redux/hooks"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
-import { useRouter } from "next/navigation";
-
-
-
-export default function Home() {
-
-
+export default function RootRedirect() {
+  const { isAuthenticated, user, authInitialized } = useAppSelector(
+    (state) => state.auth
+  )
   const router = useRouter()
 
+  useEffect(() => {
+    if (!authInitialized) return
 
-  
-  return (
-    <div>Home <span className="icon-[mdi-light--home]"></span></div>
-  );
+    if (!isAuthenticated) {
+      router.replace("/auth/login")
+      return
+    }
+
+    if (user?.isAdmin) {
+      router.replace("/admin/home")
+    } else {
+      router.replace("/user/home")
+    }
+  }, [isAuthenticated, user, authInitialized, router])
+
+  return null
 }
