@@ -39,23 +39,37 @@ export default function SignupPage() {
     }
   }
   const handleSignup = async()=>{
+    setLoading(true)
+    try {
+      let hasError = false
     for(const [key,value] of Object.entries(formData)){
       if(value.trim() === ""){
         toast.error(`${key} must not be empty`)
-        return
+        setFormError((prev)=>({
+          ...prev,
+          [key]:`${key} is required field`
+        }))
+        hasError = true
+      }else{
+        setFormError((prev)=>({
+          ...prev,
+          [key]:""
+        }))
       }
     }
-    try {
+    if(hasError) return
       const response = await signupAPI(formData)
       if(response.success){
         toast.success("Signup Successful")
         router.push("/auth/login")
       }else{
-        toast.error(response.message)
+        toast.error(response.message || "Something went wrong while")
       }
     } catch (error) {
       console.error("Handle signup error",error)
       toast.error("Internal Server Error")
+    }finally{
+      setLoading(false)
     }
   }
   return (
@@ -75,28 +89,37 @@ export default function SignupPage() {
             <label className="text-sm font-medium">Full Name</label>
             <div className="relative">
               <span className="icon-[mdi-light--account] absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></span>
-              <Input name="username" value={formData.username} placeholder="Your name" className="pl-10" />
+              <Input onChange={(e)=>handleChange(e)} name="username" value={formData.username} placeholder="Your name" className="pl-10" />
             </div>
+            {formError.username !== "" && (<span>
+              {formError.username}
+            </span>)}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Email</label>
             <div className="relative">
               <span className="icon-[mdi-light--email] absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></span>
-              <Input name="email" value={formData.username} type="email" placeholder="you@example.com" className="pl-10" />
+              <Input onChange={(e)=>handleChange(e)} name="email" value={formData.email} type="email" placeholder="you@example.com" className="pl-10" />
             </div>
+            {formError.email !== "" && (<span>
+              {formError.email}
+            </span>)}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Password</label>
             <div className="relative">
               <span className="icon-[mdi-light--lock] absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></span>
-              <Input name="password" value={formData.password} type="password" placeholder="Create password" className="pl-10" />
+              <Input onChange={(e)=>handleChange(e)} name="password" value={formData.password} type="password" placeholder="Create password" className="pl-10" />
             </div>
+            {formError.password !== "" && (<span>
+              {formError.password}
+            </span>)}
           </div>
 
-          <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
-            Sign Up
+          <Button disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={handleSignup}>
+            {loading ? "Loading ...":"Sign Up"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">

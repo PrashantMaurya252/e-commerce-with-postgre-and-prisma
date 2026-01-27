@@ -14,11 +14,16 @@ export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
 export const signupAPI = async(payload:signupPayload):Promise<signupResponse>=>{
     try {
-        const response = await axios.post(`${BACKEND_URL}/api/auth/signup`,payload)
+        const response = await axios.post(`${BACKEND_URL}/auth/signup`,payload)
         return response.data
     } catch (error:any) {
         console.log("signup api error",error)
-        throw new Error(error?.response.data.message || "Signup Error")
+        console.log("login api error",error)
+        return {
+      success: false,
+      message:
+        error?.response?.data?.message || "Sign Up Error",
+    };
     }
 }
 
@@ -38,9 +43,9 @@ export const loginAPI = async(payload:loginPayload):Promise<loginResponse>=>{
     }
 }
 
-export const sendForgotPasswordOtp = async(email:string):Promise<sendOTPResponse>=>{
+export const sendForgotPasswordOtpToEmail = async(email:string):Promise<sendOTPResponse>=>{
     try {
-        const response = await axios.post(`${BACKEND_URL}/api/auth/send-forgot-password-otp`,email)
+        const response = await axios.post(`${BACKEND_URL}/auth/send-forgot-password-otp`,email)
         return response.data
     } catch (error:any) {
         console.log("sendForgotPasswordOTP api error",error)
@@ -50,7 +55,7 @@ export const sendForgotPasswordOtp = async(email:string):Promise<sendOTPResponse
 
 export const verifyForgotPasswordOtp = async(payload:verifyForgotPasswordOtpPayload):Promise<verifyForgotPasswordOtpResponse>=>{
     try {
-        const response = await axios.post(`${BACKEND_URL}/api/auth/verify-forgot-password-otp`,payload)
+        const response = await axios.post(`${BACKEND_URL}/auth/verify-forgot-password-otp`,payload)
         return response.data
     } catch (error:any) {
         console.log("verify forgot password otp api error",error)

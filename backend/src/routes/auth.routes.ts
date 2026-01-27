@@ -7,7 +7,7 @@ const authRouter = express.Router()
 
 
 
-authRouter.post('/sign-up',signUp)
+authRouter.post('/signup',signUp)
 authRouter.post('/login',login)
 authRouter.post("/send-email-verification-otp",rateLimiter,auth,sendEmailVerificationOtp)
 authRouter.post("/verify-email-otp",rateLimiter,auth,verifyEmailOtp)
