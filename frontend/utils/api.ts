@@ -43,6 +43,22 @@ export const loginAPI = async(payload:loginPayload):Promise<loginResponse>=>{
     }
 }
 
+export const logout = async(payload:loginPayload):Promise<loginResponse>=>{
+    try {
+        const response = await axios.post(`${BACKEND_URL}/auth/logout`,payload,{
+        withCredentials: true, // ✅ REQUIRED
+      })
+        return response.data
+    } catch (error:any) {
+        console.log("logout api error",error)
+        return {
+      success: false,
+      message:
+        error?.response?.data?.message || "Logout Error",
+    };
+    }
+}
+
 export const sendForgotPasswordOtpToEmail = async(email:string):Promise<sendOTPResponse>=>{
     try {
         const response = await axios.post(`${BACKEND_URL}/auth/send-forgot-password-otp`,email)
