@@ -11,6 +11,7 @@ import adminRoutes from './routes/admin.routes.js'
 import paymentRoutes from './routes/payment.routes.js'
 import stripeRoutes from './routes/webhook.routes.js'
 import orderRoutes from './routes/order.routes.js'
+import userRoutes from './routes/user.routes.js'
 
 
 
@@ -37,6 +38,7 @@ app.use("/api/v1/cart",cartRoutes)
 app.use("/api/v1/admin",adminRoutes)
 app.use("/api/v1/payment",paymentRoutes)
 app.use("/api/v1/orders",orderRoutes)
+app.use("/api/v1/user",userRoutes)
 
 
 export default app

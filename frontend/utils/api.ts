@@ -252,3 +252,17 @@ export const getAllOrders = async():Promise<normalAPIResponse>=>{
     }
   }
 }
+
+
+export const getUserProfile = async(userId:string):Promise<normalAPIResponse>=>{
+  try {
+    const response = await api.get(`${BACKEND_URL}/user/user-profile/${userId}`,{withCredentials:true})
+    return response.data
+  } catch (error:any) {
+    console.error("get user profile error",error)
+    return {
+      success:false,
+      message:error.response.data.message || "Internal Server error"
+    }
+  }
+}
