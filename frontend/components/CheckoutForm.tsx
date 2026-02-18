@@ -42,9 +42,12 @@ const PaymentForm = () => {
   return (
     <form onSubmit={handleSubmit}>
       <PaymentElement />
-      <button disabled={loading} className="mt-4">
+      <div className="flex justify-center items-center">
+        <button disabled={loading} className="mt-4 bg-blue-700 text-white rounded-lg px-2 py-1">
         {loading ? "Processing..." : "Pay Now"}
       </button>
+      </div>
+      
     </form>
   )
 }

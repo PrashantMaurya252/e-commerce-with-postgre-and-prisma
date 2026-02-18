@@ -18,6 +18,10 @@ enum OtpType{
   FORGOT_PASSWORD
 }
 
+enum AuthProvider{
+  LOCAL
+  GOOGLE
+}
 enum Category{
   ELECTRONICS
   CLOTHES
@@ -60,9 +64,12 @@ enum DiscountType{
 
 model User{
   id                 String             @id @default(uuid())
-  name               String            
+  name               String?            
   email              String              @unique
-  password           String
+  googleId           String?             @unique
+  password           String?
+  provider           AuthProvider             @default("LOCAL")
+  avatar             String?
   orders             Order[]
   cart               Cart?
   createdAt          DateTime                @default(now())
@@ -96,6 +103,9 @@ model Product{
   isOfferActive       Boolean            @default(false)
   category            Category
   files               File[]
+  reviews             Review[]
+  averageRating       Float             @default(0)
+  totalReviews        Int               @default(0)
   createdAt           DateTime               @default(now())
   orderItems          OrderItem[]
   itemLeft            Int                    @default(0)
@@ -233,4 +243,18 @@ model RefreshToken{
   user                    User                    @relation(fields:[userId],references:[id],onDelete:Cascade)
   expiresAt               DateTime                
   createdAt               DateTime                @default(now())
+}
+
+model Review{
+  id                      String                @id @default(uuid())
+  productId               String                
+  userId                  String
+  orderId                 String?
+  comment                 String?
+  rating                  Int
+  product                 Product                 @relation(fields:[productId],references:[id],onDelete:Cascade)
+  user                    User                    @relation(fields:[userId],references:[id],onDelete:Cascade)
+  order                   Order                   @relation(fields:[orderId],references:[id],onDelete:SetNull)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                @updatedAt
 }
