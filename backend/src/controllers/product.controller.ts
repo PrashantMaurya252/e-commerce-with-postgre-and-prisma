@@ -320,3 +320,60 @@ export const productDetails = async (req: Request, res: Response) => {
 };
 
 
+export const submitProductReview = async(req:Request,res:Response)=>{
+  try {
+    const userId = req.user?.userId
+    if(!userId){
+      return res.status(401).json({success:false,message:"Unauthorized"})
+    }
+    const {productId} = req.params
+    const {comment,rating} = req.body
+    if(!rating || rating < 1 || rating > 5){
+      return res.status(400).json({success:false,message:"Rating must be  between 1 to 5"})
+    }
+
+    const product = await prisma.product.findUnique({where:{id:productId}})
+    if(!product){
+      return res.status(404).json({success:false,message:"Product not found"})
+    }
+
+     const hasPurchased = await prisma.orderItem.findFirst({
+      where:{productId,order:{userId,status:"DELIVERED"}}
+    })
+
+    if(!hasPurchased){
+      return res.status(400).json({success:false,message:"You only review your purchased product"})
+    }
+    const existingReview = await prisma.review.findUnique({where:{productId_userId:{productId,userId}}})
+    if(existingReview){
+      return res.status(400).json({success:false,message:"You already reviewd this product"})
+    }
+
+    const result = await prisma.$transaction(async (tx)=>{
+      const review = await tx.review.create({data:{
+        productId,
+        userId,
+        rating,
+        comment
+      }})
+      const stats = await tx.review.aggregate({where:{
+        productId
+      },
+      _avg:{rating:true},
+      _count:{rating:true}
+      })
+      await tx.product.update({where:{id:productId},data:{
+        averageRating:stats._avg.rating ?? 0,
+        totalReviews:stats._count.rating
+      }})
+      return review
+    })
+
+    return res.status(200).json({success:true,message:"You submitted you review successfully",data:result})
+  } catch (error) {
+    console.error("Error in Product Reviews")
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
+
+

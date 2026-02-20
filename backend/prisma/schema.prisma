@@ -259,4 +259,5 @@ model Review{
   order                   Order?                  @relation(fields:[orderId],references:[id],onDelete:SetNull)
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
+  @@unique([productId,userId])
 }

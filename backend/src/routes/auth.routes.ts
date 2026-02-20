@@ -1,5 +1,5 @@
 import express from 'express'
-import { login, logout, me, refreshToken, sendEmailVerificationOtp, sendForgotPasswordOtp, signUp, verifyEmailOtp, verifyForgotPasswordOtp } from '../controllers/auth.controller.js'
+import { googleAuth, login, logout, me, refreshToken, sendEmailVerificationOtp, sendForgotPasswordOtp, signUp, verifyEmailOtp, verifyForgotPasswordOtp } from '../controllers/auth.controller.js'
 import { auth } from '../middlewares/auth.js'
 import { rateLimiter } from '../middlewares/rateLimiter.js'
 
@@ -9,6 +9,7 @@ const authRouter = express.Router()
 
 authRouter.post('/signup',signUp)
 authRouter.post('/login',login)
+authRouter.post('/google-login',googleAuth)
 authRouter.post("/send-email-verification-otp",rateLimiter,auth,sendEmailVerificationOtp)
 authRouter.post("/verify-email-otp",rateLimiter,auth,verifyEmailOtp)
 authRouter.post("/send-forgot-password-otp",rateLimiter,sendForgotPasswordOtp)
