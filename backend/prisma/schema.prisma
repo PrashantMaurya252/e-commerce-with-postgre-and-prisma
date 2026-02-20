@@ -68,7 +68,7 @@ model User{
   email              String              @unique
   googleId           String?             @unique
   password           String?
-  provider           AuthProvider             @default("LOCAL")
+  provider           AuthProvider             @default(LOCAL)
   avatar             String?
   orders             Order[]
   cart               Cart?
@@ -78,6 +78,7 @@ model User{
   addresses          Address[]
   couponUsages       CouponUsage[]
   refreshTokens      RefreshToken[]
+  reviews             Review[]
   isVerified        Boolean             @default(false)
   
 }
@@ -145,6 +146,7 @@ model Order{
   files               File[]
   addressId           String?
   address             Address?             @relation(fields:[addressId],references:[id],onDelete:SetNull)
+  reviews             Review[]
   payment             Payment?
 }
 
@@ -254,7 +256,7 @@ model Review{
   rating                  Int
   product                 Product                 @relation(fields:[productId],references:[id],onDelete:Cascade)
   user                    User                    @relation(fields:[userId],references:[id],onDelete:Cascade)
-  order                   Order                   @relation(fields:[orderId],references:[id],onDelete:SetNull)
-  createdAt               DateTime                 @default(now())
+  order                   Order?                  @relation(fields:[orderId],references:[id],onDelete:SetNull)
+  createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
 }

@@ -6,6 +6,7 @@ import { generateAccessToken, generateRefreshToken } from "../utils/jwt.js";
 import { generateOtp, sendOtpMail } from "../utils/mailer.js";
 import jwt from "jsonwebtoken";
 import { AuthRequest } from "../middlewares/auth.js";
+import {OAuth2Client} from "google-auth-library"
 
 const signupSchema = z.object({
   email: z.string(),
@@ -330,3 +331,51 @@ export const logout = async(req:AuthRequest,res:Response)=>{
   }
 }
 
+export const googleAuth = async(req:Request,res:Response)=>{
+  try {
+    const {token} = req.body
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+    const ticket = await client.verifyIdToken({
+      idToken:token,
+      audience:process.env.GOOGLE_CLIENT_ID
+    })
+
+    const payload = ticket.getPayload()
+    if(!payload || !payload.email){
+      return res.status(400).json({
+        success:false,
+        message:"Invalid Google Token"
+      })
+    }
+    const {email,sub,name,picture}  = payload
+
+    const userExist = await prisma.user.findUnique({where:{email}})
+    if(userExist && userExist.provider === "LOCAL"){
+      return res.status(400).json({
+        success:false,
+        message:"User already exist with email & passowrd"
+      })
+    }
+
+    let user
+    if(userExist && userExist.provider === "GOOGLE"){
+      user = userExist
+    }else{
+      user = await prisma.user.create({
+        data:{
+          email,
+          name,
+          googleId:sub,
+          provider:"GOOGLE",
+          avatar:picture,
+          isVerified:true
+        }
+      })
+    }
+
+    return res.status(200).json({success:true,message:"User Logged In Successfully",data:user})
+  } catch (error) {
+    console.error("Google Auth Error",error)
+    return res.status(500).json({success:false,message:"Internal Server Error"})
+  }
+}
