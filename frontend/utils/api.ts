@@ -43,6 +43,22 @@ export const loginAPI = async(payload:loginPayload):Promise<loginResponse>=>{
     }
 }
 
+export const googleLogin = async(token:string):Promise<loginResponse>=>{
+    try {
+        const response = await axios.post(`${BACKEND_URL}/auth/google-login`,{token},{
+        withCredentials: true, // ✅ REQUIRED
+      })
+        return response.data
+    } catch (error:any) {
+        console.log("google login api error",error)
+        return {
+      success: false,
+      message:
+        error?.response?.data?.message || "Google Login Error",
+    };
+    }
+}
+
 export const logout = async(payload:loginPayload):Promise<loginResponse>=>{
     try {
         const response = await axios.post(`${BACKEND_URL}/auth/logout`,payload,{

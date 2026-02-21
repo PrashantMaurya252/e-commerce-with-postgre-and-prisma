@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ReduxProvider from "@/redux/provider";
 import { Toaster } from "@/components/ui/sonner";
+import {GoogleOAuthProvider} from "@react-oauth/google"
 
 
 
@@ -33,11 +34,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-
-        <ReduxProvider>
+        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID as string}>
+          <ReduxProvider>
           <Toaster/>
           {children}
         </ReduxProvider>
+        </GoogleOAuthProvider>
+        
       </body>
     </html>
   );
