@@ -9,8 +9,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { googleLogin, signupAPI } from "@/utils/api";
 import { GoogleLogin } from "@react-oauth/google";
+import { useDispatch } from "react-redux";
+import { useAppDispatch } from "@/redux/hooks";
+import { login } from "@/redux/slices/authSlice";
 
 export default function SignupPage() {
+  const dispatch = useAppDispatch()
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -100,12 +104,25 @@ export default function SignupPage() {
 
       const response = await googleLogin(idToken);
 
-      if (response.success) {
-        toast.success("Google Login Successful");
-        router.push("/");
-      } else {
-        toast.error(response.message || "Google login failed");
-      }
+      if (response.success && response.data) {
+              dispatch(
+                login({
+                  user: response.data.userData,
+                  accessToken: response.data.accessToken,
+              
+                  
+                })
+              );
+              if(response.data.userData.isAdmin){
+                router.push("/admin/dashboard");
+              }else{
+                router.push("/user/home")
+              }
+      
+              toast.success("You logged In Successfully")
+            } else {
+              toast.error(response?.message || "Something went wrong while login");
+            }
     } catch (error) {
       console.error("Google login error", error);
       toast.error("Login Failed");

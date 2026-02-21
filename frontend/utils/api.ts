@@ -59,9 +59,9 @@ export const googleLogin = async(token:string):Promise<loginResponse>=>{
     }
 }
 
-export const logout = async(payload:loginPayload):Promise<loginResponse>=>{
+export const logoutHandler = async():Promise<loginResponse>=>{
     try {
-        const response = await axios.post(`${BACKEND_URL}/auth/logout`,payload,{
+        const response = await api.post(`${BACKEND_URL}/auth/logout`,{},{
         withCredentials: true, // ✅ REQUIRED
       })
         return response.data

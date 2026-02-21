@@ -358,11 +358,11 @@ export const logout = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+      return res.status(401).json({ success: false, message: "Unauthorized in logout" });
     }
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+      return res.status(401).json({ success: false, message: "Unauthorized in logout" });
     }
 
     await prisma.refreshToken.deleteMany({

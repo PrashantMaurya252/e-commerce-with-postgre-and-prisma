@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import { toast } from "sonner";
-import { loginAPI } from "@/utils/api";
+import { googleLogin, loginAPI } from "@/utils/api";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/redux/store";
 import { login } from "@/redux/slices/authSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { GoogleLogin } from "@react-oauth/google";
 
 // import { Icon } from "@iconify/react";
 
@@ -87,6 +88,47 @@ export default function LoginPage() {
       [name]: value,
     }));
   };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+      try {
+        setLoading(true);
+  
+        const idToken = credentialResponse.credential;
+  
+        if (!idToken) {
+          toast.error("No ID token received");
+          return;
+        }
+  
+        const response = await googleLogin(idToken);
+  
+        if (response.success && response.data) {
+                dispatch(
+                  login({
+                    user: response.data.userData,
+                    accessToken: response.data.accessToken,
+                
+                    
+                  })
+                );
+                if(response.data.userData.isAdmin){
+                  router.push("/admin/dashboard");
+                }else{
+                  router.push("/user/home")
+                }
+        
+                toast.success("You logged In Successfully")
+              } else {
+                toast.error(response?.message || "Something went wrong while login");
+              }
+      } catch (error) {
+        console.error("Google login error", error);
+        toast.error("Login Failed");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 px-4">
       <Card className="w-full max-w-md shadow-xl rounded-2xl">
@@ -148,6 +190,21 @@ export default function LoginPage() {
           >
             {loading ? "...Loading" : "Login"}
           </Button>
+
+           {/* ================= Divider ================= */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-px bg-gray-300" />
+            <span className="text-sm text-gray-500">OR</span>
+            <div className="flex-1 h-px bg-gray-300" />
+          </div>
+
+          {/* ================= Google Login ================= */}
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast.error("Google Login Failed")}
+            />
+          </div>
 
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}

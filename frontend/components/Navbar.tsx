@@ -11,6 +11,10 @@ import {
   User,
   LayoutDashboard,
 } from 'lucide-react'
+import {logoutHandler } from '@/utils/api'
+import { toast } from 'sonner'
+import { logout } from '@/redux/slices/authSlice'
+import { useRouter } from 'next/navigation'
 
 type Role = 'USER' | 'ADMIN'
 
@@ -19,6 +23,7 @@ interface NavbarProps {
 }
 
 const Navbar = ({ role = 'USER' }: NavbarProps) => {
+  const router = useRouter()
   const { user, isAuthenticated } = useAppSelector(
     (state: RootState) => state.auth
   )
@@ -85,6 +90,17 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
 
   const options = role === 'USER' ? userOptions : adminOptions
 
+  const handleLogout = async()=>{
+    try {
+      logoutHandler()
+      logout()
+      router.push("/auth/login")
+    } catch (error) {
+      console.error("Logout Error",error)
+      toast.error("Something went wrong while logout")
+    }
+  }
+
   return (
     <header
       className="
@@ -128,6 +144,7 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
               )
             })}
           </ul>
+          <button className='text-white bg-red-600 font-semibold rounded-lg border-2 border-white px-2 py-1 cursor-pointer' onClick={handleLogout}>Logout</button>
         </div>
       </nav>
     </header>
