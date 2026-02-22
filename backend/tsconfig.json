@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "typeRoots": ["./types", "./node_modules/@types"]
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "allowSyntheticDefaultImports": true
   },
   "include": ["."],
   "exclude": ["dist", "node_modules", "generated/prisma/browser.ts"]

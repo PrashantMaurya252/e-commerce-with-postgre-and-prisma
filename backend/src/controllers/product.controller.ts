@@ -4,6 +4,7 @@ import { prisma } from "../config/prisma.js";
 import { uploadToCloudinary } from "../utils/helper.js";
 import { Category, FilePurpose, FileType } from "@prisma/client";
 import { getRandomImagesFromFolder } from "../utils/localImageUploader.js";
+import redis from '../config/redis.js'
 import path from "path";
 
 
@@ -216,7 +217,12 @@ export const getAllProducts = async (req: Request, res: Response) => {
     const search = req.query.search as string | undefined;
     const skip = (page - 1) * limit;
 
+    const cacheKey = `products:page=${page}:limit=${limit}:cat=${category || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}`
+
+    let responseData
+    const cached = await redis.get(cacheKey)
     let where: any = {};
+
     if (category) {
       where.category = category;
     }
@@ -278,6 +284,108 @@ export const getAllProducts = async (req: Request, res: Response) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
+
+// export const getAllProducts = async (req: Request, res: Response) => {
+//   try {
+//     const userId = req.user?.userId
+//     const page = Number(req.query.page) || 1;
+//     const limit = Number(req.query.limit) || 10;
+
+//     const category = req.query.category as Category | undefined;
+//     const minPrice = req.query.minPrice
+//       ? Number(req.query.minPrice)
+//       : undefined;
+//     const maxPrice = req.query.maxPrice
+//       ? Number(req.query.maxPrice)
+//       : undefined;
+
+//     const search = req.query.search as string | undefined;
+//     const skip = (page - 1) * limit;
+
+//     const cacheKey = `products:page=${page}:limit=${limit}:cat=${category || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}`
+
+//     let responseData
+//     const cached = await redis.get(cacheKey)
+//     // let where: any = {};
+
+//     if(cached){
+//       responseData = JSON.parse(cached)
+//     }else{
+//       let where: any = {};
+//       if(category) where.category = category
+//       if(minPrice || maxPrice){
+//         where.price = {}
+//         if(minPrice) where.price.get = minPrice
+//         if(maxPrice) where.price.lte = maxPrice
+//       }
+
+//       if(search){
+//         where.title={
+//           contains:search,
+//           mode:"insensitive"
+//         }
+//       }
+
+//       const products = await prisma.product.findMany({
+//         where,
+//         skip,
+//         take:limit,
+//         orderBy:{createdAt:"desc"},
+//         include:{files:true}
+//       })
+
+//       const totalProducts = await prisma.product.count({where})
+
+//       responseData ={
+//         success:true,
+//         message:"all products are fetched",
+//         page,
+//         limit,
+//         totalProducts,
+//         totalPages:Math.ceil(totalProducts/limit),
+//         data:products
+//       };
+
+//       await redis.set(cacheKey,JSON.stringify(responseData),"EX",300)
+//     }
+
+//     if(userId){
+//       const cartItems = await prisma.cartItem.findMany({
+//         where:{
+//           cart:{userId}
+//         },
+//         select:{
+//           productId:true,
+//           quantity:true
+//         }
+//       })
+
+//       const cartMap = new Map(cartItems.map((item)=>[item.productId,item.quantity]));
+//       responseData.data = responseData.data.map((product:any)=>({
+//         ...product,
+//         isInCart:cartMap.has(product.id),
+//         cartQuantity:cartMap.get(product.id) || 0,
+//       }))
+//     }else{
+//       responseData.data = responseData.data.map((product:any)=>({
+//         ...product,
+//         isInCart:false,
+//         cartQuantity:0
+//       }))
+//     }
+
+//     return res.status(200).json(responseData)
+    
+    
+
+    
+//   } catch (error) {
+//     console.error("getAllProducts Error", error);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Internal Server Error" });
+//   }
+// };
 
 export const productDetails = async (req: Request, res: Response) => {
   try {
