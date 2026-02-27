@@ -12,6 +12,9 @@ import paymentRoutes from './routes/payment.routes.js'
 import stripeRoutes from './routes/webhook.routes.js'
 import orderRoutes from './routes/order.routes.js'
 import userRoutes from './routes/user.routes.js'
+import logger from './utils/logger.js'
+import morgan from 'morgan'
+import { globalErrorHandler } from './middlewares/errorHandler.js'
 
 
 
@@ -30,6 +33,24 @@ app.use(hpp())
 app.use(cookieParser())
 app.use(express.json({limit:'10mb'}))
 app.use(express.urlencoded({extended:true}))
+
+app.use(
+  morgan((tokens, req, res) => {
+    return JSON.stringify({
+      method: tokens.method(req, res),
+      url: tokens.url(req, res),
+      status: Number(tokens.status(req, res)),
+      contentLength: tokens.res(req, res, "content-length"),
+      responseTime: Number(tokens["response-time"](req, res)),
+      ip: tokens["remote-addr"](req, res),
+      userAgent: tokens["user-agent"](req, res)
+    });
+  }, {
+    stream: {
+      write: (message) => logger.info(JSON.parse(message))
+    }
+  })
+);
 // routes
 app.use("/api/v1/auth",authRoutes)
 app.use("/api/v1/product",productRoutes)
@@ -39,6 +60,8 @@ app.use("/api/v1/admin",adminRoutes)
 app.use("/api/v1/payment",paymentRoutes)
 app.use("/api/v1/orders",orderRoutes)
 app.use("/api/v1/user",userRoutes)
+
+app.use(globalErrorHandler)
 
 
 export default app

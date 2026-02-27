@@ -8,6 +8,7 @@ import "./jobs/otpCleanup.js"
 import "./jobs/deleteExpiredRefreshToken.js"
 import "./jobs/coupon.js"
 import "./config/redis.js"
+import logger from './utils/logger.js'
 const PORT = process.env.PORT
 
 
@@ -15,4 +16,5 @@ connectDB()
 
 app.listen(PORT,()=>{
     console.log(`Server is running at port ${PORT}`)
+    logger.info(`Server is running at PORT ${PORT}`)
 })
