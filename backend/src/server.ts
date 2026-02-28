@@ -16,5 +16,5 @@ connectDB()
 
 app.listen(PORT,()=>{
     console.log(`Server is running at port ${PORT}`)
-    logger.info(`Server is running at PORT ${PORT}`)
+    // logger.info(`Server is running at PORT ${PORT}`)
 })

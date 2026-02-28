@@ -6,3 +6,56 @@
 {"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:10:24.260Z"}
 {"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:10:28.790Z"}
 {"level":"info","message":{"contentLength":"16105","ip":"::1","method":"GET","responseTime":6722.829,"status":200,"url":"/api/v1/product/all-products?page=1&limit=10","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-02-27T19:10:47.588Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:18:14.912Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:18:18.718Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:18:21.319Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:18:27.999Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:18:31.328Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:18:34.162Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:18:40.023Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:18:42.458Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:18:50.862Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:18:57.862Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:19:00.518Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:19:03.681Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:19:13.962Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:19:16.662Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:19:19.782Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:19:22.809Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:19:29.661Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:19:32.716Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:19:42.688Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:19:46.361Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:20:01.312Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:20:05.728Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:20:08.381Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:20:14.337Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:20:16.668Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:20:30.396Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:20:34.542Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:20:37.559Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:20:45.210Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:20:48.714Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:20:51.586Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:20:55.175Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:21:05.306Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:21:08.416Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:21:10.739Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:21:16.583Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:21:20.383Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:21:23.946Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:21:27.940Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:21:57.776Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-27T19:22:02.246Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-27T19:22:05.321Z"}
+{"ip":"::1","level":"warn","message":"Slow API Detected","method":"GET","responseTime":5555.435,"status":200,"timestamp":"2026-02-27T19:22:14.327Z","url":"/api/v1/product/all-products?page=1&limit=10","userAgent":"PostmanRuntime/7.51.1"}
+{"level":"info","message":{"contentLength":"16105","ip":"::1","method":"GET","responseTime":5555.435,"status":200,"url":"/api/v1/product/all-products?page=1&limit=10","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-02-27T19:22:14.329Z"}
+{"level":"info","message":"Server is running at PORT 5000","timestamp":"2026-02-28T13:03:19.355Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2026-02-28T13:03:21.769Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","responseTime":9.032,"status":200,"url":"/metrics","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-02-28T14:57:16.298Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","responseTime":6.478,"status":200,"url":"/metrics","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-02-28T15:04:08.522Z"}
+{"ip":"::1","level":"warn","message":"Slow API Detected","method":"POST","responseTime":3876.818,"status":200,"timestamp":"2026-02-28T15:06:48.163Z","url":"/api/v1/auth/login","userAgent":"PostmanRuntime/7.51.1"}
+{"level":"info","message":{"contentLength":"497","ip":"::1","method":"POST","responseTime":3876.818,"status":200,"url":"/api/v1/auth/login","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-02-28T15:06:48.175Z"}
+{"ip":"::1","level":"warn","message":"Slow API Detected","method":"POST","responseTime":2494.292,"status":200,"timestamp":"2026-02-28T15:07:12.640Z","url":"/api/v1/auth/login","userAgent":"PostmanRuntime/7.51.1"}
+{"level":"info","message":{"contentLength":"497","ip":"::1","method":"POST","responseTime":2494.292,"status":200,"url":"/api/v1/auth/login","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-02-28T15:07:12.644Z"}
+{"level":"info","message":{"ip":"::1","method":"GET","responseTime":4.565,"status":200,"url":"/metrics","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-02-28T15:09:26.750Z"}
