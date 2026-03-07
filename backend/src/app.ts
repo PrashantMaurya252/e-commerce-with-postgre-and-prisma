@@ -22,7 +22,7 @@ app.use("/api/stripe", stripeRoutes);
 app.use(helmet());
 app.use(
   cors({
-    origin: ["http://localhost:3000"],
+    origin: ["http://localhost:3000",process.env.DEPLOYED_BACKEND_LINK as string],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
