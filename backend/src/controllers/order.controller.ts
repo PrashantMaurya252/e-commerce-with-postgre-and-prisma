@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
+import { AuthRequest } from "../middlewares/auth.js";
 
 
 
-export const allOrders = async(req:Request,res:Response)=>{
+export const allOrders = async(req:AuthRequest,res:Response)=>{
     try {
         const userId = req.user?.userId
         if(!userId){

@@ -1,7 +1,8 @@
 import { Request, Response } from "express"
 import { prisma } from "../config/prisma.js"
+import { AuthRequest } from "../middlewares/auth.js"
 
-export const getProfile = async(req:Request,res:Response)=>{
+export const getProfile = async(req:AuthRequest,res:Response)=>{
   try {
     const {userId} = req.params
     if(!userId){
@@ -29,7 +30,7 @@ export const getProfile = async(req:Request,res:Response)=>{
   }
 }
 
-export const addAddress = async(req:Request,res:Response)=>{
+export const addAddress = async(req:AuthRequest,res:Response)=>{
     try {
         const userId = req.user?.userId
         if(!userId){
@@ -56,7 +57,7 @@ export const addAddress = async(req:Request,res:Response)=>{
     }
 }
 
-export const editAddress = async(req:Request,res:Response)=>{
+export const editAddress = async(req:AuthRequest,res:Response)=>{
     try {
         const userId = req.user?.userId
         const {addressId} = req.params
@@ -82,7 +83,7 @@ export const editAddress = async(req:Request,res:Response)=>{
     }
 }
 
-export const getAllAddresses = async(req:Request,res:Response)=>{
+export const getAllAddresses = async(req:AuthRequest,res:Response)=>{
     try {
         const userId = req.user?.userId
         if(!userId){
