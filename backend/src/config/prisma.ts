@@ -9,5 +9,5 @@ const adapter = new PrismaPg({ connectionString })
 const prisma = new PrismaClient({ adapter })
 
 
-
+// Hello 
 export { prisma }
