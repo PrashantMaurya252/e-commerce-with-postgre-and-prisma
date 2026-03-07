@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from 'express'
 import logger from '../utils/logger.js'
+import { AuthRequest } from './auth.js'
 
 
 export const globalErrorHandler =(
     err:any,
-    req:Request,
+    req:AuthRequest,
     res:Response,
     next:NextFunction
 )=>{

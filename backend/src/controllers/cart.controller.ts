@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
 import { cartTotal } from "../utils/helper.js";
+import { AuthRequest } from "../middlewares/auth.js";
 
-export const applyCoupon = async (req: Request, res: Response) => {
+export const applyCoupon = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
     const { code } = req.body;
@@ -278,7 +279,7 @@ export const applyCoupon = async (req: Request, res: Response) => {
 //   }
 // };
 
-export const checkout = async (req: Request, res: Response) => {
+export const checkout = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.userId
   const { couponCode } = req.body
 
@@ -462,7 +463,7 @@ export const checkout = async (req: Request, res: Response) => {
 }
 
 
-export const cartItems = async (req: Request, res: Response) => {
+export const cartItems = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
 
@@ -494,7 +495,7 @@ export const cartItems = async (req: Request, res: Response) => {
   }
 };
 
-export const addIntoCart = async (req: Request, res: Response) => {
+export const addIntoCart = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
     const { productId } = req.params;
@@ -569,7 +570,7 @@ export const addIntoCart = async (req: Request, res: Response) => {
   }
 };
 
-export const decreaseFromCart = async (req: Request, res: Response) => {
+export const decreaseFromCart = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
     const { productId } = req.params;
@@ -640,7 +641,7 @@ export const decreaseFromCart = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteCartItem = async (req: Request, res: Response) => {
+export const deleteCartItem = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
     const { productId } = req.params;
@@ -701,7 +702,7 @@ export const deleteCartItem = async (req: Request, res: Response) => {
   }
 };
 
-export const getCartItems = async (req: Request, res: Response) => {
+export const getCartItems = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
     if (!userId) {
@@ -735,7 +736,7 @@ export const getCartItems = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllCoupons = async (req: Request, res: Response) => {
+export const getAllCoupons = async (req: AuthRequest, res: Response) => {
   try {
     const coupons = await prisma.coupon.findMany({ where: { isActive: true } });
     if (!coupons) {

@@ -3,8 +3,9 @@ import { prisma } from "../config/prisma.js";
 import { success } from "zod";
 import {v2 as cloudinary} from 'cloudinary'
 import { uploadToCloudinary } from "../utils/helper.js";
+import { AuthRequest } from "../middlewares/auth.js";
 
-export const deleteFileAPI = async(req:Request,res:Response)=>{
+export const deleteFileAPI = async(req:AuthRequest,res:Response)=>{
      try {
         const {fileId} = req.params
 
@@ -27,7 +28,7 @@ export const deleteFileAPI = async(req:Request,res:Response)=>{
 
 
 
-export const updateFile = async(req:Request,res:Response)=>{
+export const updateFile = async(req:AuthRequest,res:Response)=>{
     try {
         const {fileId} = req.params
         if(!req.file){

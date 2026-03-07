@@ -6,6 +6,8 @@ import { Category, FilePurpose, FileType } from "@prisma/client";
 import { getRandomImagesFromFolder } from "../utils/localImageUploader.js";
 import redis from '../config/redis.js'
 import path from "path";
+import { AuthRequest } from "../middlewares/auth.js";
+
 
 
 const productSchema = z.object({
@@ -16,7 +18,7 @@ const productSchema = z.object({
   itemLeft: z.string().transform((val) => Number(val)),
 });
 
-export const addProduct = async (req: Request, res: Response) => {
+export const addProduct = async (req: AuthRequest, res: Response) => {
   try {
     const parsed = productSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -68,7 +70,7 @@ const updateProductSchema = z
     itemLeft: z.string().transform((val) => Number(val)),
   })
   .partial();
-export const updateProduct = async (req: Request, res: Response) => {
+export const updateProduct = async (req: AuthRequest, res: Response) => {
   try {
     console.log("body in update product", req.body);
     const parsed = updateProductSchema.safeParse(req.body);
@@ -116,7 +118,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 };
 
 
-export const productSeeder = async (req: Request, res: Response) => {
+export const productSeeder = async (req: AuthRequest, res: Response) => {
   try {
     const categoryFolders = {
   ELECTRONICS: path.join(process.cwd(), "public/electronics"),
@@ -186,7 +188,7 @@ export const productSeeder = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteAllProducts = async (req: Request, res: Response) => {
+export const deleteAllProducts = async (req: AuthRequest, res: Response) => {
   try {
     const products = await prisma.product.deleteMany();
     return res
@@ -200,7 +202,7 @@ export const deleteAllProducts = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllProducts = async (req: Request, res: Response) => {
+export const getAllProducts = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId
     const page = Number(req.query.page) || 1;
@@ -285,7 +287,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
   }
 };
 
-// export const getAllProducts = async (req: Request, res: Response) => {
+// export const getAllProducts = async (req: AuthRequest, res: Response) => {
 //   try {
 //     const userId = req.user?.userId
 //     const page = Number(req.query.page) || 1;
@@ -387,7 +389,7 @@ export const getAllProducts = async (req: Request, res: Response) => {
 //   }
 // };
 
-export const productDetails = async (req: Request, res: Response) => {
+export const productDetails = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId
     const { productId } = req.params;
@@ -428,7 +430,7 @@ export const productDetails = async (req: Request, res: Response) => {
 };
 
 
-export const submitProductReview = async(req:Request,res:Response)=>{
+export const submitProductReview = async(req:AuthRequest,res:Response)=>{
   try {
     const userId = req.user?.userId
     if(!userId){

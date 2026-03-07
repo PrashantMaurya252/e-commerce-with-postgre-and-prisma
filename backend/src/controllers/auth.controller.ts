@@ -160,7 +160,7 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const sendEmailVerificationOtp = async (req: Request, res: Response) => {
+export const sendEmailVerificationOtp = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
     const { email } = req.body;
