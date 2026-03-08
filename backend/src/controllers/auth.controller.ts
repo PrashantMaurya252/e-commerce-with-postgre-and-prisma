@@ -7,7 +7,7 @@ import { generateOtp, sendOtpMail } from "../utils/mailer.js";
 import jwt from "jsonwebtoken";
 import { AuthRequest } from "../middlewares/auth.js";
 import { OAuth2Client } from "google-auth-library";
-import { emailQueues } from "../queues/email.queues.js";
+// import { emailQueues } from "../queues/email.queues.js";
 
 const signupSchema = z.object({
   email: z.string(),
@@ -48,18 +48,18 @@ export const signUp = async (req: Request, res: Response) => {
       },
     });
 
-    await emailQueues.add("Send Welcome Email",{
-      to:email,
-      subject:"Welcome to our platform",
-      html:"<h1>Welcome to our platform</h1>"
-    },{
-      attempts:3,
-      backoff:{
-        type:"exponential",
-        delay:5000
-      },
-      removeOnComplete:true
-    })
+    // await emailQueues.add("Send Welcome Email",{
+    //   to:email,
+    //   subject:"Welcome to our platform",
+    //   html:"<h1>Welcome to our platform</h1>"
+    // },{
+    //   attempts:3,
+    //   backoff:{
+    //     type:"exponential",
+    //     delay:5000
+    //   },
+    //   removeOnComplete:true
+    // })
 
     res
       .status(201)

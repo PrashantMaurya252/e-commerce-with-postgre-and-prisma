@@ -4,7 +4,7 @@ import { prisma } from "../config/prisma.js";
 import { uploadToCloudinary } from "../utils/helper.js";
 import { Category, FilePurpose, FileType } from "@prisma/client";
 import { getRandomImagesFromFolder } from "../utils/localImageUploader.js";
-import redis from '../config/redis.js'
+// import redis from '../config/redis.js'
 import path from "path";
 import { AuthRequest } from "../middlewares/auth.js";
 
@@ -221,8 +221,8 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
 
     const cacheKey = `products:page=${page}:limit=${limit}:cat=${category || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}`
 
-    let responseData
-    const cached = await redis.get(cacheKey)
+    // let responseData
+    // const cached = await redis.get(cacheKey)
     let where: any = {};
 
     if (category) {

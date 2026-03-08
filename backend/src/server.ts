@@ -7,7 +7,7 @@ import "./config/cloudinary.js"
 import "./jobs/otpCleanup.js"
 import "./jobs/deleteExpiredRefreshToken.js"
 import "./jobs/coupon.js"
-import "./config/redis.js"
+// import "./config/redis.js"
 import logger from './utils/logger.js'
 const PORT = process.env.PORT
 
