@@ -142,7 +142,7 @@ export const login = async (req: Request, res: Response) => {
     res.cookie("refresh-token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
     return res.status(200).json({
       success: true,
@@ -385,7 +385,7 @@ export const logout = async (req: AuthRequest, res: Response) => {
     res.clearCookie("refresh-token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     return res
@@ -462,7 +462,7 @@ export const googleAuth = async (req: Request, res: Response) => {
     res.cookie("refresh-token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     return res
