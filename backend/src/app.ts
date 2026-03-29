@@ -23,7 +23,7 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: ["http://localhost:3000",process.env.DEPLOYED_FRONTEND_LINK as string,"https://desi-market.vercel.app"],
+    origin: ["http://localhost:3000",process.env.DEPLOYED_FRONTEND_LINK as string,"https://e-commerce-with-postgre-and-prisma.vercel.app"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
