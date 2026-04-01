@@ -107,7 +107,7 @@ app.get("/metrics",async(req:Request,res:Response)=>{
 })
 
 app.get("/health",(req,res)=>{
-  res.status(200).send("OK")
+  res.status(200).send("OKK")
 })
 
 app.use(globalErrorHandler);
