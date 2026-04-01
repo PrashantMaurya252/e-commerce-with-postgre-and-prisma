@@ -23,7 +23,7 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: ["http://localhost:3000",process.env.DEPLOYED_FRONTEND_LINK as string,"https://desi-market.vercel.app"],
+    origin: ["http://localhost:3000",process.env.DEPLOYED_FRONTEND_LINK as string,"https://e-commerce-with-postgre-and-prisma.vercel.app"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -104,6 +104,10 @@ app.use("/api/v1/user", userRoutes);
 app.get("/metrics",async(req:Request,res:Response)=>{
   res.set("Content-Type",register.contentType)
   res.end(await register.metrics())
+})
+
+app.get("/health",(req,res)=>{
+  res.status(200).send("OKK")
 })
 
 app.use(globalErrorHandler);

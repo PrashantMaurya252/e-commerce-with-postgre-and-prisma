@@ -1,0 +1,101 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env: 
+      DATABASE_URL: ${{ secrets.DATABASE_URL}}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache : "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Create .env file
+        run: |
+          echo "DATABASE_URL=${{secrets.DATABASE_URL}}" > backend/.env
+
+      - name: Debug ENV
+        run: echo "DATABASE_URL is set"
+        env: 
+          DATABASE_URL: ${{ secrets.DATABASE_URL}}
+
+
+      
+      - name: Generate Prisma Client
+        run: |
+          cd backend
+          npx prisma generate
+        env: 
+          DATABASE_URL: ${{ secrets.DATABASE_URL}}
+
+      - name: Build backend
+        run: |
+          cd backend
+          npm run build
+        env: 
+          DATABASE_URL: ${{ secrets.DATABASE_URL}}
+
+    timeout-minutes: 10
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Frontend Build
+        run: |
+          cd frontend
+          npm run build
+    
+    timeout-minutes: 10
+
+  deploy: 
+    if: github.ref == 'refs/heads/main'
+    needs: [build,frontend]
+    runs-on: ubuntu-latest
+  
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trigger Render Deploy
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      
+      - name: Wait for deployment
+        run: sleep 40
+
+      - name: Health Check
+        run: curl -f https://e-commerce-with-postgre-and-prisma-4.onrender.com/health || exit 1
+    
+    timeout-minutes: 10
