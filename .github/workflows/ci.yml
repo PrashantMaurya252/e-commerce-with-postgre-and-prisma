@@ -27,6 +27,10 @@ jobs:
           cd backend
           npm ci
 
+      - name: Create .env file
+        run: |
+          echo "DATABASE_URL=${{secrets.DATABASE_URL}}" > backend/.env
+
       - name: Debug ENV
         run: echo "DATABASE_URL is set"
         env: 
