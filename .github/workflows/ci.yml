@@ -1,0 +1,81 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache : "npm"
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+      
+      - name: Generate Prisma Client
+        run: |
+          cd backend
+          npx prisma generate
+
+      - name: Build backend
+        run: |
+          cd backend
+          npm run build
+
+    timeout-minutes: 10
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Frontend Build
+        run: |
+          cd frontend
+          npm run build
+    
+    timeout-minutes: 10
+
+  deploy: 
+    if: github.ref == 'refs/heads/main'
+    needs: [build,frontend]
+    runs-on: ubuntu-latest
+  
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trigger Render Deploy
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      
+      - name: Wait for deployment
+        run: sleep 40
+
+      - name: Health Check
+        run: curl -f https://e-commerce-with-postgre-and-prisma-4.onrender.com/health || exit 1
+    
+    timeout-minutes: 10
