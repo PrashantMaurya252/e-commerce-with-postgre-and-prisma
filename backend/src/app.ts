@@ -106,6 +106,10 @@ app.get("/metrics",async(req:Request,res:Response)=>{
   res.end(await register.metrics())
 })
 
+app.get("/health",(req,res)=>{
+  res.status(200).send("OK")
+})
+
 app.use(globalErrorHandler);
 
 export default app;
