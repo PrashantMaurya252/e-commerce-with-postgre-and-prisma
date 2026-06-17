@@ -112,8 +112,16 @@ model Product{
   itemLeft            Int                    @default(0)
   cartItems           CartItem[]
   disabled            Boolean                @default(false)
+  embedding           ProductEmbedding?
   @@index([title])
+}
 
+model ProductEmbedding{
+  id                  String           @id @default(uuid())
+  productId           String           @unique
+  product             Product          @relation(fields:[productId],references:[id],onDelete:Cascade)
+
+  @@map("product_embeddings")
 }
 
 
