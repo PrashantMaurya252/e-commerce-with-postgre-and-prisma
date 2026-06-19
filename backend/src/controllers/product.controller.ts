@@ -7,7 +7,8 @@ import { getRandomImagesFromFolder } from "../utils/localImageUploader.js";
 // import redis from '../config/redis.js'
 import path from "path";
 import { AuthRequest } from "../middlewares/auth.js";
-import { generateEmbedding } from "../utils/gemeni-helper.js";
+import { generateEmbedding, semanticProductSearch } from "../utils/gemeni-helper.js";
+import { tryCatch } from "bullmq";
 
 
 
@@ -544,6 +545,20 @@ export const submitProductReview = async(req:AuthRequest,res:Response)=>{
     console.error("Error in Product Reviews")
     return res.status(500).json({success:false,message:"Internal Server Error"})
   }
+}
+
+export const productSearch=async(req:Request,res:Response)=>{
+try {
+  const {query} = req.body
+  if(!query){
+    return res.status(404).json({success:false,message:"Query is required"})
+  }
+  const products = await semanticProductSearch(query)
+  return res.status(200).json({success:true,message:"Product Search",products})
+} catch (error:any) {
+  console.log("Product Search Error",error)
+  return res.status(500).json({success:false,message:"Internal Server Error"})
+}
 }
 
 

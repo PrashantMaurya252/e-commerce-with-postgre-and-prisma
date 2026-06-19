@@ -116,14 +116,16 @@ model Product{
   @@index([title])
 }
 
-model ProductEmbedding{
-  id                  String           @id @default(uuid())
-  productId           String           @unique
-  product             Product          @relation(fields:[productId],references:[id],onDelete:Cascade)
+model ProductEmbedding {
+  id        String  @id @default(uuid())
+
+  productId String  @unique @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  embedding Unsupported("vector(768)")
 
   @@map("product_embeddings")
 }
-
 
 model Address{
   id                  String             @id @default(uuid())
@@ -268,4 +270,28 @@ model Review{
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
   @@unique([productId,userId])
+}
+
+model Faq{
+  id                       String                 @id @default(uuid())
+  questions                String
+  answer                   String                 @db.Text
+  category                 String?
+  isActive                 Boolean                @default(true)
+  embedding                FaqEmbedding?
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+
+   @@map("Faq")
+}
+
+model FaqEmbedding {
+  id        String @id @default(uuid())
+
+  faqId     String @unique @map("faid")
+  faq       Faq    @relation(fields: [faqId], references: [id], onDelete: Cascade)
+
+  embedding Unsupported("vector(768)")
+
+  @@map("faq_embeddings")
 }

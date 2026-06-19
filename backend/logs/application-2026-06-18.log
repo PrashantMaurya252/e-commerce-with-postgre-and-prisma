@@ -11,3 +11,6 @@
 {"level":"info","message":{"contentLength":"51","ip":"::1","method":"POST","responseTime":10885.06,"status":500,"url":"/api/v1/product/add-product","userAgent":"PostmanRuntime/7.54.0"},"timestamp":"2026-06-17T19:14:17.257Z"}
 {"ip":"::1","level":"warn","message":"Slow API Detected","method":"POST","responseTime":8217.395,"status":201,"timestamp":"2026-06-17T19:16:52.030Z","url":"/api/v1/product/add-product","userAgent":"PostmanRuntime/7.54.0"}
 {"level":"info","message":{"contentLength":"765","ip":"::1","method":"POST","responseTime":8217.395,"status":201,"url":"/api/v1/product/add-product","userAgent":"PostmanRuntime/7.54.0"},"timestamp":"2026-06-17T19:16:52.034Z"}
+{"level":"info","message":{"contentLength":168,"ip":"::1","method":"GET","responseTime":4.713,"status":404,"url":"/api/v1/product/product-search","userAgent":"PostmanRuntime/7.54.0"},"timestamp":"2026-06-18T18:27:17.939Z"}
+{"ip":"::1","level":"warn","message":"Slow API Detected","method":"POST","responseTime":4117.802,"status":500,"timestamp":"2026-06-18T18:27:27.775Z","url":"/api/v1/product/product-search","userAgent":"PostmanRuntime/7.54.0"}
+{"level":"info","message":{"contentLength":"51","ip":"::1","method":"POST","responseTime":4117.802,"status":500,"url":"/api/v1/product/product-search","userAgent":"PostmanRuntime/7.54.0"},"timestamp":"2026-06-18T18:27:27.776Z"}
