@@ -274,7 +274,7 @@ model Review{
 
 model Faq{
   id                       String                 @id @default(uuid())
-  questions                String
+  question                String
   answer                   String                 @db.Text
   category                 String?
   isActive                 Boolean                @default(true)

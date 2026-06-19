@@ -40,53 +40,7 @@ export const addProduct = async (req: AuthRequest, res: Response) => {
       }
     }
     const embedding = await generateEmbedding(`${title}\n${description}`)
-    // const product = await prisma.product.create({
-    //   data: {
-    //     title,
-    //     description,
-    //     price,
-    //     category,
-    //     itemLeft,
-    //     files: { create: uploadedFiles },
-    //   },
-    //   include: { files: true },
-    // });
-
-  //   await tx.$executeRaw`
-  //   INSERT INTO product_embeddings
-  //   (id, product_id, embedding)
-  //   VALUES (
-  //     ${crypto.randomUUID()},
-  //     ${createdProduct.id},
-  //     ${JSON.stringify(embedding)}::vector
-  //   )
-  // `;
-
-//   const product = await prisma.$transaction(async (tx) => {
-//   const createdProduct = await tx.product.create({
-//     data: {
-//       title,
-//       description,
-//       price,
-//       category,
-//       itemLeft,
-//       files: { create: uploadedFiles },
-//     },
-//     include: { files: true },
-//   });
-
-//   await tx.$executeRaw`
-//     INSERT INTO product_embeddings
-//     (id, product_id, embedding)
-//     VALUES (
-//       ${crypto.randomUUID()},
-//       ${createdProduct.id},
-//       ${JSON.stringify(embedding)}::vector
-//     )
-//   `;
-
-//   return createdProduct;
-// });
+    
 
 const product = await prisma.product.create({
   data: {
