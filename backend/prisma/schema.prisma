@@ -78,6 +78,8 @@ model User{
   refreshTokens      RefreshToken[]
   reviews             Review[]
   chats              Chat[]
+  isActive           Boolean            @default(true)
+  isDeleted          Boolean            @default(false)
   isVerified        Boolean             @default(false)
   
 }
@@ -124,6 +126,8 @@ model Product{
   orderItems          OrderItem[]
   itemLeft            Int                    @default(0)
   cartItems           CartItem[]
+  isActive           Boolean            @default(true)
+  isDeleted          Boolean            @default(false)
   disabled            Boolean                @default(false)
   embedding           ProductEmbedding?
   @@index([title])
@@ -160,6 +164,7 @@ model Address{
   pincode             Int
   city                String
   userId              String
+  isDefault           Boolean           @default(false)
   user                User              @relation(fields:[userId],references:[id],onDelete:Cascade)
   orders              Order[]      
 }
@@ -259,6 +264,7 @@ model Coupon{
   minCartValue           Int                      @default(0)
   expiresAt              DateTime
   isActive               Boolean                  @default(true)
+  isDeleted              Boolean                  @default(false)
   createdAt              DateTime                 @default(now())
   couponUsages                 CouponUsage[]
 }
