@@ -9,7 +9,7 @@ export const createFaq = async(req:Request,res:Response)=>{
         const {question,answer} = req.body
 
         if(!question || !answer){
-            return res.status(404).json({"question and answer is required"})
+            return res.status(400).json({ success: false, message: "question and answer is required" })
         }
         const faqEmbedding = await generateEmbedding(`${question}\n${answer}`)
 
@@ -19,7 +19,7 @@ export const createFaq = async(req:Request,res:Response)=>{
 
         await prisma.$executeRaw`
         INSERT INTO faq_embeddings
-        (id faq_id embedding)
+        (id, faq_id, embedding)
         VALUES(
         ${crypto.randomUUID()},
         ${faq.id},

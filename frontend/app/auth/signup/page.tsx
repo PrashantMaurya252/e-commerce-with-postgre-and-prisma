@@ -9,9 +9,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { googleLogin, signupAPI } from "@/utils/api";
 import { GoogleLogin } from "@react-oauth/google";
-import { useDispatch } from "react-redux";
 import { useAppDispatch } from "@/redux/hooks";
 import { login } from "@/redux/slices/authSlice";
+import { ShoppingBag } from "lucide-react";
 
 export default function SignupPage() {
   const dispatch = useAppDispatch()
@@ -109,8 +109,6 @@ export default function SignupPage() {
                 login({
                   user: response.data.userData,
                   accessToken: response.data.accessToken,
-              
-                  
                 })
               );
               if(response.data.userData.isAdmin){
@@ -132,29 +130,41 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 px-4">
-      <Card className="w-full max-w-md shadow-xl rounded-2xl">
-        <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl font-bold text-emerald-600">
-            Desi Market
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Create your account
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden px-4 py-8">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse"></div>
+      <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70"></div>
+
+      <Card className="w-full max-w-md glass shadow-2xl rounded-3xl border border-white/50 relative z-10 p-2 sm:p-4">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center mb-2">
+            <div className="bg-primary text-white p-3 rounded-2xl shadow-lg shadow-primary/30">
+              <ShoppingBag size={32} strokeWidth={2.5} />
+            </div>
+          </div>
+          <div>
+            <CardTitle className="text-3xl font-black text-slate-900 tracking-tight">
+              Create Account
+            </CardTitle>
+            <p className="text-sm text-slate-500 mt-1 font-medium">
+              Join DesiMarket today
+            </p>
+          </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
           {/* ================= Full Name ================= */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Full Name</label>
+            <label className="text-sm font-bold text-slate-700">Full Name</label>
             <Input
               name="username"
               value={formData.username}
               onChange={handleChange}
               placeholder="Your name"
+              className="bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all"
             />
             {formError.username && (
-              <span className="text-sm text-red-500">
+              <span className="text-xs font-medium text-rose-500 px-1 mt-1 block">
                 {formError.username}
               </span>
             )}
@@ -162,16 +172,17 @@ export default function SignupPage() {
 
           {/* ================= Email ================= */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
+            <label className="text-sm font-bold text-slate-700">Email Address</label>
             <Input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               placeholder="you@example.com"
+              className="bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all"
             />
             {formError.email && (
-              <span className="text-sm text-red-500">
+              <span className="text-xs font-medium text-rose-500 px-1 mt-1 block">
                 {formError.email}
               </span>
             )}
@@ -179,16 +190,17 @@ export default function SignupPage() {
 
           {/* ================= Password ================= */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Password</label>
+            <label className="text-sm font-bold text-slate-700">Password</label>
             <Input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Create password"
+              placeholder="Create strong password"
+              className="bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all"
             />
             {formError.password && (
-              <span className="text-sm text-red-500">
+              <span className="text-xs font-medium text-rose-500 px-1 mt-1 block">
                 {formError.password}
               </span>
             )}
@@ -197,32 +209,36 @@ export default function SignupPage() {
           {/* ================= Signup Button ================= */}
           <Button
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700"
+            className="w-full bg-primary hover:bg-primary-hover text-white h-12 rounded-xl font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98] mt-2"
             onClick={handleSignup}
           >
-            {loading ? "Loading..." : "Sign Up"}
+            {loading ? "Creating Account..." : "Sign Up"}
           </Button>
 
           {/* ================= Divider ================= */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-px bg-gray-300" />
-            <span className="text-sm text-gray-500">OR</span>
-            <div className="flex-1 h-px bg-gray-300" />
+          <div className="flex items-center gap-4 py-2">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Or continue with</span>
+            <div className="flex-1 h-px bg-slate-200" />
           </div>
 
           {/* ================= Google Login ================= */}
-          <div className="flex justify-center">
+          <div className="flex justify-center w-full [&>div]:w-full [&>div>div]:w-full [&_iframe]:!w-full shadow-sm hover:shadow-md transition-shadow rounded-xl overflow-hidden">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => toast.error("Google Login Failed")}
+              onError={() => toast.error("Google Signup Failed")}
+              theme="outline"
+              size="large"
+              shape="rectangular"
+              text="continue_with"
             />
           </div>
 
           {/* ================= Login Redirect ================= */}
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-sm text-slate-500 font-medium pt-2">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-emerald-600 hover:underline">
-              Login
+            <Link href="/auth/login" className="text-primary hover:text-primary-hover font-bold hover:underline transition-colors">
+              Login here
             </Link>
           </p>
         </CardContent>

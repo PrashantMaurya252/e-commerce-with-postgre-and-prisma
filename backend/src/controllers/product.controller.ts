@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { includes, z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { uploadToCloudinary } from "../utils/helper.js";
-import { Category, FilePurpose, FileType } from "@prisma/client";
+import { FilePurpose, FileType } from "@prisma/client";
 import { getRandomImagesFromFolder } from "../utils/localImageUploader.js";
 // import redis from '../config/redis.js'
 import path from "path";
@@ -16,7 +16,7 @@ const productSchema = z.object({
   title: z.string(),
   description: z.string(),
   price: z.string().transform((val) => Number(val)),
-  category: z.enum(["ELECTRONICS", "CLOTHES", "DAILY_USAGE"]),
+  categoryId: z.string(),
   itemLeft: z.string().transform((val) => Number(val)),
 });
 
@@ -26,7 +26,7 @@ export const addProduct = async (req: AuthRequest, res: Response) => {
     if (!parsed.success) {
       return res.status(400).json({ success: false, message: parsed.error });
     }
-    const { title, description, price, category, itemLeft } = parsed.data;
+    const { title, description, price, categoryId, itemLeft } = parsed.data;
     let uploadedFiles: any[] = [];
     if (req.files && Array.isArray(req.files)) {
       for (const file of req.files) {
@@ -47,7 +47,7 @@ const product = await prisma.product.create({
     title,
     description,
     price,
-    category,
+    categoryId,
     itemLeft,
     files: { create: uploadedFiles },
   },
@@ -81,7 +81,7 @@ const updateProductSchema = z
     title: z.string(),
     description: z.string(),
     price: z.string().transform((val) => Number(val)),
-    category: z.enum(["ELECTRONICS", "CLOTHES", "DAILY_USAGE"]),
+    categoryId: z.string(),
     itemLeft: z.string().transform((val) => Number(val)),
   })
   .partial();
@@ -93,7 +93,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: parsed.error });
     }
 
-    const { title, description, price, category, itemLeft } = parsed.data;
+    const { title, description, price, categoryId, itemLeft } = parsed.data;
     const { productId } = req.params;
 
     const product = await prisma.product.findUnique({
@@ -144,24 +144,34 @@ export const productSeeder = async (req: AuthRequest, res: Response) => {
     const rand = (min: number, max: number) =>
       Math.floor(Math.random() * (max - min + 1)) + min;
 
-    const categories: Category[] = [
+    const defaultCategoryNames = [
       "ELECTRONICS",
       "CLOTHES",
       "DAILY_USAGE",
     ];
+    
+    const dbCategories = [];
+    for (const name of defaultCategoryNames) {
+      let cat = await prisma.category.findUnique({ where: { name } });
+      if (!cat) {
+        cat = await prisma.category.create({ data: { name, label: name } });
+      }
+      dbCategories.push(cat);
+    }
 
     for (let i = 1; i <= 40; i++) {
-      const category = categories[rand(0, categories.length - 1)];
+      const categoryObj = dbCategories[rand(0, dbCategories.length - 1)];
+      const categoryName = categoryObj.name as keyof typeof categoryFolders;
 
       const product = await prisma.product.create({
         data: {
-          title: `Sample ${category} Product ${i}`,
+          title: `Sample ${categoryName} Product ${i}`,
           description:
             "High quality product with durable material and modern design.",
           price: rand(300, 3000),
           offerPrice: rand(200, 2500),
           isOfferActive: Math.random() > 0.5,
-          category,
+          categoryId: categoryObj.id,
           itemLeft: rand(10, 80),
           disabled: false,
         },
@@ -169,7 +179,7 @@ export const productSeeder = async (req: AuthRequest, res: Response) => {
 
       // 🔥 Pick random images from local folder
       const images = getRandomImagesFromFolder(
-        categoryFolders[category],
+        categoryFolders[categoryName],
         3
       );
 
@@ -223,7 +233,7 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    const category = req.query.category as Category | undefined;
+    const categoryId = req.query.category as string | undefined;
     const minPrice = req.query.minPrice
       ? Number(req.query.minPrice)
       : undefined;
@@ -234,14 +244,14 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
     const search = req.query.search as string | undefined;
     const skip = (page - 1) * limit;
 
-    const cacheKey = `products:page=${page}:limit=${limit}:cat=${category || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}`
+    const cacheKey = `products:page=${page}:limit=${limit}:cat=${categoryId || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}`
 
     // let responseData
     // const cached = await redis.get(cacheKey)
     let where: any = {};
 
-    if (category) {
-      where.category = category;
+    if (categoryId) {
+      where.categoryId = categoryId;
     }
 
     if (minPrice || maxPrice) {

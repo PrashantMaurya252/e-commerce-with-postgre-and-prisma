@@ -6,11 +6,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
   transactionTimeout = 10000
 }
 
 datasource db {
   provider = "postgresql"
+  extensions = [vector]
 }
 
 enum OtpType{
@@ -22,11 +24,7 @@ enum AuthProvider{
   LOCAL
   GOOGLE
 }
-enum Category{
-  ELECTRONICS
-  CLOTHES
-  DAILY_USAGE
-}
+
 
 enum OrderStatus{
   PENDING
@@ -79,6 +77,7 @@ model User{
   couponUsages       CouponUsage[]
   refreshTokens      RefreshToken[]
   reviews             Review[]
+  chats              Chat[]
   isVerified        Boolean             @default(false)
   
 }
@@ -95,6 +94,19 @@ model Otp{
   @@index([email,type])
 }
 
+model Category{
+  id                 String             @id @default(uuid())
+  name               String                @unique
+  label              String              @unique
+  products           Product[]
+  isActive           Boolean               @default(true)
+  isDeleted          Boolean               @default(false)
+  deletedAt          DateTime?
+  file               File?              
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+}
+
 model Product{
   id                  String            @id @default(uuid())
   title               String
@@ -102,10 +114,11 @@ model Product{
   price               Int
   offerPrice          Int?
   isOfferActive       Boolean            @default(false)
-  category            Category
   files               File[]
   reviews             Review[]
   averageRating       Float             @default(0)
+  categoryId          String
+  category            Category          @relation(fields:[categoryId],references:[id],onDelete:Restrict)
   totalReviews        Int               @default(0)
   createdAt           DateTime               @default(now())
   orderItems          OrderItem[]
@@ -116,16 +129,26 @@ model Product{
   @@index([title])
 }
 
+
+
 model ProductEmbedding {
   id        String  @id @default(uuid())
 
   productId String  @unique @map("product_id")
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  content   String  @db.Text
+  metaData  Json?
 
   embedding Unsupported("vector(768)")
 
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+
   @@map("product_embeddings")
 }
+
+
 
 model Address{
   id                  String             @id @default(uuid())
@@ -177,9 +200,11 @@ model File{
   publicId            String
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
-  userId              String?
-  productId           String?
-  orderId             String?
+  userId              String?             @unique
+  productId           String?             
+  orderId             String?             
+  categoryId          String?             @unique
+  category            Category?             @relation(fields:[categoryId],references:[id])
   product             Product?             @relation(fields:[productId],references:[id],onDelete:Cascade)
   user                User?                @relation(fields:[userId],references:[id],onDelete:SetNull)
   order               Order?               @relation(fields:[orderId],references:[id],onDelete:Cascade)
@@ -276,7 +301,6 @@ model Faq{
   id                       String                 @id @default(uuid())
   question                String
   answer                   String                 @db.Text
-  category                 String?
   isActive                 Boolean                @default(true)
   embedding                FaqEmbedding?
   createdAt                DateTime               @default(now())
@@ -290,8 +314,30 @@ model FaqEmbedding {
 
   faqId     String @unique @map("faid")
   faq       Faq    @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  content   String @db.Text
+  metaData  Json?
 
   embedding Unsupported("vector(768)")
+  updatedAt    DateTime    @updatedAt
 
   @@map("faq_embeddings")
+}
+
+model Chat{
+  id         String      @id @default(uuid())
+  userId     String
+  title      String?
+  messages   ChatMessage[]
+  user       User        @relation(fields:[userId],references:[id],onDelete:Cascade)
+  createdAt  DateTime    @default(now())
+}
+
+
+model ChatMessage{
+  id           String     @id @default(uuid())
+  role         String
+  content      String     @db.Text
+  chatId       String
+  chat         Chat       @relation(fields:[chatId],references:[id],onDelete:Cascade)
+  createdAt    DateTime  @default(now())
 }

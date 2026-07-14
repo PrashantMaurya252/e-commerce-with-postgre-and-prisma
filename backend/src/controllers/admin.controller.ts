@@ -1,6 +1,7 @@
 import { Request,Response } from "express";
 import z from "zod";
 import { prisma } from "../config/prisma.js";
+import { v2 as cloudinary } from "cloudinary";
 
 
 
@@ -131,3 +132,53 @@ export const getAllCoupon = async(req:Request,res:Response)=>{
         return res.status(500).json({success:false,message:"Internal Server Error"})
     }
 }
+
+export const wipeAllData = async (req: Request, res: Response) => {
+  try {
+    // 1. Delete all files from Cloudinary
+    const files = await prisma.file.findMany();
+    if (files.length > 0) {
+      for (const file of files) {
+        if (file.publicId) {
+          await cloudinary.uploader.destroy(file.publicId, {
+            resource_type: file.type === "VIDEO" ? "video" : file.type === "IMAGE" ? "image" : "raw"
+          }).catch((err) => {
+            console.error(`Failed to delete file ${file.publicId} from cloudinary:`, err);
+          });
+        }
+      }
+    }
+
+    // 2. Perform Database wipe in transaction to respect relations and constraints
+    await prisma.$transaction([
+      prisma.cartItem.deleteMany(),
+      prisma.cart.deleteMany(),
+      prisma.orderItem.deleteMany(),
+      prisma.payment.deleteMany(),
+      prisma.order.deleteMany(),
+      prisma.file.deleteMany(),
+      prisma.review.deleteMany(),
+      prisma.productEmbedding.deleteMany(),
+      prisma.product.deleteMany(),
+      prisma.category.deleteMany(),
+      prisma.couponUsage.deleteMany(),
+      prisma.coupon.deleteMany(),
+      prisma.otp.deleteMany(),
+      prisma.refreshToken.deleteMany(),
+      prisma.address.deleteMany(),
+      prisma.faqEmbedding.deleteMany(),
+      prisma.faq.deleteMany(),
+      // Delete users where isAdmin is false
+      prisma.user.deleteMany({
+        where: {
+          isAdmin: false
+        }
+      })
+    ]);
+
+    return res.status(200).json({ success: true, message: "Successfully wiped all data and media files." });
+  } catch (error) {
+    console.error("Wipe all data error", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
