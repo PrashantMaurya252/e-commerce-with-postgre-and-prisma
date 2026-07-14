@@ -87,6 +87,24 @@ enum DiscountType{
   FLAT
 }
 
+enum BannerActionType {
+  NONE
+  PRODUCT
+  CATEGORY
+  BRAND
+  URL
+  SEARCH
+}
+
+enum BannerPosition {
+  HOME_TOP
+  HOME_MIDDLE
+  HOME_BOTTOM
+  CATEGORY
+  PRODUCT
+  APP_POPUP
+}
+
 model User{
   id                 String             @id @default(uuid())
   name               String?            
@@ -105,6 +123,7 @@ model User{
   refreshTokens      RefreshToken[]
   reviews             Review[]
   chats              Chat[]
+  banners            Banner[]
   isActive           Boolean            @default(true)
   isDeleted          Boolean            @default(false)
   isVerified        Boolean             @default(false)
@@ -132,7 +151,8 @@ model Category{
   isActive           Boolean               @default(true)
   isDeleted          Boolean               @default(false)
   deletedAt          DateTime?
-  file               File?              
+  image               File?              
+  banners             Banner[]
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
 }
@@ -160,6 +180,7 @@ model Product{
   isDeleted          Boolean            @default(false)
   disabled            Boolean                @default(false)
   embedding           ProductEmbedding?
+  banners             Banner[]
   @@index([title])
 }
 
@@ -235,10 +256,13 @@ model File{
   publicId            String
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
-  userId              String?             @unique
+  userId              String?             
   productId           String?             
   orderId             String?             
   categoryId          String?             @unique
+  desktopBanner Banner? @relation("DesktopBanner")
+
+  mobileBanner Banner? @relation("MobileBanner")
   category            Category?             @relation(fields:[categoryId],references:[id])
   product             Product?             @relation(fields:[productId],references:[id],onDelete:Cascade)
   user                User?                @relation(fields:[userId],references:[id],onDelete:SetNull)
@@ -429,4 +453,48 @@ model ChatMessage{
   chatId       String
   chat         Chat       @relation(fields:[chatId],references:[id],onDelete:Cascade)
   createdAt    DateTime  @default(now())
+}
+
+model Banner {
+  id             String   @id @default(uuid())
+
+  title          String
+  subtitle       String? @db.Text
+
+  imageId String @unique
+  image File @relation("DesktopBanner", fields: [imageId], references: [id])
+
+  mobileImageId String? @unique
+  mobileImage File? @relation("MobileBanner", fields: [mobileImageId], references: [id])
+
+  actionType      BannerActionType @default(NONE)
+  actionUrl       String?
+
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id])
+
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id])
+
+  position        BannerPosition @default(HOME_TOP)
+
+  priority        Int @default(0)
+
+  isActive        Boolean @default(true)
+
+  startsAt        DateTime?
+  endsAt          DateTime?
+
+  createdById     String
+  createdBy       User @relation(fields: [createdById], references: [id])
+
+  isDeleted       Boolean @default(false)
+  deletedAt       DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([position])
+  @@index([priority])
+  @@index([isActive])
 }
