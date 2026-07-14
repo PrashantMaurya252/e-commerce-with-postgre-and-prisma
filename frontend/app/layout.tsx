@@ -6,6 +6,7 @@ import "./globals.css";
 import ReduxProvider from "@/redux/provider";
 import { Toaster } from "@/components/ui/sonner";
 import {GoogleOAuthProvider} from "@react-oauth/google"
+import NetworkGuard from "@/components/NetworkGuard"
 
 
 
@@ -36,6 +37,7 @@ export default function RootLayout({
       >
         <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID as string}>
           <ReduxProvider>
+          <NetworkGuard />
           <Toaster/>
           {children}
         </ReduxProvider>

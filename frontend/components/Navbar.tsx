@@ -10,7 +10,9 @@ import {
   ShoppingCart,
   User,
   LayoutDashboard,
-  LogOut
+  LogOut,
+  Tag,
+  Users
 } from 'lucide-react'
 import {logoutHandler } from '@/utils/api'
 import { toast } from 'sonner'
@@ -80,12 +82,24 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
     },
     {
       id: 3,
+      label: 'Categories',
+      route: '/admin/categories',
+      icon: Tag,
+    },
+    {
+      id: 4,
       label: 'Orders',
       route: '/admin/orders',
       icon: ClipboardList,
     },
     {
-      id: 4,
+      id: 5,
+      label: 'Users',
+      route: '/admin/users',
+      icon: Users,
+    },
+    {
+      id: 6,
       label: 'Profile',
       route: '/admin/profile',
       icon: User,
