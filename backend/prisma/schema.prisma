@@ -25,6 +25,33 @@ enum AuthProvider{
   GOOGLE
 }
 
+enum NotificationType{
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+enum NotificationPriority{
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum NotificationChannel{
+    IN_APP
+    EMAIL
+    PUSH
+    SMS
+}
+
+enum NotificationStatus{
+    PENDING
+    SENT
+    FAILED
+    READ
+}
+
 
 enum OrderStatus{
   PENDING
@@ -81,7 +108,8 @@ model User{
   isActive           Boolean            @default(true)
   isDeleted          Boolean            @default(false)
   isVerified        Boolean             @default(false)
-  
+  receivedNotifications Notification[] @relation("NotificationReceiver")
+  sentNotifications Notification[] @relation("NotificationSender")
 }
 
 model Otp{
@@ -113,8 +141,9 @@ model Product{
   id                  String            @id @default(uuid())
   title               String
   description         String
-  price               Int
-  offerPrice          Int?
+  sellingPrice        Int
+  costPrice           Int
+  offerPrice          Int
   isOfferActive       Boolean            @default(false)
   files               File[]
   reviews             Review[]
@@ -126,6 +155,7 @@ model Product{
   orderItems          OrderItem[]
   itemLeft            Int                    @default(0)
   cartItems           CartItem[]
+  brand              String
   isActive           Boolean            @default(true)
   isDeleted          Boolean            @default(false)
   disabled            Boolean                @default(false)
@@ -327,6 +357,59 @@ model FaqEmbedding {
   updatedAt    DateTime    @updatedAt
 
   @@map("faq_embeddings")
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+
+  title         String
+  description   String   @db.Text
+  actionUrl     String?
+
+  senderId      String?
+  receiverId    String?
+
+  campaign      NotificationCampaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  campaignId    String?
+
+  sender         User? @relation("NotificationSender", fields: [senderId], references: [id])
+  receiver       User? @relation("NotificationReceiver", fields: [receiverId], references: [id], onDelete: SetNull)
+
+  channel        NotificationChannel
+  status         NotificationStatus @default(PENDING)
+
+  type           NotificationType @default(INFO)
+  priority       NotificationPriority @default(MEDIUM)
+
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  readAt         DateTime?
+
+  isRead         Boolean @default(false)
+
+  isDeleted      Boolean @default(false)
+  deletedAt      DateTime?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model NotificationCampaign{
+
+    id String @id @default(uuid())
+
+    title String
+    description String @db.Text
+
+    channel NotificationChannel
+
+    scheduledAt DateTime?
+
+    createdBy String
+
+    createdAt DateTime @default(now())
+
+    notifications Notification[]
 }
 
 model Chat{
