@@ -20,6 +20,7 @@ export default function ProductCard({
   handleProductAddedToCart,
   handleProductDecreaseFromCart,
   handleProductDeleteFromCart,
+  handleProductToggleWishlist,
 }: {
   product: Product;
   handleProductAddedToCart: (id: string) => void;

@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { AuthGuard } from "../middlewares/auth.js";
+
 import { getWishlistItems, toggleWishlistItem } from "../controllers/wishlist.controller.js";
+import { auth } from "../middlewares/auth.js";
 
 const router = Router();
 
-router.get("/", AuthGuard, getWishlistItems);
-router.post("/toggle/:productId", AuthGuard, toggleWishlistItem);
+router.get("/", auth, getWishlistItems);
+router.post("/toggle/:productId", auth, toggleWishlistItem);
 
 export default router;

@@ -1,9 +1,11 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL as string;
+
 export const wishlistApi = createApi({
   reducerPath: "wishlistApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",
+    baseUrl: BACKEND_URL || "http://localhost:8000/api/v1",
   }),
   tagTypes: ["Wishlist"],
   endpoints: (builder) => ({

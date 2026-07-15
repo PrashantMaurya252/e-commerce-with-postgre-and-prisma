@@ -56,12 +56,6 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
     },
     ...(isAuthenticated ? [
       {
-        id: 3,
-        label: 'Orders',
-        route: '/user/orders',
-        icon: ClipboardList,
-      },
-      {
         id: 4,
         label: 'Cart',
         route: '/user/cart',

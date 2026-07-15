@@ -627,4 +627,46 @@ try {
 }
 }
 
+export const updateProductReview = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    const { productId } = req.params;
+    const { comment, rating } = req.body;
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: "Rating must be between 1 to 5" });
+    }
 
+    const existingReview = await prisma.review.findUnique({ where: { productId_userId: { productId, userId } } });
+    if (!existingReview) {
+      return res.status(404).json({ success: false, message: "Review not found" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const review = await tx.review.update({
+        where: { productId_userId: { productId, userId } },
+        data: { rating, comment },
+      });
+      const stats = await tx.review.aggregate({
+        where: { productId },
+        _avg: { rating: true },
+        _count: { rating: true },
+      });
+      await tx.product.update({
+        where: { id: productId },
+        data: {
+          averageRating: stats._avg.rating ?? 0,
+          totalReviews: stats._count.rating,
+        },
+      });
+      return review;
+    });
+
+    return res.status(200).json({ success: true, message: "Review updated successfully", data: result });
+  } catch (error) {
+    console.error("Error updating review", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
