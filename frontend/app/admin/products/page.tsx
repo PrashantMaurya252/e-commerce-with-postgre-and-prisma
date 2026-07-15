@@ -19,12 +19,12 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  AlertCircle,
   Upload,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import clsx from "clsx";
 
 interface Product {
   id: string;
@@ -51,6 +51,13 @@ const EMPTY_FORM = {
   stock: "",
   categoryId: "",
 };
+
+// ── Shared classes ──────────────────────────────────────────────────────────
+const inputClass =
+  "w-full px-4 py-2.5 bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-emerald-500 focus:outline-none rounded-xl text-sm text-[var(--foreground)] placeholder-[var(--foreground-muted)] transition-colors";
+
+const labelClass =
+  "text-[11px] font-bold text-[var(--foreground-muted)] uppercase tracking-widest block mb-1.5";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -87,6 +94,7 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     fetchProducts(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   useEffect(() => {
@@ -180,101 +188,100 @@ export default function AdminProductsPage() {
     : products;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 animate-fade-in">
+      {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-[var(--foreground)] tracking-tight">
             Products
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-[var(--foreground-muted)] text-sm mt-1">
             {totalProducts} products total
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => fetchProducts(page)}
-            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-all"
+            className="p-2.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--foreground-muted)] border border-[var(--border)] transition-all"
+            title="Refresh"
           >
-            <RefreshCw size={16} />
+            <RefreshCw size={15} />
           </button>
           <button
             onClick={openCreate}
             className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-emerald-500/20"
           >
-            <Plus size={17} />
-            Add Product
+            <Plus size={16} />
+            <span>Add Product</span>
           </button>
         </div>
       </div>
 
-      {/* Search */}
+      {/* ── Search ─────────────────────────────────────────────── */}
       <div className="relative">
         <Search
           size={16}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]"
         />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search products..."
-          className="w-full pl-11 pr-4 py-3 bg-slate-900 border border-slate-800 focus:border-emerald-500/50 focus:outline-none rounded-xl text-sm text-slate-200 placeholder-slate-500 transition-colors"
+          className="w-full pl-11 pr-4 py-2.5 bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-emerald-500 focus:outline-none rounded-xl text-sm text-[var(--foreground)] placeholder-[var(--foreground-muted)] transition-colors"
         />
       </div>
 
-      {/* Table */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+      {/* ── Table ──────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card)] overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="animate-spin text-emerald-400" size={32} />
+            <Loader2 className="animate-spin text-emerald-500" size={32} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <Package size={48} className="text-slate-700" />
-            <p className="text-slate-500 font-medium">No products found</p>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Package size={44} className="text-[var(--foreground-muted)] opacity-30" />
+            <p className="text-[var(--foreground-muted)] font-medium text-sm">No products found</p>
             <button
               onClick={openCreate}
-              className="text-emerald-400 text-sm font-semibold hover:underline"
+              className="text-emerald-500 text-sm font-semibold hover:underline"
             >
               Add your first product →
             </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[600px]">
               <thead>
-                <tr className="border-b border-slate-800">
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">
-                    Category
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">
-                    Stock
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">
-                    Rating
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">
-                    Sales
-                  </th>
-                  <th className="px-5 py-4" />
+                <tr className="border-b border-[var(--border)]">
+                  {["Product", "Category", "Price", "Stock", "Rating", "Sales", ""].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className={clsx(
+                          "text-left px-4 py-3.5 text-[10px] font-bold text-[var(--foreground-muted)] uppercase tracking-widest",
+                          h === "Category" && "hidden md:table-cell",
+                          h === "Stock" && "hidden sm:table-cell",
+                          h === "Rating" && "hidden lg:table-cell",
+                          h === "Sales" && "hidden lg:table-cell",
+                          h === "" && "text-right"
+                        )}
+                      >
+                        {h}
+                      </th>
+                    )
+                  )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-[var(--border)]">
                 {filtered.map((p) => (
                   <tr
                     key={p.id}
-                    className="hover:bg-slate-800/50 transition-colors group"
+                    className="hover:bg-[var(--surface-2)] transition-colors group"
                   >
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-800 overflow-hidden flex-shrink-0 border border-slate-700">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--surface-3)] overflow-hidden flex-shrink-0 border border-[var(--border)] flex items-center justify-center">
                           {p.files?.[0]?.url ? (
                             <Image
                               src={p.files[0].url}
@@ -284,82 +291,76 @@ export default function AdminProductsPage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <Package
-                              size={18}
-                              className="m-auto text-slate-600 mt-2.5"
-                            />
+                            <Package size={16} className="text-[var(--foreground-muted)]" />
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-slate-200 truncate max-w-[180px]">
+                          <p className="font-semibold text-[var(--foreground)] truncate max-w-[150px] sm:max-w-[200px]">
                             {p.name}
                           </p>
-                          <p className="text-xs text-slate-500 truncate max-w-[180px]">
+                          <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] truncate max-w-[150px] sm:max-w-[200px]">
                             {p.description}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium">
-                        {categories.find((c) => c.id === p.categoryId)?.name ||
-                          "—"}
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <span className="px-2 py-1 rounded-md bg-[var(--surface-3)] text-[var(--foreground-muted)] text-xs font-semibold">
+                        {categories.find((c) => c.id === p.categoryId)?.name || "—"}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className="font-bold text-emerald-400">
+                    <td className="px-4 py-3">
+                      <span className="font-bold text-emerald-500">
                         ₹{Number(p.price).toLocaleString()}
                       </span>
                     </td>
-                    <td className="px-5 py-4 hidden sm:table-cell">
+                    <td className="px-4 py-3 hidden sm:table-cell">
                       <span
-                        className={`font-semibold text-sm ${
+                        className={clsx(
+                          "font-bold text-sm",
                           p.stock <= 5
-                            ? "text-rose-400"
+                            ? "text-rose-500"
                             : p.stock <= 20
-                            ? "text-amber-400"
-                            : "text-slate-300"
-                        }`}
+                            ? "text-amber-500"
+                            : "text-[var(--foreground)]"
+                        )}
                       >
                         {p.stock}
                       </span>
                     </td>
-                    <td className="px-5 py-4 hidden lg:table-cell">
+                    <td className="px-4 py-3 hidden lg:table-cell">
                       <div className="flex items-center gap-1.5">
-                        <Star
-                          size={13}
-                          className="text-amber-400 fill-amber-400"
-                        />
-                        <span className="text-slate-300 font-medium text-sm">
+                        <Star size={13} className="text-amber-400 fill-amber-400" />
+                        <span className="text-[var(--foreground)] font-bold text-xs">
                           {Number(p.averageRating).toFixed(1)}
                         </span>
-                        <span className="text-slate-600 text-xs">
+                        <span className="text-[var(--foreground-muted)] text-[10px] font-semibold">
                           ({p.totalReviews})
                         </span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 hidden lg:table-cell">
-                      <span className="text-slate-400 text-sm font-medium">
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <span className="text-[var(--foreground-muted)] text-xs font-bold">
                         {p._count?.orderItems ?? 0} sold
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center gap-1.5 justify-end opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openEdit(p)}
-                          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                          className="p-2 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors border border-[var(--border)]"
                         >
-                          <Edit3 size={15} />
+                          <Edit3 size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(p.id)}
                           disabled={deletingId === p.id}
-                          className="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+                          className="p-2 rounded-lg bg-[var(--surface-2)] hover:bg-rose-500/10 text-[var(--foreground-muted)] hover:text-rose-500 transition-colors border border-[var(--border)] hover:border-rose-500/30"
                         >
                           {deletingId === p.id ? (
-                            <Loader2 size={15} className="animate-spin" />
+                            <Loader2 size={14} className="animate-spin" />
                           ) : (
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           )}
                         </button>
                       </div>
@@ -372,58 +373,56 @@ export default function AdminProductsPage() {
         )}
       </div>
 
-      {/* Pagination */}
+      {/* ── Pagination ──────────────────────────────────────────── */}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-[var(--foreground-muted)]">
             Page {page} of {totalPages}
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-600 transition-all disabled:opacity-30"
+              className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:border-[var(--border-2)] transition-all disabled:opacity-30"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={15} />
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-600 transition-all disabled:opacity-30"
+              className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:border-[var(--border-2)] transition-all disabled:opacity-30"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={15} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Create / Edit Modal */}
+      {/* ── Modal ──────────────────────────────────────────────── */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-              <h2 className="text-base font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg shadow-2xl max-h-[92dvh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] sticky top-0 bg-[var(--card)] z-10">
+              <h2 className="text-base font-bold text-[var(--foreground)]">
                 {editProduct ? "Edit Product" : "Add New Product"}
               </h2>
               <button
                 onClick={() => setModalOpen(false)}
-                className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="p-2 rounded-lg hover:bg-[var(--surface-2)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            {/* Body */}
+            <div className="p-5 space-y-4">
               {/* Image Upload */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                  Product Image
-                </label>
+                <label className={labelClass}>Product Image</label>
                 <div
                   onClick={() => fileRef.current?.click()}
-                  className="relative w-full h-36 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-emerald-500/50 transition-colors flex items-center justify-center overflow-hidden bg-slate-800/50"
+                  className="relative w-full h-32 sm:h-36 border-2 border-dashed border-[var(--border-2)] rounded-xl cursor-pointer hover:border-emerald-500/50 transition-colors flex items-center justify-center overflow-hidden bg-[var(--surface-2)]"
                 >
                   {imagePreview ? (
                     <Image
@@ -434,11 +433,8 @@ export default function AdminProductsPage() {
                     />
                   ) : (
                     <div className="text-center">
-                      <Upload
-                        size={24}
-                        className="text-slate-500 mx-auto mb-1"
-                      />
-                      <p className="text-xs text-slate-500">
+                      <Upload size={20} className="text-[var(--foreground-muted)] mx-auto mb-1.5" />
+                      <p className="text-xs font-semibold text-[var(--foreground-muted)]">
                         Click to upload image
                       </p>
                     </div>
@@ -455,91 +451,65 @@ export default function AdminProductsPage() {
 
               {/* Name */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Name *
-                </label>
+                <label className={labelClass}>Name *</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData((f) => ({ ...f, name: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
                   placeholder="Product name"
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-emerald-500/50 focus:outline-none rounded-xl text-sm text-white placeholder-slate-500"
+                  className={inputClass}
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Description
-                </label>
+                <label className={labelClass}>Description</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData((f) => ({
-                      ...f,
-                      description: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Product description"
-                  rows={3}
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-emerald-500/50 focus:outline-none rounded-xl text-sm text-white placeholder-slate-500 resize-none"
+                  rows={2}
+                  className={`${inputClass} resize-none`}
                 />
               </div>
 
               {/* Price & Stock */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                    Price (₹) *
-                  </label>
+                  <label className={labelClass}>Price (₹) *</label>
                   <input
                     type="number"
                     value={formData.price}
-                    onChange={(e) =>
-                      setFormData((f) => ({ ...f, price: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((f) => ({ ...f, price: e.target.value }))}
                     placeholder="0"
                     min={0}
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-emerald-500/50 focus:outline-none rounded-xl text-sm text-white placeholder-slate-500"
+                    className={inputClass}
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                    Stock *
-                  </label>
+                  <label className={labelClass}>Stock *</label>
                   <input
                     type="number"
                     value={formData.stock}
-                    onChange={(e) =>
-                      setFormData((f) => ({ ...f, stock: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((f) => ({ ...f, stock: e.target.value }))}
                     placeholder="0"
                     min={0}
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-emerald-500/50 focus:outline-none rounded-xl text-sm text-white placeholder-slate-500"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               {/* Category */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Category *
-                </label>
+                <label className={labelClass}>Category *</label>
                 <select
                   value={formData.categoryId}
-                  onChange={(e) =>
-                    setFormData((f) => ({
-                      ...f,
-                      categoryId: e.target.value,
-                    }))
-                  }
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-emerald-500/50 focus:outline-none rounded-xl text-sm text-white"
+                  onChange={(e) => setFormData((f) => ({ ...f, categoryId: e.target.value }))}
+                  className={`${inputClass} appearance-none cursor-pointer`}
                 >
                   <option value="">Select category</option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.id} value={c.id} className="bg-[var(--surface)]">
                       {c.name}
                     </option>
                   ))}
@@ -547,11 +517,11 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-800">
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-[var(--border)]">
               <button
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 font-semibold text-sm transition-colors"
+                className="px-4 py-2.5 rounded-xl text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] font-semibold text-sm transition-colors"
               >
                 Cancel
               </button>

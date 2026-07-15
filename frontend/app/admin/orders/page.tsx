@@ -55,11 +55,11 @@ const STATUS_OPTIONS: OrderStatus[] = [
 ];
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
-  PENDING: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  CONFIRMED: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  SHIPPED: "bg-violet-500/15 text-violet-400 border-violet-500/30",
-  DELIVERED: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  CANCELLED: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+  PENDING: "bg-amber-500/15 text-amber-500 border-amber-500/30",
+  CONFIRMED: "bg-blue-500/15 text-blue-500 border-blue-500/30",
+  SHIPPED: "bg-violet-500/15 text-violet-500 border-violet-500/30",
+  DELIVERED: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
+  CANCELLED: "bg-rose-500/15 text-rose-500 border-rose-500/30",
 };
 
 const FILTER_OPTIONS = ["ALL", ...STATUS_OPTIONS];
@@ -91,6 +91,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders(page, statusFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter]);
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
@@ -110,20 +111,20 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-[var(--foreground)] tracking-tight">
             Orders
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-[var(--foreground-muted)] text-sm mt-1">
             {totalOrders} orders total
           </p>
         </div>
         <button
           onClick={() => fetchOrders(page, statusFilter)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold text-sm transition-all border border-slate-700 hover:border-slate-600 self-start sm:self-auto"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] rounded-xl font-semibold text-sm transition-all border border-[var(--border)] w-full sm:w-auto"
         >
           <RefreshCw size={15} />
           Refresh
@@ -140,10 +141,10 @@ export default function AdminOrdersPage() {
               setPage(1);
             }}
             className={clsx(
-              "px-4 py-2 rounded-xl text-sm font-semibold border transition-all",
+              "px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-all",
               statusFilter === s
-                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40"
-                : "bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700 hover:text-slate-300"
+                ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/40"
+                : "bg-[var(--surface-2)] text-[var(--foreground-muted)] border-[var(--border)] hover:border-[var(--border-2)] hover:text-[var(--foreground)]"
             )}
           >
             {s}
@@ -154,23 +155,23 @@ export default function AdminOrdersPage() {
       {/* Orders List */}
       <div className="space-y-3">
         {loading ? (
-          <div className="flex items-center justify-center py-24 rounded-2xl border border-slate-800 bg-slate-900">
-            <Loader2 className="animate-spin text-emerald-400" size={32} />
+          <div className="flex items-center justify-center py-24 rounded-2xl border border-[var(--card-border)] bg-[var(--card)]">
+            <Loader2 className="animate-spin text-emerald-500" size={32} />
           </div>
         ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3 rounded-2xl border border-slate-800 bg-slate-900">
-            <ClipboardList size={48} className="text-slate-700" />
-            <p className="text-slate-500 font-medium">No orders found</p>
+          <div className="flex flex-col items-center justify-center py-20 gap-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card)]">
+            <ClipboardList size={44} className="text-[var(--foreground-muted)] opacity-30" />
+            <p className="text-[var(--foreground-muted)] font-medium text-sm">No orders found</p>
           </div>
         ) : (
           orders.map((order) => (
             <div
               key={order.id}
-              className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden transition-all hover:border-slate-700"
+              className="rounded-2xl border border-[var(--card-border)] bg-[var(--card)] overflow-hidden transition-all hover:border-[var(--border-2)] shadow-sm"
             >
               {/* Order Header Row */}
               <div
-                className="flex flex-wrap items-center gap-4 px-5 py-4 cursor-pointer"
+                className="flex flex-wrap items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 cursor-pointer"
                 onClick={() =>
                   setExpandedId(
                     expandedId === order.id ? null : order.id
@@ -178,42 +179,44 @@ export default function AdminOrdersPage() {
                 }
               >
                 {/* Order ID */}
-                <div className="flex-1 min-w-[140px]">
-                  <p className="text-xs text-slate-500 font-medium mb-0.5">
+                <div className="flex-1 min-w-[120px] sm:min-w-[140px]">
+                  <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] uppercase font-bold mb-0.5">
                     Order ID
                   </p>
-                  <p className="text-sm font-bold text-white font-mono">
+                  <p className="text-sm font-bold text-[var(--foreground)] font-mono">
                     #{order.id.slice(0, 8).toUpperCase()}
                   </p>
                 </div>
 
                 {/* Customer */}
-                <div className="flex-1 min-w-[140px]">
-                  <p className="text-xs text-slate-500 font-medium mb-0.5">
+                <div className="flex-1 min-w-[120px] sm:min-w-[140px]">
+                  <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] uppercase font-bold mb-0.5">
                     Customer
                   </p>
-                  <p className="text-sm font-semibold text-slate-200">
+                  <p className="text-xs sm:text-sm font-semibold text-[var(--foreground)] truncate max-w-[120px] sm:max-w-none">
                     {order.user.name}
                   </p>
-                  <p className="text-xs text-slate-500">{order.user.email}</p>
+                  <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] truncate max-w-[120px] sm:max-w-none">
+                    {order.user.email}
+                  </p>
                 </div>
 
                 {/* Amount */}
-                <div className="flex-1 min-w-[100px]">
-                  <p className="text-xs text-slate-500 font-medium mb-0.5">
+                <div className="flex-1 min-w-[80px] sm:min-w-[100px]">
+                  <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] uppercase font-bold mb-0.5">
                     Amount
                   </p>
-                  <p className="text-sm font-bold text-emerald-400">
+                  <p className="text-xs sm:text-sm font-bold text-emerald-500">
                     ₹{Number(order.totalAmount).toLocaleString()}
                   </p>
                 </div>
 
                 {/* Date */}
                 <div className="hidden md:block flex-1 min-w-[100px]">
-                  <p className="text-xs text-slate-500 font-medium mb-0.5">
+                  <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] uppercase font-bold mb-0.5">
                     Date
                   </p>
-                  <p className="text-sm text-slate-300">
+                  <p className="text-xs sm:text-sm text-[var(--foreground)]">
                     {new Date(order.createdAt).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
@@ -224,7 +227,7 @@ export default function AdminOrdersPage() {
 
                 {/* Status selector */}
                 <div
-                  className="flex items-center gap-3"
+                  className="flex items-center gap-2 sm:gap-3"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <select
@@ -234,26 +237,26 @@ export default function AdminOrdersPage() {
                       handleStatusChange(order.id, e.target.value)
                     }
                     className={clsx(
-                      "px-3 py-1.5 rounded-xl text-xs font-bold border bg-transparent focus:outline-none transition-colors cursor-pointer appearance-none pr-7",
+                      "px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold border focus:outline-none transition-colors cursor-pointer appearance-none",
                       STATUS_STYLES[order.status]
                     )}
                   >
                     {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s} className="bg-slate-900 text-white">
+                      <option key={s} value={s} className="bg-[var(--surface)] text-[var(--foreground)]">
                         {s}
                       </option>
                     ))}
                   </select>
                   {updatingId === order.id && (
-                    <Loader2 size={14} className="animate-spin text-slate-400" />
+                    <Loader2 size={14} className="animate-spin text-[var(--foreground-muted)]" />
                   )}
                 </div>
 
                 {/* Expand icon */}
                 <ChevronDown
-                  size={18}
+                  size={16}
                   className={clsx(
-                    "text-slate-500 transition-transform duration-200 flex-shrink-0",
+                    "text-[var(--foreground-muted)] transition-transform duration-200 flex-shrink-0",
                     expandedId === order.id && "rotate-180"
                   )}
                 />
@@ -261,31 +264,31 @@ export default function AdminOrdersPage() {
 
               {/* Expanded Details */}
               {expandedId === order.id && (
-                <div className="border-t border-slate-800 px-5 py-4 space-y-4">
+                <div className="border-t border-[var(--border)] px-4 sm:px-5 py-4 space-y-4">
                   {/* Items */}
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                    <p className="text-[10px] font-black text-[var(--foreground-muted)] uppercase tracking-widest mb-3">
                       Items ({order.items.length})
                     </p>
                     <div className="space-y-2">
                       {order.items.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-800/60"
+                          className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--surface-2)]"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-slate-700">
-                              <Package size={14} className="text-slate-400" />
+                            <div className="p-1.5 rounded-lg bg-[var(--surface-3)]">
+                              <Package size={14} className="text-[var(--foreground-muted)]" />
                             </div>
-                            <p className="text-sm font-medium text-slate-200">
+                            <p className="text-xs sm:text-sm font-semibold text-[var(--foreground)]">
                               {item.product.name}
                             </p>
                           </div>
-                          <div className="flex items-center gap-4 text-sm">
-                            <span className="text-slate-400">
+                          <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+                            <span className="text-[var(--foreground-muted)] font-medium">
                               x{item.quantity}
                             </span>
-                            <span className="font-bold text-emerald-400">
+                            <span className="font-bold text-emerald-500">
                               ₹{Number(item.price).toLocaleString()}
                             </span>
                           </div>
@@ -297,15 +300,15 @@ export default function AdminOrdersPage() {
                   {/* Address */}
                   {order.address && (
                     <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                      <p className="text-[10px] font-black text-[var(--foreground-muted)] uppercase tracking-widest mb-2">
                         Delivery Address
                       </p>
-                      <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-slate-800/60">
+                      <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[var(--surface-2)]">
                         <MapPin
                           size={14}
-                          className="text-slate-500 mt-0.5 flex-shrink-0"
+                          className="text-[var(--foreground-muted)] mt-0.5 flex-shrink-0"
                         />
-                        <p className="text-sm text-slate-300">
+                        <p className="text-xs sm:text-sm text-[var(--foreground)] font-medium leading-snug">
                           {order.address.street}, {order.address.city},{" "}
                           {order.address.state} – {order.address.pincode}
                         </p>
@@ -322,21 +325,21 @@ export default function AdminOrdersPage() {
       {/* Pagination */}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-[var(--foreground-muted)]">
             Page {page} of {totalPages}
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-600 transition-all disabled:opacity-30"
+              className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:border-[var(--border-2)] transition-all disabled:opacity-30"
             >
               <ChevronLeft size={16} />
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-600 transition-all disabled:opacity-30"
+              className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:border-[var(--border-2)] transition-all disabled:opacity-30"
             >
               <ChevronRight size={16} />
             </button>

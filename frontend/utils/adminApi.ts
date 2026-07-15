@@ -279,3 +279,236 @@ export const getAdminCoupons = async (): Promise<normalAPIResponse> => {
     };
   }
 };
+
+export const createCoupon = async (
+  data: Record<string, any>
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.post(`${BACKEND_URL}/admin/create-coupon`, data, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const updateCoupon = async (
+  couponId: string,
+  data: Record<string, any>
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.put(
+      `${BACKEND_URL}/admin/update-coupon`,
+      { couponId, ...data },
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const deleteCoupon = async (
+  couponId: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.patch(
+      `${BACKEND_URL}/admin/remove-coupon`,
+      { couponId },
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+// ──────────────────── FAQs ─────────────────────
+export const getAllFaqs = async (
+  page = 1,
+  limit = 20,
+  includeInactive = true
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.get(`${BACKEND_URL}/faq`, {
+      params: { page, limit, includeInactive },
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const createFaq = async (data: {
+  question: string;
+  answer: string;
+  isActive?: boolean;
+}): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.post(`${BACKEND_URL}/faq/create`, data, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const updateFaq = async (
+  faqId: string,
+  data: Partial<{ question: string; answer: string; isActive: boolean }>
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.put(`${BACKEND_URL}/faq/${faqId}`, data, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const deleteFaq = async (
+  faqId: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.delete(`${BACKEND_URL}/faq/${faqId}`, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const toggleFaqStatus = async (
+  faqId: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.patch(
+      `${BACKEND_URL}/faq/${faqId}/toggle`,
+      {},
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+// ──────────────────── Campaigns ─────────────────────
+export const getAllCampaigns = async (
+  page = 1,
+  limit = 10,
+  type?: "instant" | "scheduled"
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.get(`${BACKEND_URL}/notification-campaign`, {
+      params: { page, limit, type },
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const getCampaignById = async (
+  campaignId: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.get(
+      `${BACKEND_URL}/notification-campaign/${campaignId}`,
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const createCampaign = async (
+  data: Record<string, any>
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.post(
+      `${BACKEND_URL}/notification-campaign/create`,
+      data,
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const updateCampaign = async (
+  campaignId: string,
+  data: Record<string, any>
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.put(
+      `${BACKEND_URL}/notification-campaign/${campaignId}`,
+      data,
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const deleteCampaign = async (
+  campaignId: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.delete(
+      `${BACKEND_URL}/notification-campaign/${campaignId}`,
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};

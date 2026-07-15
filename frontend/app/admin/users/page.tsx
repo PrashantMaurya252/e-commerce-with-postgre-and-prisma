@@ -84,20 +84,20 @@ export default function AdminUsersPage() {
     : users;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-[var(--foreground)] tracking-tight">
             Users
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-[var(--foreground-muted)] text-sm mt-1">
             {totalUsers} registered users
           </p>
         </div>
         <button
           onClick={() => fetchUsers(page)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold text-sm transition-all border border-slate-700 hover:border-slate-600 self-start sm:self-auto"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] rounded-xl font-semibold text-sm transition-all border border-[var(--border)] w-full sm:w-auto"
         >
           <RefreshCw size={15} />
           Refresh
@@ -108,45 +108,45 @@ export default function AdminUsersPage() {
       <div className="relative">
         <Search
           size={16}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)]"
         />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or email..."
-          className="w-full pl-11 pr-4 py-3 bg-slate-900 border border-slate-800 focus:border-emerald-500/50 focus:outline-none rounded-xl text-sm text-slate-200 placeholder-slate-500 transition-colors"
+          className="w-full pl-11 pr-4 py-2.5 bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-emerald-500 focus:outline-none rounded-xl text-sm text-[var(--foreground)] placeholder-[var(--foreground-muted)] transition-colors"
         />
       </div>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {[
           {
             label: "Total",
             value: totalUsers,
-            color: "text-slate-300",
-            bg: "bg-slate-800/60",
+            color: "text-[var(--foreground)]",
+            bg: "bg-[var(--surface-2)]",
           },
           {
             label: "Active",
             value: users.filter((u) => u.isActive).length,
-            color: "text-emerald-400",
+            color: "text-emerald-500",
             bg: "bg-emerald-500/10",
           },
           {
             label: "Inactive",
             value: users.filter((u) => !u.isActive).length,
-            color: "text-rose-400",
+            color: "text-rose-500",
             bg: "bg-rose-500/10",
           },
         ].map((s) => (
           <div
             key={s.label}
-            className={`rounded-xl px-4 py-3 border border-slate-800 ${s.bg}`}
+            className={`rounded-xl px-3 sm:px-4 py-3 border border-[var(--border)] ${s.bg}`}
           >
-            <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className={`text-lg sm:text-xl font-black ${s.color}`}>{s.value}</p>
+            <p className="text-xs text-[var(--foreground-muted)] font-medium mt-0.5">
               {s.label}
             </p>
           </div>
@@ -154,49 +154,45 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Table / List */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+      <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--card)] overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="animate-spin text-emerald-400" size={32} />
+            <Loader2 className="animate-spin text-emerald-500" size={32} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <Users size={48} className="text-slate-700" />
-            <p className="text-slate-500 font-medium">No users found</p>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Users size={44} className="text-[var(--foreground-muted)] opacity-30" />
+            <p className="text-[var(--foreground-muted)] font-medium text-sm">No users found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[500px]">
               <thead>
-                <tr className="border-b border-slate-800">
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden md:table-cell">
-                    Email
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">
-                    Joined
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider hidden sm:table-cell">
-                    Orders
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-5 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                    Action
-                  </th>
+                <tr className="border-b border-[var(--border)]">
+                  {["User", "Email", "Joined", "Orders", "Status", ""].map((h) => (
+                    <th
+                      key={h}
+                      className={clsx(
+                        "text-left px-4 py-3.5 text-[10px] font-bold text-[var(--foreground-muted)] uppercase tracking-widest",
+                        h === "Email" && "hidden md:table-cell",
+                        h === "Joined" && "hidden lg:table-cell",
+                        h === "Orders" && "hidden sm:table-cell",
+                        h === "" && "text-right"
+                      )}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-[var(--border)]">
                 {filtered.map((user) => (
                   <tr
                     key={user.id}
-                    className="hover:bg-slate-800/40 transition-colors"
+                    className="hover:bg-[var(--surface-2)] transition-colors group"
                   >
                     {/* User */}
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-600 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">
                           {user.avatar ? (
@@ -211,72 +207,72 @@ export default function AdminUsersPage() {
                             user.name.charAt(0).toUpperCase()
                           )}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-slate-200">
+                            <p className="font-semibold text-[var(--foreground)] truncate max-w-[150px]">
                               {user.name}
                             </p>
                             {user.isAdmin && (
-                              <span className="px-1.5 py-0.5 rounded-md bg-violet-500/15 text-violet-400 text-[10px] font-bold">
+                              <span className="px-1.5 py-0.5 rounded-md bg-violet-500/15 text-violet-500 text-[10px] font-bold flex-shrink-0">
                                 ADMIN
                               </span>
                             )}
                           </div>
+                          <p className="text-[10px] text-[var(--foreground-muted)] md:hidden truncate max-w-[150px]">
+                            {user.email}
+                          </p>
                         </div>
                       </div>
                     </td>
 
                     {/* Email */}
-                    <td className="px-5 py-4 hidden md:table-cell">
+                    <td className="px-4 py-3 hidden md:table-cell">
                       <div className="flex items-center gap-1.5">
-                        <Mail size={13} className="text-slate-600" />
-                        <span className="text-slate-400 text-sm">
+                        <Mail size={12} className="text-[var(--foreground-muted)] flex-shrink-0" />
+                        <span className="text-[var(--foreground-muted)] text-sm font-medium truncate max-w-[180px]">
                           {user.email}
                         </span>
                       </div>
                     </td>
 
                     {/* Joined */}
-                    <td className="px-5 py-4 hidden lg:table-cell">
+                    <td className="px-4 py-3 hidden lg:table-cell">
                       <div className="flex items-center gap-1.5">
-                        <Calendar size={13} className="text-slate-600" />
-                        <span className="text-slate-400 text-sm">
-                          {new Date(user.createdAt).toLocaleDateString(
-                            "en-IN",
-                            {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            }
-                          )}
+                        <Calendar size={12} className="text-[var(--foreground-muted)] flex-shrink-0" />
+                        <span className="text-[var(--foreground-muted)] text-sm font-medium">
+                          {new Date(user.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </span>
                       </div>
                     </td>
 
                     {/* Orders */}
-                    <td className="px-5 py-4 hidden sm:table-cell">
+                    <td className="px-4 py-3 hidden sm:table-cell">
                       <div className="flex items-center gap-1.5">
-                        <ShoppingBag size={13} className="text-slate-600" />
-                        <span className="text-slate-300 font-semibold text-sm">
+                        <ShoppingBag size={12} className="text-[var(--foreground-muted)] flex-shrink-0" />
+                        <span className="text-[var(--foreground)] font-bold text-sm">
                           {user._count.orders}
                         </span>
                       </div>
                     </td>
 
                     {/* Status Badge */}
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3">
                       <span
                         className={clsx(
-                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border",
+                          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold border",
                           user.isActive
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                            : "bg-rose-500/10 text-rose-500 border-rose-500/20"
                         )}
                       >
                         <span
                           className={clsx(
-                            "w-1.5 h-1.5 rounded-full",
-                            user.isActive ? "bg-emerald-400" : "bg-rose-400"
+                            "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                            user.isActive ? "bg-emerald-500" : "bg-rose-500"
                           )}
                         />
                         {user.isActive ? "Active" : "Inactive"}
@@ -284,16 +280,16 @@ export default function AdminUsersPage() {
                     </td>
 
                     {/* Action */}
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-4 py-3 text-right">
                       {!user.isAdmin && (
                         <button
                           onClick={() => handleToggle(user)}
                           disabled={togglingId === user.id}
                           className={clsx(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ml-auto",
+                            "flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold border transition-all ml-auto",
                             user.isActive
-                              ? "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20"
-                              : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                              ? "bg-[var(--surface-2)] text-[var(--foreground-muted)] border-[var(--border)] hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30"
+                              : "bg-[var(--surface-2)] text-[var(--foreground-muted)] border-[var(--border)] hover:bg-emerald-500/10 hover:text-emerald-500 hover:border-emerald-500/30"
                           )}
                         >
                           {togglingId === user.id ? (
@@ -303,7 +299,9 @@ export default function AdminUsersPage() {
                           ) : (
                             <ShieldCheck size={13} />
                           )}
-                          {user.isActive ? "Deactivate" : "Activate"}
+                          <span className="hidden sm:inline">
+                            {user.isActive ? "Deactivate" : "Activate"}
+                          </span>
                         </button>
                       )}
                     </td>
@@ -318,23 +316,23 @@ export default function AdminUsersPage() {
       {/* Pagination */}
       {!loading && totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-[var(--foreground-muted)]">
             Page {page} of {totalPages}
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-600 transition-all disabled:opacity-30"
+              className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:border-[var(--border-2)] transition-all disabled:opacity-30"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={15} />
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-600 transition-all disabled:opacity-30"
+              className="p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:border-[var(--border-2)] transition-all disabled:opacity-30"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={15} />
             </button>
           </div>
         </div>

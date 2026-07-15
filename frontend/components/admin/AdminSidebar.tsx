@@ -12,6 +12,12 @@ import {
   Menu,
   X,
   ChevronRight,
+  Ticket,
+  HelpCircle,
+  Bell,
+  Megaphone,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
@@ -19,6 +25,7 @@ import { logoutHandler } from "@/utils/api";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/redux/hooks";
 import { logout } from "@/redux/slices/authSlice";
+import { useTheme } from "next-themes";
 
 const navItems = [
   {
@@ -51,6 +58,30 @@ const navItems = [
     icon: Users,
     description: "Manage Users",
   },
+  {
+    label: "Coupons",
+    route: "/admin/coupons",
+    icon: Ticket,
+    description: "Discount Coupons",
+  },
+  {
+    label: "FAQs",
+    route: "/admin/faqs",
+    icon: HelpCircle,
+    description: "Manage FAQs",
+  },
+  {
+    label: "Notifications",
+    route: "/admin/notifications",
+    icon: Bell,
+    description: "Send Notifications",
+  },
+  {
+    label: "Campaigns",
+    route: "/admin/campaigns",
+    icon: Megaphone,
+    description: "Broadcast Campaigns",
+  },
 ];
 
 export default function AdminSidebar() {
@@ -58,6 +89,9 @@ export default function AdminSidebar() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  const isDark = theme === "dark";
 
   const handleLogout = async () => {
     try {
@@ -70,75 +104,85 @@ export default function AdminSidebar() {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Logo */}
-      <div className="p-6 border-b border-slate-800">
+      <div className="p-5 border-b border-[var(--border)] flex-shrink-0 flex items-center justify-between">
         <Link
           href="/admin/dashboard"
           className="flex items-center gap-3 group"
           onClick={() => setMobileOpen(false)}
         >
-          <div className="bg-emerald-500 p-2.5 rounded-xl shadow-lg shadow-emerald-500/30 group-hover:scale-105 transition-transform">
-            <ShoppingBag size={22} className="text-white" strokeWidth={2.5} />
+          <div className="bg-emerald-500 p-2.5 rounded-xl shadow-lg shadow-emerald-500/30 group-hover:scale-105 transition-transform flex-shrink-0">
+            <ShoppingBag size={20} className="text-white" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-lg font-black text-white tracking-tight leading-none">
+            <h1 className="text-base font-black text-[var(--foreground)] tracking-tight leading-none">
               DesiMarket
             </h1>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">
+            <p className="text-xs text-[var(--foreground-muted)] font-medium mt-0.5">
               Admin Panel
             </p>
           </div>
         </Link>
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="lg:hidden p-2 -mr-2 rounded-lg text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] transition-colors"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest px-3 mb-3">
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+        <p className="text-[10px] font-bold text-[var(--foreground-muted)] uppercase tracking-widest px-3 mb-2 mt-1">
           Navigation
         </p>
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.route;
+          const isActive =
+            pathname === item.route ||
+            pathname.startsWith(item.route + "/");
           return (
             <Link
               key={item.route}
               href={item.route}
               onClick={() => setMobileOpen(false)}
               className={clsx(
-                "flex items-center gap-3.5 px-3 py-3 rounded-xl group transition-all duration-200",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl group transition-all duration-150",
                 isActive
-                  ? "bg-emerald-500/15 text-emerald-400 shadow-sm"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  ? "bg-emerald-500/15 text-emerald-500 dark:text-emerald-400"
+                  : "text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)]"
               )}
             >
               <div
                 className={clsx(
-                  "p-1.5 rounded-lg transition-colors",
+                  "p-1.5 rounded-lg transition-colors flex-shrink-0",
                   isActive
-                    ? "bg-emerald-500/20 text-emerald-400"
-                    : "bg-slate-800 group-hover:bg-slate-700 text-slate-500 group-hover:text-white"
+                    ? "bg-emerald-500/20 text-emerald-500 dark:text-emerald-400"
+                    : "bg-[var(--surface-3)] group-hover:bg-[var(--surface-2)] text-[var(--foreground-muted)] group-hover:text-[var(--foreground)]"
                 )}
               >
-                <Icon size={17} strokeWidth={isActive ? 2.5 : 2} />
+                <Icon size={15} strokeWidth={isActive ? 2.5 : 2} />
               </div>
               <div className="flex-1 min-w-0">
                 <p
                   className={clsx(
-                    "text-sm font-semibold leading-none",
-                    isActive ? "text-emerald-400" : ""
+                    "text-sm font-semibold leading-none truncate",
+                    isActive
+                      ? "text-emerald-500 dark:text-emerald-400"
+                      : ""
                   )}
                 >
                   {item.label}
                 </p>
-                <p className="text-xs text-slate-500 mt-0.5 truncate">
+                <p className="text-[10px] text-[var(--foreground-muted)] mt-0.5 truncate">
                   {item.description}
                 </p>
               </div>
               {isActive && (
                 <ChevronRight
-                  size={14}
-                  className="text-emerald-400 flex-shrink-0"
+                  size={13}
+                  className="text-emerald-500 dark:text-emerald-400 flex-shrink-0"
                 />
               )}
             </Link>
@@ -146,14 +190,32 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-slate-800">
+      {/* Bottom actions */}
+      <div className="p-3 border-t border-[var(--border)] flex-shrink-0 space-y-1">
+        {/* Theme Toggle */}
+        <button
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--foreground)] transition-all duration-150 group"
+        >
+          <div className="p-1.5 rounded-lg bg-[var(--surface-3)] group-hover:bg-[var(--surface-2)] transition-colors flex-shrink-0">
+            {isDark ? (
+              <Sun size={15} className="text-amber-400" />
+            ) : (
+              <Moon size={15} className="text-violet-500" />
+            )}
+          </div>
+          <span className="text-sm font-semibold">
+            {isDark ? "Light Mode" : "Dark Mode"}
+          </span>
+        </button>
+
+        {/* Logout */}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all duration-200 group"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-all duration-150 group"
         >
-          <div className="p-1.5 rounded-lg bg-slate-800 group-hover:bg-rose-500/20 text-slate-500 group-hover:text-rose-400 transition-colors">
-            <LogOut size={17} />
+          <div className="p-1.5 rounded-lg bg-[var(--surface-3)] group-hover:bg-rose-500/20 text-[var(--foreground-muted)] group-hover:text-rose-500 transition-colors flex-shrink-0">
+            <LogOut size={15} />
           </div>
           <span className="text-sm font-semibold">Logout</span>
         </button>
@@ -164,24 +226,35 @@ export default function AdminSidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-slate-900 border-r border-slate-800 fixed top-0 left-0 z-40">
+      <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-[var(--surface)] border-r border-[var(--border)] fixed top-0 left-0 z-40 transition-colors duration-200">
         <SidebarContent />
       </aside>
 
       {/* Mobile Top Bar */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800 px-4 h-16 flex items-center justify-between">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[var(--surface)] border-b border-[var(--border)] px-4 h-14 flex items-center justify-between transition-colors duration-200">
         <Link href="/admin/dashboard" className="flex items-center gap-2.5">
-          <div className="bg-emerald-500 p-2 rounded-lg shadow-lg shadow-emerald-500/30">
-            <ShoppingBag size={18} className="text-white" strokeWidth={2.5} />
+          <div className="bg-emerald-500 p-1.5 rounded-lg shadow-lg shadow-emerald-500/30">
+            <ShoppingBag size={16} className="text-white" strokeWidth={2.5} />
           </div>
-          <span className="text-base font-black text-white">DesiMarket</span>
+          <span className="text-sm font-black text-[var(--foreground)]">
+            DesiMarket
+          </span>
         </Link>
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 transition-colors"
-        >
-          <Menu size={22} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Mobile theme toggle */}
+          <button
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            className="p-2 rounded-lg text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] transition-colors"
+          >
+            {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-violet-500" />}
+          </button>
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="p-2 rounded-lg text-[var(--foreground-muted)] hover:bg-[var(--surface-2)] transition-colors"
+          >
+            <Menu size={20} />
+          </button>
+        </div>
       </header>
 
       {/* Mobile Drawer Overlay */}
@@ -195,18 +268,10 @@ export default function AdminSidebar() {
       {/* Mobile Drawer */}
       <aside
         className={clsx(
-          "lg:hidden fixed top-0 left-0 h-full w-72 bg-slate-900 z-50 transition-transform duration-300 shadow-2xl",
+          "lg:hidden fixed top-0 left-0 h-full w-72 bg-[var(--surface)] border-r border-[var(--border)] z-50 transition-transform duration-300 shadow-2xl",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex justify-end p-4">
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
         <SidebarContent />
       </aside>
     </>

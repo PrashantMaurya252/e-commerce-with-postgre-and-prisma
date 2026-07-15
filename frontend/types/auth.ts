@@ -59,4 +59,6 @@ export interface normalAPIResponse{
     totalOrders?: number,
     totalUsers?: number,
     totalProducts?: number,
+    total?: number,
+    totalNotifications?: number,
 }

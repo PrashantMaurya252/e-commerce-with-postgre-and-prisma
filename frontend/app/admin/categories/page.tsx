@@ -16,7 +16,6 @@ import {
   Upload,
   Loader2,
   RefreshCw,
-  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -30,6 +29,12 @@ interface Category {
 }
 
 const EMPTY_FORM = { name: "", description: "" };
+
+const inputClass =
+  "w-full px-4 py-2.5 bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-emerald-500 focus:outline-none rounded-xl text-sm text-[var(--foreground)] placeholder-[var(--foreground-muted)] transition-colors";
+
+const labelClass =
+  "text-[11px] font-bold text-[var(--foreground-muted)] uppercase tracking-widest block mb-1.5";
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -119,61 +124,62 @@ export default function AdminCategoriesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-[var(--foreground)] tracking-tight">
             Categories
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-[var(--foreground-muted)] text-sm mt-1">
             {categories.length} categories total
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={fetchCategories}
-            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-all"
+            className="p-2.5 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--foreground-muted)] border border-[var(--border)] transition-all"
+            title="Refresh"
           >
-            <RefreshCw size={16} />
+            <RefreshCw size={15} />
           </button>
           <button
             onClick={openCreate}
             className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-emerald-500/20"
           >
-            <Plus size={17} />
-            Add Category
+            <Plus size={16} />
+            <span>Add Category</span>
           </button>
         </div>
       </div>
 
       {/* Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="h-48 rounded-2xl bg-slate-800 animate-pulse" />
+            <div key={i} className="h-48 rounded-2xl bg-[var(--surface-2)] animate-pulse" />
           ))}
         </div>
       ) : categories.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4 rounded-2xl border border-slate-800 bg-slate-900">
-          <Tag size={48} className="text-slate-700" />
-          <p className="text-slate-500 font-medium">No categories yet</p>
+        <div className="flex flex-col items-center justify-center py-20 gap-3 rounded-2xl border border-[var(--card-border)] bg-[var(--card)]">
+          <Tag size={44} className="text-[var(--foreground-muted)] opacity-30" />
+          <p className="text-[var(--foreground-muted)] font-medium text-sm">No categories yet</p>
           <button
             onClick={openCreate}
-            className="text-emerald-400 text-sm font-semibold hover:underline"
+            className="text-emerald-500 text-sm font-semibold hover:underline"
           >
             Create your first category →
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {categories.map((cat) => (
             <div
               key={cat.id}
-              className="relative rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden group hover:border-slate-700 transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/50"
+              className="relative rounded-2xl border border-[var(--card-border)] bg-[var(--card)] overflow-hidden group hover:border-[var(--border-2)] transition-all duration-300 shadow-sm hover:shadow-md"
             >
               {/* Cover Image */}
-              <div className="h-36 bg-gradient-to-br from-slate-800 to-slate-900 relative overflow-hidden">
+              <div className="h-32 sm:h-36 bg-[var(--surface-2)] relative overflow-hidden">
                 {cat.imageUrl ? (
                   <Image
                     src={cat.imageUrl}
@@ -183,44 +189,45 @@ export default function AdminCategoriesPage() {
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Tag size={36} className="text-slate-700" />
+                    <Tag size={32} className="text-[var(--foreground-muted)] opacity-50" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.8)] dark:from-[var(--card)] via-transparent to-transparent" />
               </div>
 
               {/* Info */}
-              <div className="p-4">
-                <h3 className="font-bold text-white text-sm">{cat.name}</h3>
+              <div className="p-4 relative">
+                <h3 className="font-bold text-[var(--foreground)] dark:text-[var(--foreground)] text-[white] sm:text-sm text-sm -mt-[34px] sm:-mt-[34px] drop-shadow-md z-10 block pb-2">{cat.name}</h3>
+                
                 {cat.description && (
-                  <p className="text-slate-500 text-xs mt-0.5 line-clamp-2">
+                  <p className="text-[var(--foreground-muted)] text-xs line-clamp-2">
                     {cat.description}
                   </p>
                 )}
                 {cat._count !== undefined && (
-                  <span className="inline-block mt-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-semibold">
-                    {cat._count.products} products
+                  <span className="inline-block mt-2.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-wider">
+                    {cat._count.products} items
                   </span>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-3 right-3 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => openEdit(cat)}
-                  className="p-2 rounded-lg bg-slate-900/90 backdrop-blur-sm text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
+                  className="p-2 rounded-lg bg-[rgba(0,0,0,0.6)] backdrop-blur-md text-white hover:bg-[rgba(0,0,0,0.8)] transition-colors shadow-sm"
                 >
-                  <Edit3 size={14} />
+                  <Edit3 size={13} />
                 </button>
                 <button
                   onClick={() => handleDelete(cat.id)}
                   disabled={deletingId === cat.id}
-                  className="p-2 rounded-lg bg-slate-900/90 backdrop-blur-sm text-slate-300 hover:text-rose-400 hover:bg-rose-500/10 transition-colors shadow-lg"
+                  className="p-2 rounded-lg bg-[rgba(0,0,0,0.6)] backdrop-blur-md text-white hover:text-rose-400 hover:bg-[rgba(0,0,0,0.8)] transition-colors shadow-sm"
                 >
                   {deletingId === cat.id ? (
-                    <Loader2 size={14} className="animate-spin" />
+                    <Loader2 size={13} className="animate-spin" />
                   ) : (
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   )}
                 </button>
               </div>
@@ -231,29 +238,28 @@ export default function AdminCategoriesPage() {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-              <h2 className="text-base font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-[var(--card)] border border-[var(--card-border)] rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl max-h-[92dvh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] sticky top-0 bg-[var(--card)] z-10">
+              <h2 className="text-base font-bold text-[var(--foreground)]">
                 {editCat ? "Edit Category" : "Add Category"}
               </h2>
               <button
                 onClick={() => setModalOpen(false)}
-                className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                className="p-2 rounded-lg hover:bg-[var(--surface-2)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-5 space-y-4">
               {/* Image Upload */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                  Category Image
-                </label>
+                <label className={labelClass}>Category Image</label>
                 <div
                   onClick={() => fileRef.current?.click()}
-                  className="relative w-full h-36 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-emerald-500/50 transition-colors flex items-center justify-center overflow-hidden bg-slate-800/50"
+                  className="relative w-full h-32 border-2 border-dashed border-[var(--border-2)] rounded-xl cursor-pointer hover:border-emerald-500/50 transition-colors flex items-center justify-center overflow-hidden bg-[var(--surface-2)]"
                 >
                   {imagePreview ? (
                     <Image
@@ -264,8 +270,8 @@ export default function AdminCategoriesPage() {
                     />
                   ) : (
                     <div className="text-center">
-                      <Upload size={24} className="text-slate-500 mx-auto mb-1" />
-                      <p className="text-xs text-slate-500">Click to upload image</p>
+                      <Upload size={20} className="text-[var(--foreground-muted)] mx-auto mb-1.5" />
+                      <p className="text-xs font-semibold text-[var(--foreground-muted)]">Click to upload image</p>
                     </div>
                   )}
                 </div>
@@ -280,41 +286,33 @@ export default function AdminCategoriesPage() {
 
               {/* Name */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Name *
-                </label>
+                <label className={labelClass}>Name *</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData((f) => ({ ...f, name: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
                   placeholder="Category name"
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-emerald-500/50 focus:outline-none rounded-xl text-sm text-white placeholder-slate-500"
+                  className={inputClass}
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Description
-                </label>
+                <label className={labelClass}>Description</label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData((f) => ({ ...f, description: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Short description (optional)"
-                  rows={3}
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-emerald-500/50 focus:outline-none rounded-xl text-sm text-white placeholder-slate-500 resize-none"
+                  rows={2}
+                  className={`${inputClass} resize-none`}
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-[var(--border)]">
               <button
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 font-semibold text-sm transition-colors"
+                className="px-4 py-2.5 rounded-xl text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] font-semibold text-sm transition-colors"
               >
                 Cancel
               </button>
@@ -323,7 +321,7 @@ export default function AdminCategoriesPage() {
                 disabled={saving}
                 className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-60"
               >
-                {saving && <Loader2 size={15} className="animate-spin" />}
+                {saving && <Loader2 size={14} className="animate-spin" />}
                 {editCat ? "Save Changes" : "Create Category"}
               </button>
             </div>
