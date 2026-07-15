@@ -53,12 +53,12 @@ export const addCategory = async (req: AuthRequest, res: Response) => {
         label,
         isActive: isActive !== undefined ? isActive : true,
         ...(fileData && {
-          file: {
+          image: {
             create: fileData
           }
         })
       },
-      include: { file: true }
+      include: { image: true }
     });
 
     return res.status(201).json({
@@ -89,7 +89,7 @@ export const updateCategory = async (req: AuthRequest, res: Response) => {
 
     const existingCategory = await prisma.category.findUnique({
       where: { id },
-      include: { file: true }
+      include: { image: true }
     });
 
     if (!existingCategory) {
@@ -118,7 +118,7 @@ export const updateCategory = async (req: AuthRequest, res: Response) => {
       data: {
         ...dataToBeUpdate,
         ...(fileData && {
-          file: {
+          image: {
             upsert: {
               create: fileData,
               update: fileData,
@@ -126,7 +126,7 @@ export const updateCategory = async (req: AuthRequest, res: Response) => {
           }
         })
       },
-      include: { file: true }
+      include: { image: true }
     });
 
     return res.status(200).json({
@@ -151,7 +151,7 @@ export const getAllCategories = async (req: Request, res: Response) => {
 
     const categories = await prisma.category.findMany({
       where,
-      include: { file: true },
+      include: { image: true },
       orderBy: { createdAt: 'desc' }
     });
 

@@ -360,7 +360,7 @@ export const addIntoCart = async (req: AuthRequest, res: Response) => {
     const price =
       product.isOfferActive && product.offerPrice
         ? product.offerPrice
-        : product.price;
+        : product.sellingPrice;
 
     // 2️⃣ Ensure cart exists
     let cart = await prisma.cart.findUnique({ where: { userId } });
@@ -442,7 +442,7 @@ export const decreaseFromCart = async (req: AuthRequest, res: Response) => {
     const price =
       cartItem.product.isOfferActive && cartItem.product.offerPrice
         ? cartItem.product.offerPrice
-        : cartItem.product.price;
+        : cartItem.product.sellingPrice;
 
     // 2️⃣ Decide operation
     if (cartItem.quantity > 1) {
@@ -513,7 +513,7 @@ export const deleteCartItem = async (req: AuthRequest, res: Response) => {
     const price =
       cartItem.product.isOfferActive && cartItem.product.offerPrice
         ? cartItem.product.offerPrice
-        : cartItem.product.price;
+        : cartItem.product.sellingPrice;
 
     const totalToDeduct = price * cartItem.quantity;
 

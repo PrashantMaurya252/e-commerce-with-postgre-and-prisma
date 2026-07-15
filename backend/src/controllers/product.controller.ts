@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { includes, z } from "zod";
+import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { uploadToCloudinary } from "../utils/helper.js";
 import { FilePurpose, FileType } from "@prisma/client";
@@ -8,17 +8,36 @@ import { getRandomImagesFromFolder } from "../utils/localImageUploader.js";
 import path from "path";
 import { AuthRequest } from "../middlewares/auth.js";
 import { generateEmbedding, semanticProductSearch } from "../utils/gemeni-helper.js";
-import { tryCatch } from "bullmq";
 
 
 
-const productSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  price: z.string().transform((val) => Number(val)),
-  categoryId: z.string(),
-  itemLeft: z.string().transform((val) => Number(val)),
-});
+
+const productSchema = z
+  .object({
+    title: z.string(),
+    description: z.string(),
+    sellingPrice: z.string().transform((val) => Number(val)),
+    costPrice: z.string().transform((val) => Number(val)),
+    offerPrice: z.string().transform((val) => Number(val)),
+    brand: z.string(),
+    categoryId: z.string(),
+    itemLeft: z.string().transform((val) => Number(val)),
+    isOfferActive: z
+      .union([z.boolean(), z.string().transform((val) => val === "true")])
+      .optional(),
+  })
+  .refine((data) => data.costPrice < data.sellingPrice, {
+    message: "costPrice must be less than sellingPrice",
+    path: ["costPrice"],
+  })
+  .refine((data) => data.costPrice < data.offerPrice, {
+    message: "costPrice must be less than offerPrice",
+    path: ["costPrice"],
+  })
+  .refine((data) => data.offerPrice <= data.sellingPrice, {
+    message: "offerPrice must be less than or equal to sellingPrice",
+    path: ["offerPrice"],
+  });
 
 export const addProduct = async (req: AuthRequest, res: Response) => {
   try {
@@ -26,7 +45,7 @@ export const addProduct = async (req: AuthRequest, res: Response) => {
     if (!parsed.success) {
       return res.status(400).json({ success: false, message: parsed.error });
     }
-    const { title, description, price, categoryId, itemLeft } = parsed.data;
+    const { title, description, sellingPrice, costPrice, offerPrice, brand, categoryId, itemLeft, isOfferActive } = parsed.data;
     let uploadedFiles: any[] = [];
     if (req.files && Array.isArray(req.files)) {
       for (const file of req.files) {
@@ -39,30 +58,33 @@ export const addProduct = async (req: AuthRequest, res: Response) => {
         });
       }
     }
-    const embedding = await generateEmbedding(`${title}\n${description}`)
-    
+    const embedding = await generateEmbedding(`${title}\n${description}`);
 
-const product = await prisma.product.create({
-  data: {
-    title,
-    description,
-    price,
-    categoryId,
-    itemLeft,
-    files: { create: uploadedFiles },
-  },
-  include: { files: true },
-});
+    const product = await prisma.product.create({
+      data: {
+        title,
+        description,
+        sellingPrice,
+        costPrice,
+        offerPrice,
+        brand,
+        isOfferActive: isOfferActive ?? false,
+        categoryId,
+        itemLeft,
+        files: { create: uploadedFiles },
+      },
+      include: { files: true },
+    });
 
-await prisma.$executeRaw`
-  INSERT INTO product_embeddings
-  (id, product_id, embedding)
-  VALUES (
-    ${crypto.randomUUID()},
-    ${product.id},
-    ${JSON.stringify(embedding)}::vector
-  )
-`;
+    await prisma.$executeRaw`
+      INSERT INTO product_embeddings
+      (id, product_id, embedding)
+      VALUES (
+        ${crypto.randomUUID()},
+        ${product.id},
+        ${JSON.stringify(embedding)}::vector
+      )
+    `;
     return res.status(201).json({
       success: true,
       message: "Product Created successfully",
@@ -80,11 +102,43 @@ const updateProductSchema = z
   .object({
     title: z.string(),
     description: z.string(),
-    price: z.string().transform((val) => Number(val)),
+    sellingPrice: z.string().transform((val) => Number(val)),
+    costPrice: z.string().transform((val) => Number(val)),
+    offerPrice: z.string().transform((val) => Number(val)),
+    brand: z.string(),
     categoryId: z.string(),
     itemLeft: z.string().transform((val) => Number(val)),
+    isOfferActive: z
+      .union([z.boolean(), z.string().transform((val) => val === "true")])
+      .optional(),
   })
-  .partial();
+  .partial()
+  .superRefine((data, ctx) => {
+    // Only validate when at least two of the three prices are provided
+    const { sellingPrice, costPrice, offerPrice } = data;
+    if (costPrice !== undefined && sellingPrice !== undefined && costPrice >= sellingPrice) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "costPrice must be less than sellingPrice",
+        path: ["costPrice"],
+      });
+    }
+    if (costPrice !== undefined && offerPrice !== undefined && costPrice >= offerPrice) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "costPrice must be less than offerPrice",
+        path: ["costPrice"],
+      });
+    }
+    if (offerPrice !== undefined && sellingPrice !== undefined && offerPrice > sellingPrice) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "offerPrice must be less than or equal to sellingPrice",
+        path: ["offerPrice"],
+      });
+    }
+  });
+
 export const updateProduct = async (req: AuthRequest, res: Response) => {
   try {
     console.log("body in update product", req.body);
@@ -93,13 +147,10 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: parsed.error });
     }
 
-    const { title, description, price, categoryId, itemLeft } = parsed.data;
     const { productId } = req.params;
 
     const product = await prisma.product.findUnique({
-      where: {
-        id: productId,
-      },
+      where: { id: productId },
     });
 
     if (!product) {
@@ -109,21 +160,43 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // If only one price is provided, validate against the existing DB values
+    const resolvedSelling = parsed.data.sellingPrice ?? product.sellingPrice;
+    const resolvedCost = parsed.data.costPrice ?? product.costPrice;
+    const resolvedOffer = parsed.data.offerPrice ?? product.offerPrice;
+
+    if (resolvedCost >= resolvedSelling) {
+      return res.status(400).json({
+        success: false,
+        message: "costPrice must be less than sellingPrice",
+      });
+    }
+    if (resolvedCost >= resolvedOffer) {
+      return res.status(400).json({
+        success: false,
+        message: "costPrice must be less than offerPrice",
+      });
+    }
+    if (resolvedOffer > resolvedSelling) {
+      return res.status(400).json({
+        success: false,
+        message: "offerPrice must be less than or equal to sellingPrice",
+      });
+    }
+
     const dataToBeUpdate = Object.fromEntries(
       Object.entries(parsed.data)?.filter(([_, value]) => value !== undefined)
     );
 
-    const updateProduct = await prisma.product.update({
+    const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: dataToBeUpdate,
     });
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "product updated successfully",
-        data: updateProduct,
-      });
+    return res.status(200).json({
+      success: true,
+      message: "product updated successfully",
+      data: updatedProduct,
+    });
   } catch (error) {
     console.error("update product error", error);
     return res
@@ -163,13 +236,18 @@ export const productSeeder = async (req: AuthRequest, res: Response) => {
       const categoryObj = dbCategories[rand(0, dbCategories.length - 1)];
       const categoryName = categoryObj.name as keyof typeof categoryFolders;
 
+      const selling = rand(300, 3000);
+      const cost = rand(100, selling - 1);
+      const offer = rand(cost + 1, selling);
       const product = await prisma.product.create({
         data: {
           title: `Sample ${categoryName} Product ${i}`,
           description:
             "High quality product with durable material and modern design.",
-          price: rand(300, 3000),
-          offerPrice: rand(200, 2500),
+          sellingPrice: selling,
+          costPrice: cost,
+          offerPrice: offer,
+          brand: categoryName,
           isOfferActive: Math.random() > 0.5,
           categoryId: categoryObj.id,
           itemLeft: rand(10, 80),
