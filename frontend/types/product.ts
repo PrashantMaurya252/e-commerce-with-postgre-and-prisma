@@ -11,7 +11,8 @@ export interface Product {
   category: Category;
   image: string;
   isInCart:boolean,
-  cartQuantity:number
+  cartQuantity:number,
+  isInWishlist?: boolean;
 }
 
 export interface ProductFilter{

@@ -130,12 +130,12 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] relative overflow-hidden px-4 py-8">
       {/* Background Decorative Elements */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-72 h-72 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70"></div>
 
-      <Card className="w-full max-w-md glass shadow-2xl rounded-3xl border border-white/50 relative z-10 p-2 sm:p-4">
+      <Card className="w-full max-w-md glass shadow-2xl rounded-3xl relative z-10 p-2 sm:p-4">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center mb-2">
             <div className="bg-primary text-white p-3 rounded-2xl shadow-lg shadow-primary/30">
@@ -143,10 +143,10 @@ export default function SignupPage() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-3xl font-black text-slate-900 tracking-tight">
+            <CardTitle className="text-3xl font-black text-[var(--foreground)] tracking-tight">
               Create Account
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1 font-medium">
+            <p className="text-sm text-[var(--foreground-muted)] mt-1 font-medium">
               Join DesiMarket today
             </p>
           </div>
@@ -155,13 +155,13 @@ export default function SignupPage() {
         <CardContent className="space-y-4">
           {/* ================= Full Name ================= */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Full Name</label>
+            <label className="text-sm font-bold text-[var(--foreground)]">Full Name</label>
             <Input
               name="username"
               value={formData.username}
               onChange={handleChange}
               placeholder="Your name"
-              className="bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all"
+              className="bg-[var(--surface)] border-[var(--border)] focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all text-[var(--foreground)]"
             />
             {formError.username && (
               <span className="text-xs font-medium text-rose-500 px-1 mt-1 block">
@@ -172,14 +172,14 @@ export default function SignupPage() {
 
           {/* ================= Email ================= */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Email Address</label>
+            <label className="text-sm font-bold text-[var(--foreground)]">Email Address</label>
             <Input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               placeholder="you@example.com"
-              className="bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all"
+              className="bg-[var(--surface)] border-[var(--border)] focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all text-[var(--foreground)]"
             />
             {formError.email && (
               <span className="text-xs font-medium text-rose-500 px-1 mt-1 block">
@@ -190,14 +190,14 @@ export default function SignupPage() {
 
           {/* ================= Password ================= */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Password</label>
+            <label className="text-sm font-bold text-[var(--foreground)]">Password</label>
             <Input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="Create strong password"
-              className="bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all"
+              className="bg-[var(--surface)] border-[var(--border)] focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all text-[var(--foreground)]"
             />
             {formError.password && (
               <span className="text-xs font-medium text-rose-500 px-1 mt-1 block">
@@ -217,9 +217,9 @@ export default function SignupPage() {
 
           {/* ================= Divider ================= */}
           <div className="flex items-center gap-4 py-2">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Or continue with</span>
-            <div className="flex-1 h-px bg-slate-200" />
+            <div className="flex-1 h-px bg-[var(--border)]" />
+            <span className="text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider">Or continue with</span>
+            <div className="flex-1 h-px bg-[var(--border)]" />
           </div>
 
           {/* ================= Google Login ================= */}
@@ -235,7 +235,7 @@ export default function SignupPage() {
           </div>
 
           {/* ================= Login Redirect ================= */}
-          <p className="text-center text-sm text-slate-500 font-medium pt-2">
+          <p className="text-center text-sm text-[var(--foreground-muted)] font-medium pt-2">
             Already have an account?{" "}
             <Link href="/auth/login" className="text-primary hover:text-primary-hover font-bold hover:underline transition-colors">
               Login here

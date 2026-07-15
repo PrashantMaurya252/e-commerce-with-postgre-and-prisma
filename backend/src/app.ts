@@ -16,6 +16,7 @@ import categoryRoutes from "./routes/category.routes.js";
 import bannerRoutes from "./routes/banner.routes.js";
 import notificationCampaignRoutes from "./routes/notification-campaign.routes.js";
 import faqRoutes from "./routes/faq.routes.js";
+import wishlistRoutes from "./routes/wishlist.routes.js";
 import logger from "./utils/logger.js";
 import morgan from "morgan";
 import { globalErrorHandler } from "./middlewares/errorHandler.js";
@@ -109,6 +110,7 @@ app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/banner", bannerRoutes);
 app.use("/api/v1/notification-campaign", notificationCampaignRoutes);
 app.use("/api/v1/faq", faqRoutes);
+app.use("/api/v1/wishlist", wishlistRoutes);
 app.get("/metrics",async(req:Request,res:Response)=>{
   res.set("Content-Type",register.contentType)
   res.end(await register.metrics())

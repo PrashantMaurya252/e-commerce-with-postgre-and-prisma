@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Heart } from "lucide-react";
 
 import { Product } from "@/types/product";
 import {
@@ -10,6 +11,9 @@ import {
   useDecreaseFromCartMutation,
   useDeleteFromCartMutation,
 } from "@/redux/services/cartApi";
+import { useToggleWishlistItemMutation } from "@/redux/services/wishlistApi";
+import { useAppSelector } from "@/redux/hooks";
+import { RootState } from "@/redux/store";
 
 export default function ProductCard({
   product,
@@ -21,6 +25,7 @@ export default function ProductCard({
   handleProductAddedToCart: (id: string) => void;
   handleProductDecreaseFromCart: (id: string) => void;
   handleProductDeleteFromCart: (id: string) => void;
+  handleProductToggleWishlist?: (id: string) => void;
 }) {
   const router = useRouter();
 
@@ -31,11 +36,25 @@ export default function ProductCard({
     useDeleteFromCartMutation();
 
   const isProcessing = adding || decreasing || removing;
+  const { isAuthenticated } = useAppSelector((state: RootState) => state.auth);
+
+  const [toggleWishlist, { isLoading: togglingWishlist }] = useToggleWishlistItemMutation();
 
   /* ================= HANDLERS ================= */
 
   /* ADD */
-  const handleAdd = async () => {
+  const handleAdd = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!isAuthenticated) {
+      toast.error("Please login to add items to cart", {
+        action: {
+          label: "Login",
+          onClick: () => router.push("/auth/login"),
+        },
+      });
+      return;
+    }
+
     handleProductAddedToCart(product.id); // optimistic
 
     try {
@@ -99,12 +118,35 @@ export default function ProductCard({
     }
   };
 
+  /* TOGGLE WISHLIST */
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      toast.error("Please login to manage wishlist", {
+        action: { label: "Login", onClick: () => router.push("/auth/login") },
+      });
+      return;
+    }
+    
+    if (handleProductToggleWishlist) {
+      handleProductToggleWishlist(product.id); // optimistic
+    }
+    try {
+      await toggleWishlist(product.id).unwrap();
+    } catch (error: any) {
+      if (handleProductToggleWishlist) {
+        handleProductToggleWishlist(product.id); // rollback
+      }
+      toast.error(error?.data?.message || "Failed to update wishlist");
+    }
+  };
+
   /* ================= UI ================= */
 
   return (
     <div
-      className={`border rounded-xl p-4 transition relative
-        ${isProcessing ? "opacity-60 pointer-events-none" : "hover:shadow-lg"}
+      className={`border border-[var(--border)] bg-[var(--card)] rounded-xl p-4 transition relative
+        ${isProcessing ? "opacity-60 pointer-events-none" : "hover:shadow-lg hover:border-primary/30"}
       `}
     >
       {/* LOADING OVERLAY */}
@@ -125,17 +167,29 @@ export default function ProductCard({
           fill
           className="object-cover rounded-lg"
         />
+        <button
+          onClick={handleWishlistToggle}
+          disabled={togglingWishlist}
+          className="absolute top-2 left-2 p-1.5 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors"
+        >
+          <Heart
+            size={18}
+            className={`transition-colors ${
+              product.isInWishlist ? "fill-red-500 text-red-500" : "text-gray-600"
+            }`}
+          />
+        </button>
       </div>
 
       {/* INFO */}
-      <h3 className="font-medium text-sm line-clamp-1">{product.name}</h3>
-      <p className="text-orange-600 font-semibold">₹{product.price}</p>
+      <h3 className="font-medium text-sm line-clamp-1 text-[var(--foreground)]">{product.name}</h3>
+      <p className="text-primary font-semibold">₹{product.price}</p>
 
       {/* ACTIONS */}
       {!product.isInCart ? (
         <button
           onClick={handleAdd}
-          className="mt-3 w-full bg-orange-600 text-white py-2 rounded-md text-sm hover:bg-orange-700"
+          className="mt-3 w-full bg-primary text-white py-2 rounded-md text-sm hover:bg-primary-hover transition-colors"
         >
           Add to Cart
         </button>
@@ -183,7 +237,7 @@ export default function ProductCard({
       {/* VIEW DETAILS */}
       <button
         onClick={() => router.push(`/user/products/${product.id}`)}
-        className="mt-3 w-full text-sm text-gray-600 hover:text-black underline"
+        className="mt-3 w-full text-sm text-[var(--foreground-muted)] hover:text-primary transition-colors underline"
       >
         View Details
       </button>

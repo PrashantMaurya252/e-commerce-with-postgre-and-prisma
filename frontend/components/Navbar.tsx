@@ -12,8 +12,13 @@ import {
   LayoutDashboard,
   LogOut,
   Tag,
-  Users
+  Users,
+  Sun,
+  Moon,
+  LogIn,
+  Heart
 } from 'lucide-react'
+import { useTheme } from "next-themes"
 import {logoutHandler } from '@/utils/api'
 import { toast } from 'sonner'
 import { logout } from '@/redux/slices/authSlice'
@@ -33,6 +38,8 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
   const { user, isAuthenticated } = useAppSelector(
     (state: RootState) => state.auth
   )
+  const { theme, setTheme } = useTheme()
+  const isDark = theme === "dark"
 
   const userOptions = [
     {
@@ -47,24 +54,32 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
       route: '/user/products',
       icon: ShoppingBag,
     },
-    {
-      id: 3,
-      label: 'Orders',
-      route: '/user/orders',
-      icon: ClipboardList,
-    },
-    {
-      id: 4,
-      label: 'Cart',
-      route: '/user/cart',
-      icon: ShoppingCart,
-    },
-    {
-      id: 5,
-      label: 'Profile',
-      route: '/user/profile',
-      icon: User,
-    },
+    ...(isAuthenticated ? [
+      {
+        id: 3,
+        label: 'Orders',
+        route: '/user/orders',
+        icon: ClipboardList,
+      },
+      {
+        id: 4,
+        label: 'Cart',
+        route: '/user/cart',
+        icon: ShoppingCart,
+      },
+      {
+        id: 5,
+        label: 'Profile',
+        route: '/user/profile',
+        icon: User,
+      },
+      {
+        id: 6,
+        label: 'Wishlist',
+        route: '/user/wishlist',
+        icon: Heart,
+      },
+    ] : [])
   ]
 
   const adminOptions = [
@@ -176,13 +191,31 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
             })}
           </ul>
           
-          <button 
-            className='hidden lg:flex items-center gap-2 text-rose-600 bg-rose-50 hover:bg-rose-100 font-semibold rounded-full px-5 py-2.5 transition-all duration-300 hover:shadow-sm active:scale-95' 
-            onClick={handleLogout}
-          >
-            <LogOut size={18} strokeWidth={2.5} />
-            <span>Logout</span>
-          </button>
+          <div className="hidden lg:flex items-center gap-3">
+            <button
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              className="p-2.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
+            >
+              {isDark ? <Sun size={20} className="text-amber-400" /> : <Moon size={20} className="text-violet-500" />}
+            </button>
+            {isAuthenticated ? (
+              <button 
+                className='flex items-center gap-2 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 font-semibold rounded-full px-5 py-2.5 transition-all duration-300 hover:shadow-sm active:scale-95' 
+                onClick={handleLogout}
+              >
+                <LogOut size={18} strokeWidth={2.5} />
+                <span>Logout</span>
+              </button>
+            ) : (
+              <button 
+                className='flex items-center gap-2 text-primary bg-primary/10 hover:bg-primary/20 font-semibold rounded-full px-5 py-2.5 transition-all duration-300 hover:shadow-sm active:scale-95' 
+                onClick={() => router.push("/auth/login")}
+              >
+                <LogIn size={18} strokeWidth={2.5} />
+                <span>Login</span>
+              </button>
+            )}
+          </div>
         </div>
       </nav>
     </header>

@@ -7,9 +7,12 @@ import { ArrowRight, ShoppingBag, Truck, ShieldCheck, CreditCard } from "lucide-
 import BannerCarousel from "@/components/home/BannerCarousel";
 import { fetchAllProducts } from "@/utils/api";
 import { getProductImage } from "@/utils/product";
+import { useAppSelector } from "@/redux/hooks";
+import { toast } from "sonner";
 
 export default function Home() {
   const router = useRouter();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   const [featured, setFeatured] = useState<any[]>([]);
   const [electronics, setElectronics] = useState<any[]>([]);
@@ -49,12 +52,12 @@ export default function Home() {
 
   /* -------------------- Skeleton Card -------------------- */
   const SkeletonCard = () => (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col h-full">
-      <div className="h-40 md:h-48 rounded-xl bg-slate-200 animate-shimmer mb-4 w-full" />
+    <div className="bg-[var(--card)] rounded-2xl p-4 shadow-sm border border-[var(--border)] flex flex-col h-full">
+      <div className="h-40 md:h-48 rounded-xl bg-[var(--surface-2)] animate-shimmer mb-4 w-full" />
       <div className="space-y-3 mt-auto">
-        <div className="h-4 rounded bg-slate-200 animate-shimmer w-3/4" />
-        <div className="h-4 rounded bg-slate-200 animate-shimmer w-1/2" />
-        <div className="h-5 rounded bg-slate-200 animate-shimmer w-1/3 mt-2" />
+        <div className="h-4 rounded bg-[var(--surface-2)] animate-shimmer w-3/4" />
+        <div className="h-4 rounded bg-[var(--surface-2)] animate-shimmer w-1/2" />
+        <div className="h-5 rounded bg-[var(--surface-2)] animate-shimmer w-1/3 mt-2" />
       </div>
     </div>
   );
@@ -68,9 +71,9 @@ export default function Home() {
             <div
               key={p.id}
               onClick={() => router.push("/user/products")}
-              className="group cursor-pointer bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+              className="group cursor-pointer bg-[var(--card)] rounded-2xl p-4 border border-[var(--border)] shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 flex flex-col h-full"
             >
-              <div className="relative aspect-square w-full mb-4 overflow-hidden rounded-xl bg-slate-50 flex items-center justify-center p-4">
+              <div className="relative aspect-square w-full mb-4 overflow-hidden rounded-xl bg-white flex items-center justify-center p-4">
                 <img
                   src={p.image}
                   alt={p.name}
@@ -78,12 +81,26 @@ export default function Home() {
                 />
               </div>
               <div className="mt-auto">
-                <h3 className="text-sm md:text-base font-medium text-slate-800 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                <h3 className="text-sm md:text-base font-medium text-[var(--foreground)] line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                   {p.name}
                 </h3>
                 <div className="flex items-center justify-between mt-3">
-                  <p className="font-bold text-lg text-slate-900">₹{p.price}</p>
-                  <button className="bg-slate-100 hover:bg-primary hover:text-white p-2 rounded-full transition-colors text-slate-600">
+                  <p className="font-bold text-lg text-[var(--foreground)]">₹{p.price}</p>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if(!isAuthenticated){
+                        toast.error("Please login to add items to cart", {
+                          action: {
+                            label: "Login",
+                            onClick: () => router.push("/auth/login"),
+                          }
+                        });
+                      } else {
+                        router.push(`/user/products/${p.id}`);
+                      }
+                    }}
+                    className="bg-[var(--surface-2)] hover:bg-primary hover:text-white p-2 rounded-full transition-colors text-[var(--foreground-muted)]">
                     <ShoppingBag size={18} />
                   </button>
                 </div>
@@ -128,7 +145,7 @@ export default function Home() {
 
   /* -------------------- UI -------------------- */
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-[var(--background)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Banner Section - Wrapped nicely */}
@@ -174,8 +191,8 @@ export default function Home() {
         <section className="py-12 animate-fade-in">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Featured Products</h2>
-              <p className="text-slate-500 mt-2">Handpicked items just for you</p>
+              <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight">Featured Products</h2>
+              <p className="text-[var(--foreground-muted)] mt-2">Handpicked items just for you</p>
             </div>
             <button onClick={() => router.push("/user/products")} className="hidden md:flex items-center text-primary font-semibold hover:underline">
               View All <ArrowRight size={16} className="ml-1" />
@@ -188,8 +205,8 @@ export default function Home() {
         <section className="py-12 animate-fade-in">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Latest Electronics</h2>
-              <p className="text-slate-500 mt-2">Upgrade your tech game</p>
+              <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight">Latest Electronics</h2>
+              <p className="text-[var(--foreground-muted)] mt-2">Upgrade your tech game</p>
             </div>
           </div>
           <ProductGrid products={electronics} />
@@ -199,8 +216,8 @@ export default function Home() {
         <section className="py-12 animate-fade-in mb-20">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Trending Fashion</h2>
-              <p className="text-slate-500 mt-2">Dress to impress</p>
+              <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight">Trending Fashion</h2>
+              <p className="text-[var(--foreground-muted)] mt-2">Dress to impress</p>
             </div>
           </div>
           <ProductGrid products={fashion} />

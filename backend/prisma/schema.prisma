@@ -115,6 +115,7 @@ model User{
   avatar             String?
   orders             Order[]
   cart               Cart?
+  wishlist           Wishlist?
   createdAt          DateTime                @default(now())
   isAdmin            Boolean            @default(false)
   files              File[]
@@ -175,6 +176,7 @@ model Product{
   orderItems          OrderItem[]
   itemLeft            Int                    @default(0)
   cartItems           CartItem[]
+  wishlistItem        WishlistItem[]
   brand              String
   isActive           Boolean            @default(true)
   isDeleted          Boolean            @default(false)
@@ -281,6 +283,29 @@ model Payment {
   updatedAt              DateTime      @updatedAt
 
   order                  Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Wishlist{
+  id                     String                  @id @default(uuid())
+  items                  WishlistItem[]
+  total                  Int                       @default(0)
+  userId                 String                    @unique
+  user                   User                      @relation(fields:[userId], references:[id],onDelete:Cascade)
+  updatedAt              DateTime                      @updatedAt
+}
+
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId     String
+  productId  String
+  quantity   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  wishlist       Wishlist     @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([wishlistId, productId]) // one cart record per user-product pair
 }
 
 model Cart{

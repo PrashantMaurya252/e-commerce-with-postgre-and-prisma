@@ -359,7 +359,17 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
           select:{
             quantity:true
           }
-        }:false
+        }:false,
+        wishlistItem: userId ? {
+          where: {
+            wishlist: {
+              userId
+            }
+          },
+          select: {
+            id: true
+          }
+        } : false
        },
     });
 
@@ -368,7 +378,9 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
       ...item,
       isInCart:item.cartItems.length > 0,
       cartQuantity:item.cartItems[0]?.quantity || 0,
-      cartItems:undefined
+      cartItems:undefined,
+      isInWishlist: item.wishlistItem ? item.wishlistItem.length > 0 : false,
+      wishlistItem: undefined
     }))
 
     return res
@@ -508,7 +520,17 @@ export const productDetails = async (req: AuthRequest, res: Response) => {
           select:{
             quantity:true
           }
-        }:false
+        }:false,
+        wishlistItem: userId ? {
+          where: {
+            wishlist: {
+              userId
+            }
+          },
+          select: {
+            id: true
+          }
+        } : false
        },
     });
     if (!product) {
@@ -521,7 +543,9 @@ export const productDetails = async (req: AuthRequest, res: Response) => {
       ...product,
       isInCart:product.cartItems.length > 0,
       cartQuantity:product.cartItems[0]?.quantity || 0,
-      cartItems:undefined
+      cartItems:undefined,
+      isInWishlist: product.wishlistItem ? product.wishlistItem.length > 0 : false,
+      wishlistItem: undefined
     }
     return res.status(200).json({ success: true, data: formattedProducts });
   } catch (error) {

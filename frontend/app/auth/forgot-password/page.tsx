@@ -39,12 +39,12 @@ export default function ForgotPasswordPage() {
     }
   }
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] relative overflow-hidden px-4">
       {/* Background Decorative Elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse"></div>
       <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70"></div>
 
-      <Card className="w-full max-w-md glass shadow-2xl rounded-3xl border border-white/50 relative z-10 p-2 sm:p-4">
+      <Card className="w-full max-w-md glass shadow-2xl rounded-3xl relative z-10 p-2 sm:p-4">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center mb-2">
             <div className="bg-primary text-white p-3 rounded-2xl shadow-lg shadow-primary/30">
@@ -52,10 +52,10 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-3xl font-black text-slate-900 tracking-tight">
+            <CardTitle className="text-3xl font-black text-[var(--foreground)] tracking-tight">
               Forgot Password
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1 font-medium">
+            <p className="text-sm text-[var(--foreground-muted)] mt-1 font-medium">
               Enter your registered email to receive OTP
             </p>
           </div>
@@ -63,15 +63,15 @@ export default function ForgotPasswordPage() {
 
         <CardContent className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Email Address</label>
+            <label className="text-sm font-bold text-[var(--foreground)]">Email Address</label>
             <div className="relative">
-              <span className="icon-[mdi-light--email] absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"></span>
+              <span className="icon-[mdi-light--email] absolute left-4 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] text-xl"></span>
               <Input 
                 onChange={(e)=>setEmail(e.target.value.trim())} 
                 value={email} 
                 type="email" 
                 placeholder="you@example.com" 
-                className="pl-11 bg-white/50 border-slate-200 focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all" 
+                className="pl-11 bg-[var(--surface)] border-[var(--border)] focus:border-primary focus:ring-primary/20 h-12 rounded-xl transition-all text-[var(--foreground)]" 
               />
             </div>
           </div>
@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
             {loading ? "Sending OTP..." : "Send OTP"}
           </Button>
 
-          <p className="text-center text-sm text-slate-500 font-medium pt-2">
+          <p className="text-center text-sm text-[var(--foreground-muted)] font-medium pt-2">
             Remember your password?{" "}
             <Link href="/auth/login" className="text-primary hover:text-primary-hover font-bold hover:underline transition-colors">
               Login here

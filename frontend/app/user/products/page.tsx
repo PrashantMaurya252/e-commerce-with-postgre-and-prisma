@@ -69,7 +69,8 @@ export default function Products() {
         isOfferActive: p.isOfferActive,
         offerPrice: p.offerPrice,
         isInCart:p.isInCart,
-        cartQuantity:p.cartQuantity
+        cartQuantity:p.cartQuantity,
+        isInWishlist: p.isInWishlist
       }));
       setProducts(mapped);
       setTotalPages(response.totalPages || 1);
@@ -111,6 +112,12 @@ export default function Products() {
 
   const handleProductDeleteFromCart = (productId:string)=>{
     setProducts((prev)=>prev.map((product)=>product.id ===productId ? {...product,isInCart:false,cartQuantity:0}:product))
+  }
+  
+  const handleProductToggleWishlist = (productId: string) => {
+    setProducts((prev) => prev.map((product) => 
+      product.id === productId ? { ...product, isInWishlist: !product.isInWishlist } : product
+    ));
   }
   /* -------------------- Main Fetch -------------------- */
   useEffect(() => {
@@ -181,7 +188,13 @@ export default function Products() {
             }`}
           >
             {products?.length > 0 ? (
-              <ProductsGrid products={products} handleProductAddedToCart={handleProductAddedToCart} handleProductDecreaseFromCart={handleProductDecreaseFromCart} handleProductDeleteFromCart={handleProductDeleteFromCart}/>
+              <ProductsGrid 
+                products={products} 
+                handleProductAddedToCart={handleProductAddedToCart} 
+                handleProductDecreaseFromCart={handleProductDecreaseFromCart} 
+                handleProductDeleteFromCart={handleProductDeleteFromCart}
+                handleProductToggleWishlist={handleProductToggleWishlist}
+              />
             ) : (
               !loading && (
                 <p className="text-center text-muted-foreground">

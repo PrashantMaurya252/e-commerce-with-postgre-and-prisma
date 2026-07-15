@@ -53,15 +53,15 @@ const Orders = () => {
         {orders.map((order) => (
           <div
             key={order.id}
-            className="border rounded-xl p-4 md:p-6 shadow-sm bg-white"
+            className="border border-[var(--border)] rounded-xl p-4 md:p-6 shadow-sm bg-[var(--card)]"
           >
             {/* Order Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
-                <p className="text-sm text-gray-500">
-                  Order ID: <span className="font-medium">{order.id.slice(0, 8)}</span>
+                <p className="text-sm text-[var(--foreground-muted)]">
+                  Order ID: <span className="font-medium text-[var(--foreground)]">{order.id.slice(0, 8)}</span>
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[var(--foreground-muted)]">
                   Placed on:{' '}
                   {new Date(order.createdAt).toLocaleDateString()}
                 </p>
@@ -108,8 +108,8 @@ const Orders = () => {
 
                     {/* Product Info */}
                     <div className="flex-1">
-                      <p className="font-medium">{product.title}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-[var(--foreground)]">{product.title}</p>
+                      <p className="text-sm text-[var(--foreground-muted)]">
                         Qty: {item.quantity}
                       </p>
 
@@ -133,8 +133,8 @@ const Orders = () => {
             </div>
 
             {/* Order Summary */}
-            <div className="border-t mt-4 pt-4 flex flex-col sm:flex-row sm:justify-between gap-2">
-              <div className="text-sm text-gray-600">
+            <div className="border-t border-[var(--border)] mt-4 pt-4 flex flex-col sm:flex-row sm:justify-between gap-2">
+              <div className="text-sm text-[var(--foreground-muted)]">
                 Subtotal: ₹{order.subTotal}
                 {order.discountAmount > 0 && (
                   <>

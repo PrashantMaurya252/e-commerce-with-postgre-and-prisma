@@ -10,11 +10,9 @@ export default function UserClientLayout({
   children: React.ReactNode
 }) {
   return (
-    <AuthGuard>
-      <RoleGuard allowedRoles={["USER"]}>
-        <Navbar role="USER"/>
-        <main className="pt-[72px] pb-[72px]">{children}</main>
-      </RoleGuard>
-    </AuthGuard>
+    <>
+      <Navbar role="USER"/>
+      <main className="pt-[72px] pb-[72px]">{children}</main>
+    </>
   )
 }
