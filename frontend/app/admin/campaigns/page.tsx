@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import clsx from "clsx";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Campaign {
   id: string;
@@ -71,6 +72,7 @@ export default function AdminCampaignsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, id: '', title: '' });
 
   const fetchCampaigns = async (pg = page) => {
     setLoading(true);
@@ -124,11 +126,15 @@ export default function AdminCampaignsPage() {
     }
   };
 
-  const handleDelete = async (campaign: Campaign) => {
+  const handleDeleteClick = (campaign: Campaign) => {
     if (!campaign.scheduledAt) return toast.error("Only scheduled campaigns can be deleted");
-    if (!confirm(`Delete campaign "${campaign.title}"?`)) return;
-    setDeletingId(campaign.id);
-    const res = await deleteCampaign(campaign.id);
+    setConfirmConfig({ isOpen: true, id: campaign.id, title: campaign.title });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmConfig.id) return;
+    setDeletingId(confirmConfig.id);
+    const res = await deleteCampaign(confirmConfig.id);
     if (res.success) {
       toast.success("Campaign deleted");
       fetchCampaigns(page);
@@ -136,6 +142,7 @@ export default function AdminCampaignsPage() {
       toast.error(res.message || "Failed");
     }
     setDeletingId(null);
+    setConfirmConfig({ isOpen: false, id: '', title: '' });
   };
 
   return (
@@ -294,7 +301,7 @@ export default function AdminCampaignsPage() {
                     {/* Delete */}
                     {isScheduled && !isExpired && (
                       <button
-                        onClick={() => handleDelete(campaign)}
+                        onClick={() => handleDeleteClick(campaign)}
                         disabled={deletingId === campaign.id}
                         className="p-2 rounded-xl bg-[var(--surface-2)] hover:bg-rose-500/10 text-[var(--foreground-muted)] hover:text-rose-500 border border-[var(--border)] hover:border-rose-500/30 transition-all flex-shrink-0"
                       >
@@ -512,6 +519,16 @@ export default function AdminCampaignsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig({ isOpen: false, id: '', title: '' })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Campaign"
+        message={`Are you sure you want to delete campaign "${confirmConfig.title}"?`}
+        confirmText="Delete"
+        isLoading={!!deletingId}
+      />
     </div>
   );
 }

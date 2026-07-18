@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Category {
   id: string;
@@ -47,6 +48,7 @@ export default function AdminCategoriesPage() {
   const [imagePreview, setImagePreview] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, id: '' });
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchCategories = async () => {
@@ -112,10 +114,14 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this category? Products will be uncategorized.")) return;
-    setDeletingId(id);
-    const res = await deleteCategory(id);
+  const handleDeleteClick = (id: string) => {
+    setConfirmConfig({ isOpen: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmConfig.id) return;
+    setDeletingId(confirmConfig.id);
+    const res = await deleteCategory(confirmConfig.id);
     if (res.success) {
       toast.success("Category deleted");
       fetchCategories();
@@ -123,6 +129,7 @@ export default function AdminCategoriesPage() {
       toast.error(res.message || "Delete failed");
     }
     setDeletingId(null);
+    setConfirmConfig({ isOpen: false, id: '' });
   };
 
   return (
@@ -222,7 +229,7 @@ export default function AdminCategoriesPage() {
                   <Edit3 size={13} />
                 </button>
                 <button
-                  onClick={() => handleDelete(cat.id)}
+                  onClick={() => handleDeleteClick(cat.id)}
                   disabled={deletingId === cat.id}
                   className="p-2 rounded-lg bg-[rgba(0,0,0,0.6)] backdrop-blur-md text-white hover:text-rose-400 hover:bg-[rgba(0,0,0,0.8)] transition-colors shadow-sm"
                 >
@@ -344,6 +351,16 @@ export default function AdminCategoriesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig({ isOpen: false, id: '' })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Category"
+        message="Are you sure you want to delete this category? Products within this category may be affected."
+        confirmText="Delete"
+        isLoading={!!deletingId}
+      />
     </div>
   );
 }

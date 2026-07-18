@@ -9,7 +9,7 @@ import ProductSkeleton from "@/components/products/ProductSkeleton";
 
 import { Category } from "@/types/product";
 import { useDebounce } from "@/hooks/useDebounce";
-import { fetchAllProducts } from "@/utils/api";
+import { fetchAllProducts, fetchBrands, fetchCategories } from "@/utils/api";
 import { getProductImage } from "@/utils/product";
 
 import {
@@ -32,10 +32,16 @@ export default function Products() {
 
   /* -------------------- Filters -------------------- */
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<Category | "ALL">("ALL");
-  const [price, setPrice] = useState(100000);
+  const [category, setCategory] = useState<string>("ALL");
+  const [minPrice, setMinPrice] = useState<number | undefined>();
+  const [maxPrice, setMaxPrice] = useState<number | undefined>();
+  const [brand, setBrand] = useState<string>("");
   const debouncedSearch = useDebounce(search);
   const [loading,setLoading] = useState(true)
+
+  /* -------------------- Options -------------------- */
+  const [categories, setCategories] = useState<any[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
 
   /* -------------------- Data -------------------- */
   const [products, setProducts] = useState<any[]>([]);
@@ -54,7 +60,9 @@ export default function Products() {
     const response = await fetchAllProducts({
       search: debouncedSearch,
       category,
-      price,
+      minPrice,
+      maxPrice,
+      brand,
       page,
       limit,
     });
@@ -119,10 +127,22 @@ export default function Products() {
       product.id === productId ? { ...product, isInWishlist: !product.isInWishlist } : product
     ));
   }
+  useEffect(() => {
+    const loadInitialData = async () => {
+      const [brandsRes, catRes] = await Promise.all([
+        fetchBrands(),
+        fetchCategories()
+      ]);
+      if (brandsRes.success) setBrands(brandsRes.data);
+      if (catRes.success) setCategories(catRes.data);
+    };
+    loadInitialData();
+  }, []);
+
   /* -------------------- Main Fetch -------------------- */
   useEffect(() => {
     fetchProducts();
-  }, [ category, price, page]);
+  }, [category, minPrice, maxPrice, brand, page]);
 
   /* -------------------- Search Dropdown -------------------- */
   useEffect(() => {
@@ -161,14 +181,20 @@ export default function Products() {
           setSearch={setSearch}
           category={category}
           setCategory={setCategory}
-          price={price}
-          setPrice={setPrice}
+          minPrice={minPrice}
+          setMinPrice={setMinPrice}
+          maxPrice={maxPrice}
+          setMaxPrice={setMaxPrice}
+          brand={brand}
+          setBrand={setBrand}
           searchResults={searchResults}
           showDropdown={showDropdown}
           setShowDropdown={setShowDropdown}
           onSelectProduct={(id: string) =>
             router.push(`/user/products/${id}`)
           }
+          categories={categories}
+          brands={brands}
         />
 
         {/* Products */}

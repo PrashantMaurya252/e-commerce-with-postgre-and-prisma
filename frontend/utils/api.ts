@@ -108,7 +108,9 @@ export const fetchAllProducts = async (
           limit: filter.limit,
           search: filter.search,
           category: filter.category !== "ALL" ? filter.category : undefined,
-          price: filter.price,
+          minPrice: filter.minPrice,
+          maxPrice: filter.maxPrice,
+          brand: filter.brand,
         },
         withCredentials: true,
       }
@@ -121,6 +123,28 @@ export const fetchAllProducts = async (
       message: error.response?.data?.message || "Something went wrong",
       data: [],
     };
+  }
+};
+
+export const fetchBrands = async (): Promise<{ success: boolean; data: string[] }> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/product/brands`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, data: [] };
+  }
+};
+
+export const fetchCategories = async (): Promise<{ success: boolean; data: any[] }> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/category/get-all-category`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, data: [] };
   }
 };
 

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import clsx from "clsx";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Coupon {
   id: string;
@@ -66,6 +67,7 @@ export default function AdminCouponsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, id: '', code: '' });
 
   const fetchCoupons = async () => {
     setLoading(true);
@@ -134,10 +136,14 @@ export default function AdminCouponsPage() {
     }
   };
 
-  const handleDelete = async (coupon: Coupon) => {
-    if (!confirm(`Deactivate coupon "${coupon.code}"?`)) return;
-    setDeletingId(coupon.id);
-    const res = await deleteCoupon(coupon.id);
+  const handleDeleteClick = (coupon: Coupon) => {
+    setConfirmConfig({ isOpen: true, id: coupon.id, code: coupon.code });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmConfig.id) return;
+    setDeletingId(confirmConfig.id);
+    const res = await deleteCoupon(confirmConfig.id);
     if (res.success) {
       toast.success("Coupon deactivated");
       fetchCoupons();
@@ -145,6 +151,7 @@ export default function AdminCouponsPage() {
       toast.error(res.message || "Failed");
     }
     setDeletingId(null);
+    setConfirmConfig({ isOpen: false, id: '', code: '' });
   };
 
   const isExpired = (expiresAt: string) => new Date(expiresAt) < new Date();
@@ -366,14 +373,14 @@ export default function AdminCouponsPage() {
                         <div className="flex items-center gap-1.5 justify-end">
                           <button
                             onClick={() => openEdit(coupon)}
-                            className="p-2 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-all border border-[var(--border)]"
+            className="p-2 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface-3)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-all border border-[var(--border)]"
                           >
                             <Edit3 size={13} />
                           </button>
                           <button
-                            onClick={() => handleDelete(coupon)}
+                            onClick={() => handleDeleteClick(coupon)}
                             disabled={deletingId === coupon.id}
-                            className="p-2 rounded-xl bg-[var(--surface-2)] hover:bg-rose-500/10 text-[var(--foreground-muted)] hover:text-rose-500 transition-all border border-[var(--border)] hover:border-rose-500/30"
+                            className="p-1.5 rounded-lg bg-[var(--surface-3)] hover:bg-rose-500/10 text-[var(--foreground-muted)] hover:text-rose-500 transition-colors border border-transparent hover:border-rose-500/30"
                           >
                             {deletingId === coupon.id ? (
                               <Loader2 size={13} className="animate-spin" />
@@ -556,6 +563,16 @@ export default function AdminCouponsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig({ isOpen: false, id: '', code: '' })}
+        onConfirm={handleConfirmDelete}
+        title="Deactivate Coupon"
+        message={`Are you sure you want to deactivate coupon "${confirmConfig.code}"?`}
+        confirmText="Deactivate"
+        isLoading={!!deletingId}
+      />
     </div>
   );
 }

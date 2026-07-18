@@ -36,8 +36,8 @@ export const addCategory = async (req: AuthRequest, res: Response) => {
 
     let fileData = undefined;
 
-    if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-      const file = req.files[0];
+    if (req.file) {
+      const file = req.file;
       const result = await uploadToCloudinary(file as any);
       fileData = {
         url: result?.secure_url,
@@ -102,8 +102,8 @@ export const updateCategory = async (req: AuthRequest, res: Response) => {
 
     let fileData = undefined;
 
-    if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-      const file = req.files[0];
+    if (req.file) {
+      const file = req.file;
       const result = await uploadToCloudinary(file as any);
       fileData = {
         url: result?.secure_url,

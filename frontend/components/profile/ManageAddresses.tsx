@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { Plus, Edit2, Trash2, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 import { useAddAddressMutation, useUpdateAddressMutation, useDeleteAddressMutation } from '@/redux/services/profileApi'
 
 export default function ManageAddresses({ addresses }: { addresses: any[] }) {
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, id: '' })
   
   const [formData, setFormData] = useState({
     line1: '', line2: '', city: '', pincode: '', phoneNumber1: '', phoneNumber2: '', landmark: ''
@@ -52,13 +54,19 @@ export default function ManageAddresses({ addresses }: { addresses: any[] }) {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this address?")) return
+  const handleDeleteClick = (id: string) => {
+    setConfirmConfig({ isOpen: true, id })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmConfig.id) return
     try {
-      await deleteAddress(id).unwrap()
+      await deleteAddress(confirmConfig.id).unwrap()
       toast.success("Address deleted successfully")
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to delete address")
+    } finally {
+      setConfirmConfig({ isOpen: false, id: '' })
     }
   }
 
@@ -133,7 +141,7 @@ export default function ManageAddresses({ addresses }: { addresses: any[] }) {
                 <button onClick={() => handleEdit(addr)} className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
                   <Edit2 size={18} />
                 </button>
-                <button onClick={() => handleDelete(addr.id)} disabled={isDeleting} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50">
+                <button onClick={() => handleDeleteClick(addr.id)} disabled={isDeleting} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50">
                   <Trash2 size={18} />
                 </button>
               </div>
@@ -146,6 +154,16 @@ export default function ManageAddresses({ addresses }: { addresses: any[] }) {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig({ isOpen: false, id: '' })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Address"
+        message="Are you sure you want to delete this address? This action cannot be undone."
+        confirmText="Delete"
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

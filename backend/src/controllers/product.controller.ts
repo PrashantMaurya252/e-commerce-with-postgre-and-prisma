@@ -251,15 +251,13 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
-
-
 export const productSeeder = async (req: AuthRequest, res: Response) => {
   try {
     const categoryFolders = {
-  ELECTRONICS: path.join(process.cwd(), "public/electronics"),
-  CLOTHES: path.join(process.cwd(), "public/clothes"),
-  DAILY_USAGE: path.join(process.cwd(), "public/daily_use"),
-};
+      ELECTRONICS: path.join(process.cwd(), "public/electronics"),
+      CLOTHES: path.join(process.cwd(), "public/clothes"),
+      DAILY_USAGE: path.join(process.cwd(), "public/daily_use"),
+    };
 
     const rand = (min: number, max: number) =>
       Math.floor(Math.random() * (max - min + 1)) + min;
@@ -269,7 +267,7 @@ export const productSeeder = async (req: AuthRequest, res: Response) => {
       "CLOTHES",
       "DAILY_USAGE",
     ];
-    
+
     const dbCategories = [];
     for (const name of defaultCategoryNames) {
       let cat = await prisma.category.findUnique({ where: { name } });
@@ -354,10 +352,9 @@ export const deleteAllProducts = async (req: AuthRequest, res: Response) => {
 
 export const getAllProducts = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId
+    const userId = req.user?.userId;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-
     const categoryId = req.query.category as string | undefined;
     const minPrice = req.query.minPrice
       ? Number(req.query.minPrice)
@@ -367,12 +364,11 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
       : undefined;
 
     const search = req.query.search as string | undefined;
+    const brand = req.query.brand as string | undefined;
     const skip = (page - 1) * limit;
 
-    const cacheKey = `products:page=${page}:limit=${limit}:cat=${categoryId || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}`
+    const cacheKey = `products:page=${page}:limit=${limit}:cat=${categoryId || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}:brand=${brand || "none"}`;
 
-    // let responseData
-    // const cached = await redis.get(cacheKey)
     let where: any = {};
 
     if (categoryId) {
@@ -380,33 +376,41 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
     }
 
     if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = minPrice;
-      if (maxPrice) where.price.lte = maxPrice;
+      where.offerPrice = {};
+      if (minPrice) where.offerPrice.gte = minPrice;
+      if (maxPrice) where.offerPrice.lte = maxPrice;
+    }
+
+    if (brand) {
+      const brandList = brand.split(',').map(b => b.trim()).filter(Boolean);
+      if (brandList.length > 0) {
+        where.brand = { in: brandList };
+      }
     }
 
     if (search) {
-      where.title = {
-        contains: search,
-        mode: "insensitive",
-      };
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { brand: { contains: search, mode: "insensitive" } }
+      ];
     }
     const products = await prisma.product.findMany({
       where,
       skip,
       take: limit,
       orderBy: { createdAt: "desc" },
-      include: { files: true,
-        cartItems:userId ?{
-          where:{
-            cart:{
+      include: {
+        files: true,
+        cartItems: userId ? {
+          where: {
+            cart: {
               userId
             }
           },
-          select:{
-            quantity:true
+          select: {
+            quantity: true
           }
-        }:false,
+        } : false,
         wishlistItem: userId ? {
           where: {
             wishlist: {
@@ -417,15 +421,15 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
             id: true
           }
         } : false
-       },
+      },
     });
 
     const totalProducts = await prisma.product.count({ where });
-    const formattedProducts = products?.map((item)=>({
+    const formattedProducts = products?.map((item) => ({
       ...item,
-      isInCart:item.cartItems.length > 0,
-      cartQuantity:item.cartItems[0]?.quantity || 0,
-      cartItems:undefined,
+      isInCart: item.cartItems.length > 0,
+      cartQuantity: item.cartItems[0]?.quantity || 0,
+      cartItems: undefined,
       isInWishlist: item.wishlistItem ? item.wishlistItem.length > 0 : false,
       wishlistItem: undefined
     }))
@@ -449,125 +453,24 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// export const getAllProducts = async (req: AuthRequest, res: Response) => {
-//   try {
-//     const userId = req.user?.userId
-//     const page = Number(req.query.page) || 1;
-//     const limit = Number(req.query.limit) || 10;
-
-//     const category = req.query.category as Category | undefined;
-//     const minPrice = req.query.minPrice
-//       ? Number(req.query.minPrice)
-//       : undefined;
-//     const maxPrice = req.query.maxPrice
-//       ? Number(req.query.maxPrice)
-//       : undefined;
-
-//     const search = req.query.search as string | undefined;
-//     const skip = (page - 1) * limit;
-
-//     const cacheKey = `products:page=${page}:limit=${limit}:cat=${category || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}`
-
-//     let responseData
-//     const cached = await redis.get(cacheKey)
-//     // let where: any = {};
-
-//     if(cached){
-//       responseData = JSON.parse(cached)
-//     }else{
-//       let where: any = {};
-//       if(category) where.category = category
-//       if(minPrice || maxPrice){
-//         where.price = {}
-//         if(minPrice) where.price.get = minPrice
-//         if(maxPrice) where.price.lte = maxPrice
-//       }
-
-//       if(search){
-//         where.title={
-//           contains:search,
-//           mode:"insensitive"
-//         }
-//       }
-
-//       const products = await prisma.product.findMany({
-//         where,
-//         skip,
-//         take:limit,
-//         orderBy:{createdAt:"desc"},
-//         include:{files:true}
-//       })
-
-//       const totalProducts = await prisma.product.count({where})
-
-//       responseData ={
-//         success:true,
-//         message:"all products are fetched",
-//         page,
-//         limit,
-//         totalProducts,
-//         totalPages:Math.ceil(totalProducts/limit),
-//         data:products
-//       };
-
-//       await redis.set(cacheKey,JSON.stringify(responseData),"EX",300)
-//     }
-
-//     if(userId){
-//       const cartItems = await prisma.cartItem.findMany({
-//         where:{
-//           cart:{userId}
-//         },
-//         select:{
-//           productId:true,
-//           quantity:true
-//         }
-//       })
-
-//       const cartMap = new Map(cartItems.map((item)=>[item.productId,item.quantity]));
-//       responseData.data = responseData.data.map((product:any)=>({
-//         ...product,
-//         isInCart:cartMap.has(product.id),
-//         cartQuantity:cartMap.get(product.id) || 0,
-//       }))
-//     }else{
-//       responseData.data = responseData.data.map((product:any)=>({
-//         ...product,
-//         isInCart:false,
-//         cartQuantity:0
-//       }))
-//     }
-
-//     return res.status(200).json(responseData)
-    
-    
-
-    
-//   } catch (error) {
-//     console.error("getAllProducts Error", error);
-//     return res
-//       .status(500)
-//       .json({ success: false, message: "Internal Server Error" });
-//   }
-// };
-
 export const productDetails = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId
     const { productId } = req.params;
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      include: { files: true,
-        cartItems:userId ? {
-          where:{
-            cart:{
+      include: {
+        files: true,
+        cartItems: userId ? {
+          where: {
+            cart: {
               userId
             }
           },
-          select:{
-            quantity:true
+          select: {
+            quantity: true
           }
-        }:false,
+        } : false,
         wishlistItem: userId ? {
           where: {
             wishlist: {
@@ -578,7 +481,7 @@ export const productDetails = async (req: AuthRequest, res: Response) => {
             id: true
           }
         } : false
-       },
+      },
     });
     if (!product) {
       return res
@@ -588,9 +491,9 @@ export const productDetails = async (req: AuthRequest, res: Response) => {
 
     const formattedProducts = {
       ...product,
-      isInCart:product.cartItems.length > 0,
-      cartQuantity:product.cartItems[0]?.quantity || 0,
-      cartItems:undefined,
+      isInCart: product.cartItems.length > 0,
+      cartQuantity: product.cartItems[0]?.quantity || 0,
+      cartItems: undefined,
       isInWishlist: product.wishlistItem ? product.wishlistItem.length > 0 : false,
       wishlistItem: undefined
     }
@@ -604,74 +507,79 @@ export const productDetails = async (req: AuthRequest, res: Response) => {
 };
 
 
-export const submitProductReview = async(req:AuthRequest,res:Response)=>{
+export const submitProductReview = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId
-    if(!userId){
-      return res.status(401).json({success:false,message:"Unauthorized"})
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" })
     }
-    const {productId} = req.params
-    const {comment,rating} = req.body
-    if(!rating || rating < 1 || rating > 5){
-      return res.status(400).json({success:false,message:"Rating must be  between 1 to 5"})
-    }
-
-    const product = await prisma.product.findUnique({where:{id:productId}})
-    if(!product){
-      return res.status(404).json({success:false,message:"Product not found"})
+    const { productId } = req.params
+    const { comment, rating } = req.body
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: "Rating must be  between 1 to 5" })
     }
 
-     const hasPurchased = await prisma.orderItem.findFirst({
-      where:{productId,order:{userId,status:"DELIVERED"}}
+    const product = await prisma.product.findUnique({ where: { id: productId } })
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" })
+    }
+
+    const hasPurchased = await prisma.orderItem.findFirst({
+      where: { productId, order: { userId, status: "DELIVERED" } }
     })
 
-    if(!hasPurchased){
-      return res.status(400).json({success:false,message:"You only review your purchased product"})
+    if (!hasPurchased) {
+      return res.status(400).json({ success: false, message: "You only review your purchased product" })
     }
-    const existingReview = await prisma.review.findUnique({where:{productId_userId:{productId,userId}}})
-    if(existingReview){
-      return res.status(400).json({success:false,message:"You already reviewd this product"})
+    const existingReview = await prisma.review.findUnique({ where: { productId_userId: { productId, userId } } })
+    if (existingReview) {
+      return res.status(400).json({ success: false, message: "You already reviewd this product" })
     }
 
-    const result = await prisma.$transaction(async (tx)=>{
-      const review = await tx.review.create({data:{
-        productId,
-        userId,
-        rating,
-        comment
-      }})
-      const stats = await tx.review.aggregate({where:{
-        productId
-      },
-      _avg:{rating:true},
-      _count:{rating:true}
+    const result = await prisma.$transaction(async (tx) => {
+      const review = await tx.review.create({
+        data: {
+          productId,
+          userId,
+          rating,
+          comment
+        }
       })
-      await tx.product.update({where:{id:productId},data:{
-        averageRating:stats._avg.rating ?? 0,
-        totalReviews:stats._count.rating
-      }})
+      const stats = await tx.review.aggregate({
+        where: {
+          productId
+        },
+        _avg: { rating: true },
+        _count: { rating: true }
+      })
+      await tx.product.update({
+        where: { id: productId }, data: {
+          averageRating: stats._avg.rating ?? 0,
+          totalReviews: stats._count.rating
+        }
+      })
       return review
     })
 
-    return res.status(200).json({success:true,message:"You submitted you review successfully",data:result})
+    return res.status(200).json({ success: true, message: "You submitted you review successfully", data: result })
   } catch (error) {
     console.error("Error in Product Reviews")
-    return res.status(500).json({success:false,message:"Internal Server Error"})
+    return res.status(500).json({ success: false, message: "Internal Server Error" })
   }
 }
 
-export const productSearch=async(req:Request,res:Response)=>{
-try {
-  const {query} = req.body
-  if(!query){
-    return res.status(404).json({success:false,message:"Query is required"})
+export const productSearch = async (req: Request, res: Response) => {
+  try {
+    const { query } = req.body
+    if (!query) {
+      return res.status(404).json({ success: false, message: "Query is required" })
+    }
+    const products = await semanticProductSearch(query)
+    return res.status(200).json({ success: true, message: "Product Search", products })
+  } catch (error: any) {
+    console.log("Product Search Error", error)
+    return res.status(500).json({ success: false, message: "Internal Server Error" })
   }
-  const products = await semanticProductSearch(query)
-  return res.status(200).json({success:true,message:"Product Search",products})
-} catch (error:any) {
-  console.log("Product Search Error",error)
-  return res.status(500).json({success:false,message:"Internal Server Error"})
-}
 }
 
 export const updateProductReview = async (req: AuthRequest, res: Response) => {
@@ -714,6 +622,21 @@ export const updateProductReview = async (req: AuthRequest, res: Response) => {
     return res.status(200).json({ success: true, message: "Review updated successfully", data: result });
   } catch (error) {
     console.error("Error updating review", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+export const getAllBrands = async (req: Request, res: Response) => {
+  try {
+    const products = await prisma.product.findMany({
+      distinct: ['brand'],
+      select: { brand: true },
+      where: { brand: { not: "" } },
+    });
+    const brands = products.map((p) => p.brand).filter(Boolean);
+    return res.status(200).json({ success: true, data: brands });
+  } catch (error) {
+    console.error("getAllBrands Error", error);
     return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };

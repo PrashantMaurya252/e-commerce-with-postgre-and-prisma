@@ -19,7 +19,9 @@ export interface ProductFilter{
     search?:string,
     page?:number,
     limit?:number,
-    price?:number,
+    minPrice?:number,
+    maxPrice?:number,
+    brand?:string,
     category?:string
 }
 

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import clsx from "clsx";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Faq {
   id: string;
@@ -52,6 +53,7 @@ export default function AdminFaqsPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, id: '' });
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchFaqs = async () => {
@@ -97,10 +99,14 @@ export default function AdminFaqsPage() {
     }
   };
 
-  const handleDelete = async (faq: Faq) => {
-    if (!confirm(`Delete this FAQ?`)) return;
-    setDeletingId(faq.id);
-    const res = await deleteFaq(faq.id);
+  const handleDeleteClick = (faq: Faq) => {
+    setConfirmConfig({ isOpen: true, id: faq.id });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmConfig.id) return;
+    setDeletingId(confirmConfig.id);
+    const res = await deleteFaq(confirmConfig.id);
     if (res.success) {
       toast.success("FAQ deleted");
       fetchFaqs();
@@ -108,6 +114,7 @@ export default function AdminFaqsPage() {
       toast.error(res.message || "Failed");
     }
     setDeletingId(null);
+    setConfirmConfig({ isOpen: false, id: '' });
   };
 
   const handleToggle = async (faq: Faq) => {
@@ -251,9 +258,9 @@ export default function AdminFaqsPage() {
                     <Edit3 size={13} />
                   </button>
                   <button
-                    onClick={() => handleDelete(faq)}
+                    onClick={() => handleDeleteClick(faq)}
                     disabled={deletingId === faq.id}
-                    className="p-1.5 rounded-lg hover:bg-rose-500/10 text-[var(--foreground-muted)] hover:text-rose-500 transition-colors"
+                    className="p-1.5 rounded-lg bg-[var(--surface-3)] hover:bg-rose-500/10 text-[var(--foreground-muted)] hover:text-rose-500 transition-colors border border-transparent hover:border-rose-500/30"
                   >
                     {deletingId === faq.id ? (
                       <Loader2 size={13} className="animate-spin" />
@@ -408,6 +415,16 @@ export default function AdminFaqsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig({ isOpen: false, id: '' })}
+        onConfirm={handleConfirmDelete}
+        title="Delete FAQ"
+        message="Are you sure you want to delete this FAQ? This action cannot be undone."
+        confirmText="Delete"
+        isLoading={!!deletingId}
+      />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import Image from "next/image";
 import clsx from "clsx";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Product {
   id: string;
@@ -82,6 +83,7 @@ export default function AdminProductsPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, id: '' });
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchProducts = async (pg = page) => {
@@ -224,10 +226,14 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this product? This cannot be undone.")) return;
-    setDeletingId(id);
-    const res = await deleteProduct(id);
+  const handleDeleteClick = (id: string) => {
+    setConfirmConfig({ isOpen: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmConfig.id) return;
+    setDeletingId(confirmConfig.id);
+    const res = await deleteProduct(confirmConfig.id);
     if (res.success) {
       toast.success("Product deleted");
       fetchProducts(page);
@@ -235,6 +241,7 @@ export default function AdminProductsPage() {
       toast.error(res.message || "Delete failed");
     }
     setDeletingId(null);
+    setConfirmConfig({ isOpen: false, id: '' });
   };
 
   const filtered = search.trim()
@@ -409,7 +416,7 @@ export default function AdminProductsPage() {
                           <Edit3 size={14} />
                         </button>
                         <button
-                          onClick={() => handleDelete(p.id)}
+                          onClick={() => handleDeleteClick(p.id)}
                           disabled={deletingId === p.id}
                           className="p-2 rounded-lg bg-[var(--surface-2)] hover:bg-rose-500/10 text-[var(--foreground-muted)] hover:text-rose-500 transition-colors border border-[var(--border)] hover:border-rose-500/30"
                         >
@@ -666,6 +673,16 @@ export default function AdminProductsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig({ isOpen: false, id: '' })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+        confirmText="Delete"
+        isLoading={!!deletingId}
+      />
     </div>
   );
 }
