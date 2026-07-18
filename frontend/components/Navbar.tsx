@@ -3,6 +3,7 @@
 import { useAppSelector } from '@/redux/hooks'
 import { RootState } from '@/redux/store'
 import Link from 'next/link'
+import { useGetCartItemsQuery } from '@/redux/services/cartApi'
 import {
   Home,
   ShoppingBag,
@@ -40,6 +41,11 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
   )
   const { theme, setTheme } = useTheme()
   const isDark = theme === "dark"
+
+  const { data: cartData } = useGetCartItemsQuery(undefined, { 
+    skip: !isAuthenticated || role !== 'USER' 
+  });
+  const cartItemsCount = cartData?.data?.items?.reduce((total: number, item: any) => total + item.quantity, 0) || 0;
 
   const userOptions = [
     {
@@ -167,13 +173,20 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
                         : "text-muted-foreground hover:text-primary hover:bg-muted"
                     )}
                   >
-                    <Icon 
-                      className={clsx(
-                        "h-6 w-6 lg:h-5 lg:w-5 transition-transform duration-300",
-                        isActive && "scale-110"
-                      )} 
-                      strokeWidth={isActive ? 2.5 : 2}
-                    />
+                    <div className="relative">
+                      <Icon 
+                        className={clsx(
+                          "h-6 w-6 lg:h-5 lg:w-5 transition-transform duration-300",
+                          isActive && "scale-110"
+                        )} 
+                        strokeWidth={isActive ? 2.5 : 2}
+                      />
+                      {item.label === 'Cart' && cartItemsCount > 0 && (
+                        <span className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] font-bold h-[18px] min-w-[18px] rounded-full flex items-center justify-center shadow-sm px-1">
+                          {cartItemsCount > 99 ? '99+' : cartItemsCount}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Hide label on small screens */}
                     <span className="hidden sm:block lg:inline">

@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ShoppingBag, Truck, ShieldCheck, CreditCard } from "lucide-react";
 
-import BannerCarousel from "@/components/home/BannerCarousel";
-import { fetchAllProducts } from "@/utils/api";
+import StorefrontBanner from "@/components/home/StorefrontBanner";
+import ProductsGrid from "@/components/products/ProductsGrid";
+import { fetchAllProducts, getAllFaqsAPI, getPublicBannersAPI } from "@/utils/api";
 import { getProductImage } from "@/utils/product";
 import { useAppSelector } from "@/redux/hooks";
 import { toast } from "sonner";
@@ -15,8 +16,11 @@ export default function Home() {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   const [featured, setFeatured] = useState<any[]>([]);
-  const [electronics, setElectronics] = useState<any[]>([]);
-  const [fashion, setFashion] = useState<any[]>([]);
+  const [faqs, setFaqs] = useState<any[]>([]);
+  const [topBanners, setTopBanners] = useState<any[]>([]);
+  const [middleBanners, setMiddleBanners] = useState<any[]>([]);
+  const [bottomBanners, setBottomBanners] = useState<any[]>([]);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   /* -------------------- Fetch Products -------------------- */
@@ -24,10 +28,12 @@ export default function Home() {
     const loadHomeProducts = async () => {
       setLoading(true);
 
-      const [featuredRes, electronicsRes, fashionRes] = await Promise.all([
+      const [featuredRes, faqsRes, topRes, midRes, botRes] = await Promise.all([
         fetchAllProducts({ page: 1, limit: 8 }),
-        fetchAllProducts({ category: "ELECTRONICS", page: 1, limit: 8 }),
-        fetchAllProducts({ category: "CLOTHES", page: 1, limit: 8 }),
+        getAllFaqsAPI(),
+        getPublicBannersAPI("HOME_TOP", 5),
+        getPublicBannersAPI("HOME_MIDDLE", 3),
+        getPublicBannersAPI("HOME_BOTTOM", 3),
       ]);
 
       const mapProducts = (res: any) =>
@@ -35,14 +41,25 @@ export default function Home() {
           ? res.data.map((p: any) => ({
               id: p.id,
               name: p.title,
-              price: p.isOfferActive ? p.offerPrice : p.price,
+              price: p.isOfferActive ? p.offerPrice : p.sellingPrice,
+              sellingPrice: p.sellingPrice,
+              offerPrice: p.offerPrice,
+              category: p.category,
               image: getProductImage(p.files),
+              isOfferActive: p.isOfferActive,
+              isInCart: p.isInCart,
+              cartQuantity: p.cartQuantity,
+              isInWishlist: p.isInWishlist,
+              averageRating: p.averageRating,
+              totalReviews: p.totalReviews,
             }))
           : [];
 
       setFeatured(mapProducts(featuredRes));
-      setElectronics(mapProducts(electronicsRes));
-      setFashion(mapProducts(fashionRes));
+      if (faqsRes?.success) setFaqs(faqsRes.data || []);
+      if (topRes?.success) setTopBanners(topRes.data || []);
+      if (midRes?.success) setMiddleBanners(midRes.data || []);
+      if (botRes?.success) setBottomBanners(botRes.data || []);
 
       setTimeout(() => setLoading(false), 500); // smooth skeleton UX
     };
@@ -62,53 +79,26 @@ export default function Home() {
     </div>
   );
 
-  /* -------------------- Product Grid -------------------- */
-  const ProductGrid = ({ products }: { products: any[] }) => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
-      {loading
-        ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
-        : products.map((p) => (
-            <div
-              key={p.id}
-              onClick={() => router.push("/user/products")}
-              className="group cursor-pointer bg-[var(--card)] rounded-2xl p-4 border border-[var(--border)] shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 flex flex-col h-full"
-            >
-              <div className="relative aspect-square w-full mb-4 overflow-hidden rounded-xl bg-white flex items-center justify-center p-4">
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 ease-out"
-                />
-              </div>
-              <div className="mt-auto">
-                <h3 className="text-sm md:text-base font-medium text-[var(--foreground)] line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                  {p.name}
-                </h3>
-                <div className="flex items-center justify-between mt-3">
-                  <p className="font-bold text-lg text-[var(--foreground)]">₹{p.price}</p>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if(!isAuthenticated){
-                        toast.error("Please login to add items to cart", {
-                          action: {
-                            label: "Login",
-                            onClick: () => router.push("/auth/login"),
-                          }
-                        });
-                      } else {
-                        router.push(`/user/products/${p.id}`);
-                      }
-                    }}
-                    className="bg-[var(--surface-2)] hover:bg-primary hover:text-white p-2 rounded-full transition-colors text-[var(--foreground-muted)]">
-                    <ShoppingBag size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-    </div>
-  );
+  /* -------------------- State Updaters -------------------- */
+  const updateProductState = (productId: string, updateFn: (p: any) => any) => {
+    setFeatured(prev => prev.map(p => p.id === productId ? updateFn(p) : p));
+  };
+
+  const handleProductAddedToCart = (productId: string) => {
+    updateProductState(productId, (p) => ({ ...p, isInCart: true, cartQuantity: p.cartQuantity + 1 }));
+  };
+
+  const handleProductDecreaseFromCart = (productId: string) => {
+    updateProductState(productId, (p) => ({ ...p, cartQuantity: p.cartQuantity - 1 }));
+  };
+
+  const handleProductDeleteFromCart = (productId: string) => {
+    updateProductState(productId, (p) => ({ ...p, isInCart: false, cartQuantity: 0 }));
+  };
+
+  const handleProductToggleWishlist = (productId: string) => {
+    updateProductState(productId, (p) => ({ ...p, isInWishlist: !p.isInWishlist }));
+  };
 
   /* -------------------- Features Section -------------------- */
   const FeatureBanner = () => (
@@ -149,10 +139,15 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Banner Section - Wrapped nicely */}
-        <div className="pt-6 pb-4">
-          <div className="rounded-3xl overflow-hidden shadow-sm">
-            <BannerCarousel />
-          </div>
+        <div className="pt-6 pb-4 space-y-4">
+          {topBanners.map(banner => (
+            <StorefrontBanner key={banner.id} banner={banner} />
+          ))}
+          {topBanners.length === 0 && (
+            <div className="rounded-3xl overflow-hidden shadow-sm h-64 bg-[var(--surface-2)] flex items-center justify-center border border-[var(--border)]">
+              <span className="text-[var(--foreground-muted)]">No active banners available</span>
+            </div>
+          )}
         </div>
 
         {/* Hero Section */}
@@ -198,30 +193,75 @@ export default function Home() {
               View All <ArrowRight size={16} className="ml-1" />
             </button>
           </div>
-          <ProductGrid products={featured} />
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
+              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : (
+            <ProductsGrid 
+              products={featured}
+              handleProductAddedToCart={handleProductAddedToCart}
+              handleProductDecreaseFromCart={handleProductDecreaseFromCart}
+              handleProductDeleteFromCart={handleProductDeleteFromCart}
+              handleProductToggleWishlist={handleProductToggleWishlist}
+            />
+          )}
         </section>
 
-        {/* Electronics */}
-        <section className="py-12 animate-fade-in">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight">Latest Electronics</h2>
-              <p className="text-[var(--foreground-muted)] mt-2">Upgrade your tech game</p>
-            </div>
+        {/* Middle Banners */}
+        {middleBanners.length > 0 && (
+          <section className="py-8 space-y-4 animate-fade-in">
+            {middleBanners.map(banner => (
+              <StorefrontBanner key={banner.id} banner={banner} />
+            ))}
+          </section>
+        )}
+
+        {/* FAQs Section */}
+        <section className="py-16 animate-fade-in mb-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight">Frequently Asked Questions</h2>
+            <p className="text-[var(--foreground-muted)] mt-4 max-w-2xl mx-auto">Have questions? We're here to help.</p>
           </div>
-          <ProductGrid products={electronics} />
+          <div className="max-w-3xl mx-auto space-y-4">
+            {faqs.length > 0 ? (
+              faqs.map((faq) => (
+                <div 
+                  key={faq.id} 
+                  className="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden transition-all duration-300"
+                >
+                  <button
+                    onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
+                    className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
+                  >
+                    <span className="font-bold text-[var(--foreground)]">{faq.question}</span>
+                    <span className={`text-primary transition-transform duration-300 ${openFaq === faq.id ? 'rotate-180' : ''}`}>
+                      ▼
+                    </span>
+                  </button>
+                  <div 
+                    className={`px-6 text-[var(--foreground-muted)] transition-all duration-300 overflow-hidden ${
+                      openFaq === faq.id ? 'max-h-96 pb-5 opacity-100' : 'max-h-0 opacity-0'
+                    }`}
+                  >
+                    {faq.answer}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-[var(--foreground-muted)]">No FAQs available right now.</p>
+            )}
+          </div>
         </section>
 
-        {/* Fashion */}
-        <section className="py-12 animate-fade-in mb-20">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight">Trending Fashion</h2>
-              <p className="text-[var(--foreground-muted)] mt-2">Dress to impress</p>
-            </div>
-          </div>
-          <ProductGrid products={fashion} />
-        </section>
+        {/* Bottom Banners */}
+        {bottomBanners.length > 0 && (
+          <section className="py-8 space-y-4 animate-fade-in mb-8">
+            {bottomBanners.map(banner => (
+              <StorefrontBanner key={banner.id} banner={banner} />
+            ))}
+          </section>
+        )}
       </div>
 
       {/* Footer */}

@@ -62,6 +62,12 @@ export default function CartPage() {
     toast.success(`Coupon ${res.data.coupon} applied`);
   };
 
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCoupon("");
+    toast.success("Coupon removed");
+  };
+
   /* ================= CART ================= */
 
   const handleIncrease = async (productId: string) => {
@@ -127,7 +133,7 @@ export default function CartPage() {
 
         {items.map((item: any) => {
           const p = item.product;
-          const price = p.isOfferActive ? p.offerPrice : p.price;
+          const price = p.offerPrice && p.sellingPrice > p.offerPrice ? p.offerPrice : p.sellingPrice;
 
           return (
             <div key={item.id} className="flex gap-4 border border-[var(--border)] bg-[var(--card)] rounded-xl p-4">
@@ -175,14 +181,24 @@ export default function CartPage() {
             value={coupon}
             onChange={(e) => setCoupon(e.target.value)}
             placeholder="Enter coupon"
-            className="flex-1 border border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)] rounded-md px-3 py-2 outline-none focus:border-primary transition-colors"
+            disabled={!!appliedCoupon}
+            className="flex-1 border border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)] rounded-md px-3 py-2 outline-none focus:border-primary transition-colors disabled:opacity-50"
           />
-          <button
-            onClick={() => handleApplyCoupon()}
-            className="bg-primary text-white font-semibold rounded-md px-4 hover:bg-primary-hover transition-colors"
-          >
-            Apply
-          </button>
+          {!appliedCoupon ? (
+            <button
+              onClick={() => handleApplyCoupon()}
+              className="bg-primary text-white font-semibold rounded-md px-4 hover:bg-primary-hover transition-colors"
+            >
+              Apply
+            </button>
+          ) : (
+            <button
+              onClick={handleRemoveCoupon}
+              className="bg-rose-500 text-white font-semibold rounded-md px-4 hover:bg-rose-600 transition-colors"
+            >
+              Remove
+            </button>
+          )}
         </div>
 
         <div className="text-sm space-y-2">

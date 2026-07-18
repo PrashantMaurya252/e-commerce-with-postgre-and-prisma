@@ -148,6 +148,89 @@ export const fetchCategories = async (): Promise<{ success: boolean; data: any[]
   }
 };
 
+export const getAllFaqsAPI = async (): Promise<{ success: boolean; data: any[] }> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/faq`);
+    return response.data;
+  } catch (error: any) {
+    console.error("fetch faqs error", error);
+    return { success: false, data: [] };
+  }
+};
+
+/* -------------------------------------------------------------------------- */
+/*                              BANNER APIs                                   */
+/* -------------------------------------------------------------------------- */
+
+export const getPublicBannersAPI = async (position?: string, limit?: number) => {
+  try {
+    const params = new URLSearchParams();
+    if (position) params.append("position", position);
+    if (limit) params.append("limit", limit.toString());
+    const response = await api.get(`${BACKEND_URL}/banner/public?${params.toString()}`);
+    return response.data;
+  } catch (error: any) {
+    return { success: false, data: [] };
+  }
+};
+
+export const getAdminBannersAPI = async (params: { page?: number; limit?: number; position?: string; isActive?: boolean; includeDeleted?: boolean }) => {
+  try {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page.toString());
+    if (params.limit) query.append("limit", params.limit.toString());
+    if (params.position) query.append("position", params.position);
+    if (params.isActive !== undefined) query.append("isActive", params.isActive.toString());
+    if (params.includeDeleted !== undefined) query.append("includeDeleted", params.includeDeleted.toString());
+
+    const response = await api.get(`${BACKEND_URL}/banner/admin?${query.toString()}`, { withCredentials: true });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, data: [], pagination: {} };
+  }
+};
+
+export const createBannerAPI = async (formData: FormData) => {
+  try {
+    const response = await api.post(`${BACKEND_URL}/banner`, formData, {
+      withCredentials: true,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, message: error.response?.data?.message || "Failed to create banner" };
+  }
+};
+
+export const updateBannerAPI = async (id: string, formData: FormData) => {
+  try {
+    const response = await api.put(`${BACKEND_URL}/banner/${id}`, formData, {
+      withCredentials: true,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, message: error.response?.data?.message || "Failed to update banner" };
+  }
+};
+
+export const toggleBannerStatusAPI = async (id: string) => {
+  try {
+    const response = await api.patch(`${BACKEND_URL}/banner/${id}/toggle`, {}, { withCredentials: true });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, message: error.response?.data?.message || "Failed to toggle banner" };
+  }
+};
+
+export const deleteBannerAPI = async (id: string) => {
+  try {
+    const response = await api.delete(`${BACKEND_URL}/banner/${id}`, { withCredentials: true });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, message: error.response?.data?.message || "Failed to delete banner" };
+  }
+};
 
 export const meAPI = async()=>{
 

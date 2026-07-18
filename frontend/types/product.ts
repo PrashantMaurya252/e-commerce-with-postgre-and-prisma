@@ -7,12 +7,17 @@ export enum Category {
 export interface Product {
   id: string;
   name: string;
-  price: number;
-  category: Category;
+  price: number; // This is the resolved price (offerPrice if active, else sellingPrice)
+  sellingPrice: number;
+  offerPrice: number;
+  isOfferActive: boolean;
+  category: string;
   image: string;
-  isInCart:boolean,
-  cartQuantity:number,
+  isInCart: boolean;
+  cartQuantity: number;
   isInWishlist?: boolean;
+  averageRating: number;
+  totalReviews: number;
 }
 
 export interface ProductFilter{

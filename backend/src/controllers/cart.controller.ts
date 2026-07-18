@@ -322,7 +322,7 @@ export const cartItems = async (req: AuthRequest, res: Response) => {
 
     return res
       .status(200)
-      .json({ success: false, data: cart.items, totalAmount: cart.total });
+      .json({ success: true, data: cart.items, totalAmount: cart.total });
   } catch (error) {
     console.error("cartItems error", error);
     return res

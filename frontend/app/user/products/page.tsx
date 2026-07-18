@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import ProductFilters from "@/components/products/ProductFilters";
 import ProductsGrid from "@/components/products/ProductsGrid";
 import ProductSkeleton from "@/components/products/ProductSkeleton";
+import ProductPopupBanner from "@/components/products/ProductPopupBanner";
 
 import { Category } from "@/types/product";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -71,14 +72,17 @@ export default function Products() {
       const mapped = response.data.map((p: any) => ({
         id: p.id,
         name: p.title,
-        price: p.isOfferActive ? p.offerPrice : p.price,
+        price: p.isOfferActive ? p.offerPrice : p.sellingPrice, // Updated to use sellingPrice if no offer
+        sellingPrice: p.sellingPrice,
+        offerPrice: p.offerPrice,
         category: p.category,
         image: getProductImage(p.files),
         isOfferActive: p.isOfferActive,
-        offerPrice: p.offerPrice,
-        isInCart:p.isInCart,
-        cartQuantity:p.cartQuantity,
-        isInWishlist: p.isInWishlist
+        isInCart: p.isInCart,
+        cartQuantity: p.cartQuantity,
+        isInWishlist: p.isInWishlist,
+        averageRating: p.averageRating,
+        totalReviews: p.totalReviews,
       }));
       setProducts(mapped);
       setTotalPages(response.totalPages || 1);
@@ -171,10 +175,18 @@ export default function Products() {
 
   /* -------------------- UI -------------------- */
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">All Products</h1>
+    <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+      <ProductPopupBanner />
+      <div className="mb-8 p-8 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20">
+        <h1 className="text-3xl md:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[var(--foreground)] to-[var(--foreground-muted)] tracking-tight">
+          Discover Products
+        </h1>
+        <p className="text-[var(--foreground-muted)] mt-2 font-medium">
+          Find the best items tailored just for you.
+        </p>
+      </div>
 
-      <div className="grid md:grid-cols-[280px_1fr] gap-6">
+      <div className="grid lg:grid-cols-[280px_1fr] gap-8">
         {/* Filters */}
         <ProductFilters
           search={search}

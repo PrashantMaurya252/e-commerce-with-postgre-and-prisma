@@ -18,6 +18,7 @@ import {
   Megaphone,
   Sun,
   Moon,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
@@ -81,6 +82,12 @@ const navItems = [
     route: "/admin/campaigns",
     icon: Megaphone,
     description: "Broadcast Campaigns",
+  },
+  {
+    label: "Banners",
+    route: "/admin/banners",
+    icon: ImageIcon,
+    description: "Manage Banners",
   },
 ];
 

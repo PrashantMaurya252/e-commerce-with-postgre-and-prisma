@@ -135,7 +135,7 @@ export const createBanner = async (req: AuthRequest, res: Response) => {
           category: { select: { id: true, name: true } },
         },
       });
-    });
+    }, { maxWait: 5000, timeout: 15000 });
 
     return res.status(201).json({
       success: true,
@@ -232,7 +232,7 @@ export const updateBanner = async (req: AuthRequest, res: Response) => {
           category: { select: { id: true, name: true } },
         },
       });
-    });
+    }, { maxWait: 5000, timeout: 15000 });
 
     return res.status(200).json({
       success: true,
