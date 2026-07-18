@@ -119,7 +119,7 @@ export const createProduct = async (
 ): Promise<normalAPIResponse> => {
   try {
     const res = await api.post(
-      `${BACKEND_URL}/product/create-product`,
+      `${BACKEND_URL}/product/add-product`,
       formData,
       {
         withCredentials: true,

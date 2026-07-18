@@ -58,7 +58,8 @@ export const addProduct = async (req: AuthRequest, res: Response) => {
         });
       }
     }
-    const embedding = await generateEmbedding(`${title}\n${description}`);
+    const contentText = `${title}\n${description}`;
+    const embedding = await generateEmbedding(contentText);
 
     const product = await prisma.product.create({
       data: {
@@ -78,11 +79,13 @@ export const addProduct = async (req: AuthRequest, res: Response) => {
 
     await prisma.$executeRaw`
       INSERT INTO product_embeddings
-      (id, product_id, embedding)
+      (id, product_id, content, embedding, "updatedAt")
       VALUES (
         ${crypto.randomUUID()},
         ${product.id},
-        ${JSON.stringify(embedding)}::vector
+        ${contentText},
+        ${`[${embedding.join(",")}]`}::vector,
+        NOW()
       )
     `;
     return res.status(201).json({
@@ -188,10 +191,54 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
       Object.entries(parsed.data)?.filter(([_, value]) => value !== undefined)
     );
 
+    let uploadedFiles: any[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files) {
+        const result = await uploadToCloudinary(file as any);
+        uploadedFiles?.push({
+          url: result?.secure_url,
+          publicId: result?.public_id,
+          type: file.mimetype.startsWith("video") ? FileType.VIDEO : FileType.IMAGE,
+          filePurpose: FilePurpose.PRODUCT_MEDIA,
+        });
+      }
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
-      data: dataToBeUpdate,
+      data: {
+        ...dataToBeUpdate,
+        ...(uploadedFiles.length > 0 && {
+          files: {
+            create: uploadedFiles
+          }
+        })
+      },
     });
+
+    const contentChanged = dataToBeUpdate.title !== undefined || dataToBeUpdate.description !== undefined;
+    if (contentChanged) {
+      try {
+        const contentText = `${updatedProduct.title}\n${updatedProduct.description}`;
+        const embedding = await generateEmbedding(contentText);
+        await prisma.$executeRaw`
+          INSERT INTO product_embeddings (id, product_id, content, embedding, "updatedAt")
+          VALUES (
+            ${crypto.randomUUID()},
+            ${productId},
+            ${contentText},
+            ${`[${embedding.join(",")}]`}::vector,
+            NOW()
+          )
+          ON CONFLICT (product_id) DO UPDATE
+            SET content = EXCLUDED.content,
+                embedding = EXCLUDED.embedding,
+                "updatedAt" = NOW()
+        `;
+      } catch (embeddingError) {
+        console.error("Product embedding update failed (non-fatal):", embeddingError);
+      }
+    }
     return res.status(200).json({
       success: true,
       message: "product updated successfully",

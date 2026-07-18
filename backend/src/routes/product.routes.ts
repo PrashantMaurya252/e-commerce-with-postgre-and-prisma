@@ -6,8 +6,8 @@ import { addProduct, deleteAllProducts, getAllProducts, productDetails, productS
 
 const productRouter = express.Router()
 
-productRouter.post("/add-product", auth, authorize, upload.array("files", 10), addProduct)
-productRouter.put("/update-product/:productId", auth, authorize, updateProduct)
+productRouter.post("/add-product", auth, authorize, upload.array("files", 4), addProduct)
+productRouter.put("/update-product/:productId", auth, authorize, upload.array("files", 4), updateProduct)
 productRouter.get("/seeding-products", auth, authorize, productSeeder)
 productRouter.delete("/delete-all-products", auth, authorize, deleteAllProducts)
 productRouter.get("/all-products", auth, getAllProducts)

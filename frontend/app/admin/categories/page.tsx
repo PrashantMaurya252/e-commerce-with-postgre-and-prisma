@@ -23,12 +23,13 @@ import Image from "next/image";
 interface Category {
   id: string;
   name: string;
-  description?: string;
-  imageUrl?: string;
+  label: string;
+  isActive: boolean;
+  image?: { url: string };
   _count?: { products: number };
 }
 
-const EMPTY_FORM = { name: "", description: "" };
+const EMPTY_FORM = { name: "", label: "", isActive: true };
 
 const inputClass =
   "w-full px-4 py-2.5 bg-[var(--input-bg)] border border-[var(--input-border)] focus:border-emerald-500 focus:outline-none rounded-xl text-sm text-[var(--foreground)] placeholder-[var(--foreground-muted)] transition-colors";
@@ -69,9 +70,9 @@ export default function AdminCategoriesPage() {
 
   const openEdit = (cat: Category) => {
     setEditCat(cat);
-    setFormData({ name: cat.name, description: cat.description || "" });
+    setFormData({ name: cat.name, label: cat.label || "", isActive: cat.isActive ?? true });
     setImageFile(null);
-    setImagePreview(cat.imageUrl || "");
+    setImagePreview(cat.image?.url || "");
     setModalOpen(true);
   };
 
@@ -83,15 +84,16 @@ export default function AdminCategoriesPage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name.trim()) {
-      toast.error("Category name is required");
+    if (!formData.name.trim() || !formData.label.trim()) {
+      toast.error("Category name and label are required");
       return;
     }
     setSaving(true);
     try {
       const fd = new FormData();
       fd.append("name", formData.name.trim());
-      if (formData.description) fd.append("description", formData.description);
+      fd.append("label", formData.label.trim());
+      fd.append("isActive", String(formData.isActive));
       if (imageFile) fd.append("file", imageFile);
 
       const res = editCat
@@ -180,9 +182,9 @@ export default function AdminCategoriesPage() {
             >
               {/* Cover Image */}
               <div className="h-32 sm:h-36 bg-[var(--surface-2)] relative overflow-hidden">
-                {cat.imageUrl ? (
+                {cat.image?.url ? (
                   <Image
-                    src={cat.imageUrl}
+                    src={cat.image.url}
                     alt={cat.name}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -199,9 +201,9 @@ export default function AdminCategoriesPage() {
               <div className="p-4 relative">
                 <h3 className="font-bold text-[var(--foreground)] dark:text-[var(--foreground)] text-[white] sm:text-sm text-sm -mt-[34px] sm:-mt-[34px] drop-shadow-md z-10 block pb-2">{cat.name}</h3>
                 
-                {cat.description && (
+                {cat.label && (
                   <p className="text-[var(--foreground-muted)] text-xs line-clamp-2">
-                    {cat.description}
+                    {cat.label}
                   </p>
                 )}
                 {cat._count !== undefined && (
@@ -296,16 +298,30 @@ export default function AdminCategoriesPage() {
                 />
               </div>
 
-              {/* Description */}
+              {/* Label */}
               <div>
-                <label className={labelClass}>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Short description (optional)"
-                  rows={2}
-                  className={`${inputClass} resize-none`}
+                <label className={labelClass}>Label *</label>
+                <input
+                  type="text"
+                  value={formData.label}
+                  onChange={(e) => setFormData((f) => ({ ...f, label: e.target.value }))}
+                  placeholder="Category label"
+                  className={inputClass}
                 />
+              </div>
+
+              {/* Is Active */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData((f) => ({ ...f, isActive: e.target.checked }))}
+                  className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer"
+                />
+                <label htmlFor="isActive" className="text-sm font-semibold text-[var(--foreground)] cursor-pointer">
+                  Is Active
+                </label>
               </div>
             </div>
 

@@ -28,10 +28,14 @@ import clsx from "clsx";
 
 interface Product {
   id: string;
-  name: string;
+  title: string;
   description: string;
-  price: number;
-  stock: number;
+  sellingPrice: number;
+  costPrice: number;
+  offerPrice: number;
+  brand: string;
+  itemLeft: number;
+  isOfferActive: boolean;
   categoryId: string;
   averageRating: number;
   totalReviews: number;
@@ -45,10 +49,14 @@ interface Category {
 }
 
 const EMPTY_FORM = {
-  name: "",
+  title: "",
   description: "",
-  price: "",
-  stock: "",
+  sellingPrice: "",
+  costPrice: "",
+  offerPrice: "",
+  brand: "",
+  itemLeft: "",
+  isOfferActive: false,
   categoryId: "",
 };
 
@@ -70,8 +78,8 @@ export default function AdminProductsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -104,51 +112,99 @@ export default function AdminProductsPage() {
   const openCreate = () => {
     setEditProduct(null);
     setFormData(EMPTY_FORM);
-    setImageFile(null);
-    setImagePreview("");
+    setImageFiles([]);
+    setImagePreviews([]);
     setModalOpen(true);
   };
 
   const openEdit = (p: Product) => {
     setEditProduct(p);
     setFormData({
-      name: p.name,
+      title: p.title,
       description: p.description,
-      price: String(p.price),
-      stock: String(p.stock),
+      sellingPrice: String(p.sellingPrice),
+      costPrice: String(p.costPrice),
+      offerPrice: String(p.offerPrice),
+      brand: p.brand,
+      itemLeft: String(p.itemLeft),
+      isOfferActive: p.isOfferActive,
       categoryId: p.categoryId,
     });
-    setImageFile(null);
-    setImagePreview(p.files?.[0]?.url || "");
+    setImageFiles([]);
+    setImagePreviews(p.files?.map(f => f.url) || []);
     setModalOpen(true);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    const newFiles = Array.from(e.target.files || []);
+    if (!newFiles.length) return;
+
+    setImageFiles((prev) => {
+      const combined = [...prev, ...newFiles];
+      return combined.slice(0, 4);
+    });
+
+    setImagePreviews((prev) => {
+      const newUrls = newFiles.map((file) => URL.createObjectURL(file));
+      const combined = [...prev, ...newUrls];
+      return combined.slice(0, 4);
+    });
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    // If it's an existing image, it is in previews but not in imageFiles (or it is before imageFiles)
+    // To handle properly, we assume imageFiles are added AFTER existing previews.
+    const existingPreviewsCount = imagePreviews.length - imageFiles.length;
+    
+    setImagePreviews((prev) => prev.filter((_, i) => i !== indexToRemove));
+    
+    if (indexToRemove >= existingPreviewsCount) {
+      // It's a newly added file
+      setImageFiles((prev) => prev.filter((_, i) => i !== (indexToRemove - existingPreviewsCount)));
+    } else {
+      // NOTE: In a fully complete system we would also track which existing images to delete from backend.
+      // For now, it just removes it from the UI preview.
+    }
   };
 
   const handleSubmit = async () => {
     if (
-      !formData.name.trim() ||
-      !formData.price ||
-      !formData.stock ||
+      !formData.title.trim() ||
+      !formData.sellingPrice ||
+      !formData.costPrice ||
+      !formData.offerPrice ||
+      !formData.brand.trim() ||
+      !formData.itemLeft ||
       !formData.categoryId
     ) {
       toast.error("Please fill all required fields");
       return;
     }
+    if (Number(formData.costPrice) >= Number(formData.sellingPrice)) {
+      toast.error("Cost price must be less than selling price");
+      return;
+    }
+    if (Number(formData.costPrice) >= Number(formData.offerPrice)) {
+      toast.error("Cost price must be less than offer price");
+      return;
+    }
+    if (Number(formData.offerPrice) > Number(formData.sellingPrice)) {
+      toast.error("Offer price must be less than or equal to selling price");
+      return;
+    }
     setSaving(true);
     try {
       const fd = new FormData();
-      fd.append("name", formData.name.trim());
+      fd.append("title", formData.title.trim());
       fd.append("description", formData.description.trim());
-      fd.append("price", formData.price);
-      fd.append("stock", formData.stock);
+      fd.append("sellingPrice", formData.sellingPrice);
+      fd.append("costPrice", formData.costPrice);
+      fd.append("offerPrice", formData.offerPrice);
+      fd.append("brand", formData.brand.trim());
+      fd.append("itemLeft", formData.itemLeft);
+      fd.append("isOfferActive", String(formData.isOfferActive));
       fd.append("categoryId", formData.categoryId);
-      if (imageFile) fd.append("file", imageFile);
+      imageFiles.forEach((file) => fd.append("files", file));
 
       const res = editProduct
         ? await updateProduct(editProduct.id, fd)
@@ -183,7 +239,7 @@ export default function AdminProductsPage() {
 
   const filtered = search.trim()
     ? products.filter((p) =>
-        p.name.toLowerCase().includes(search.toLowerCase())
+        p.title.toLowerCase().includes(search.toLowerCase())
       )
     : products;
 
@@ -285,7 +341,7 @@ export default function AdminProductsPage() {
                           {p.files?.[0]?.url ? (
                             <Image
                               src={p.files[0].url}
-                              alt={p.name}
+                              alt={p.title}
                               width={40}
                               height={40}
                               className="w-full h-full object-cover"
@@ -296,7 +352,7 @@ export default function AdminProductsPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-[var(--foreground)] truncate max-w-[150px] sm:max-w-[200px]">
-                            {p.name}
+                            {p.title}
                           </p>
                           <p className="text-[10px] sm:text-xs text-[var(--foreground-muted)] truncate max-w-[150px] sm:max-w-[200px]">
                             {p.description}
@@ -311,21 +367,21 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-bold text-emerald-500">
-                        ₹{Number(p.price).toLocaleString()}
+                        ₹{Number(p.sellingPrice).toLocaleString()}
                       </span>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
                       <span
                         className={clsx(
                           "font-bold text-sm",
-                          p.stock <= 5
+                          p.itemLeft <= 5
                             ? "text-rose-500"
-                            : p.stock <= 20
+                            : p.itemLeft <= 20
                             ? "text-amber-500"
                             : "text-[var(--foreground)]"
                         )}
                       >
-                        {p.stock}
+                        {p.itemLeft}
                       </span>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
@@ -419,44 +475,67 @@ export default function AdminProductsPage() {
             <div className="p-5 space-y-4">
               {/* Image Upload */}
               <div>
-                <label className={labelClass}>Product Image</label>
-                <div
-                  onClick={() => fileRef.current?.click()}
-                  className="relative w-full h-32 sm:h-36 border-2 border-dashed border-[var(--border-2)] rounded-xl cursor-pointer hover:border-emerald-500/50 transition-colors flex items-center justify-center overflow-hidden bg-[var(--surface-2)]"
-                >
-                  {imagePreview ? (
-                    <Image
-                      src={imagePreview}
-                      alt="preview"
-                      fill
-                      className="object-cover rounded-xl"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <Upload size={20} className="text-[var(--foreground-muted)] mx-auto mb-1.5" />
-                      <p className="text-xs font-semibold text-[var(--foreground-muted)]">
-                        Click to upload image
-                      </p>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelClass.replace("mb-1.5", "")}>Product Images (Up to 4)</label>
+                  <span className="text-[10px] font-bold text-[var(--foreground-muted)]">{imagePreviews.length}/4</span>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative w-full aspect-square border border-[var(--border-2)] rounded-xl overflow-hidden group bg-[var(--surface-2)]">
+                      <Image
+                        src={preview}
+                        alt={`preview-${index}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(index);
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-black/60 backdrop-blur-sm text-white rounded-lg hover:bg-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {imagePreviews.length < 4 && (
+                    <div
+                      onClick={() => fileRef.current?.click()}
+                      className="relative w-full aspect-square border-2 border-dashed border-[var(--border-2)] rounded-xl cursor-pointer hover:border-emerald-500/50 transition-colors flex items-center justify-center bg-[var(--surface-2)]"
+                    >
+                      <div className="text-center p-2">
+                        <Upload size={18} className="text-[var(--foreground-muted)] mx-auto mb-1" />
+                        <p className="text-[10px] font-semibold text-[var(--foreground-muted)]">
+                          Add Image
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
+
                 <input
                   ref={fileRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   className="hidden"
                   onChange={handleImageChange}
+                  value="" // Ensure we can re-select the same file if needed
                 />
               </div>
 
-              {/* Name */}
+              {/* Title */}
               <div>
-                <label className={labelClass}>Name *</label>
+                <label className={labelClass}>Title *</label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="Product name"
+                  value={formData.title}
+                  onChange={(e) => setFormData((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="Product title"
                   className={inputClass}
                 />
               </div>
@@ -473,30 +552,80 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              {/* Price & Stock */}
+              {/* Prices */}
+              <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                <div>
+                  <label className={labelClass}>Selling Price (₹) *</label>
+                  <input
+                    type="number"
+                    value={formData.sellingPrice}
+                    onChange={(e) => setFormData((f) => ({ ...f, sellingPrice: e.target.value }))}
+                    placeholder="0"
+                    min={0}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Cost Price (₹) *</label>
+                  <input
+                    type="number"
+                    value={formData.costPrice}
+                    onChange={(e) => setFormData((f) => ({ ...f, costPrice: e.target.value }))}
+                    placeholder="0"
+                    min={0}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Offer Price (₹) *</label>
+                  <input
+                    type="number"
+                    value={formData.offerPrice}
+                    onChange={(e) => setFormData((f) => ({ ...f, offerPrice: e.target.value }))}
+                    placeholder="0"
+                    min={0}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              {/* Brand & Stock */}
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className={labelClass}>Price (₹) *</label>
+                  <label className={labelClass}>Brand *</label>
                   <input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData((f) => ({ ...f, price: e.target.value }))}
-                    placeholder="0"
-                    min={0}
+                    type="text"
+                    value={formData.brand}
+                    onChange={(e) => setFormData((f) => ({ ...f, brand: e.target.value }))}
+                    placeholder="Brand name"
                     className={inputClass}
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Stock *</label>
+                  <label className={labelClass}>Stock (Items Left) *</label>
                   <input
                     type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData((f) => ({ ...f, stock: e.target.value }))}
+                    value={formData.itemLeft}
+                    onChange={(e) => setFormData((f) => ({ ...f, itemLeft: e.target.value }))}
                     placeholder="0"
                     min={0}
                     className={inputClass}
                   />
                 </div>
+              </div>
+
+              {/* Is Offer Active */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isOfferActive"
+                  checked={formData.isOfferActive}
+                  onChange={(e) => setFormData((f) => ({ ...f, isOfferActive: e.target.checked }))}
+                  className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-500 cursor-pointer"
+                />
+                <label htmlFor="isOfferActive" className="text-sm font-semibold text-[var(--foreground)] cursor-pointer">
+                  Is Offer Active
+                </label>
               </div>
 
               {/* Category */}
