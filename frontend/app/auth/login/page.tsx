@@ -13,7 +13,7 @@ import { RootState, AppDispatch } from "@/redux/store";
 import { login } from "@/redux/slices/authSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { GoogleLogin } from "@react-oauth/google";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, X } from "lucide-react";
 
 export default function LoginPage() {
   const dispatch = useAppDispatch();
@@ -28,6 +28,7 @@ export default function LoginPage() {
   });
   const router = useRouter();
   const {user,isAuthenticated,accessToken} = useAppSelector((state:RootState)=>state.auth)
+  const [showDemoModal, setShowDemoModal] = useState(true);
 
   const handleSubmit = async () => {
     try {
@@ -122,6 +123,41 @@ export default function LoginPage() {
         setLoading(false);
       }
     };
+
+  const handleDemoLogin = async (role: "ADMIN" | "USER") => {
+    setShowDemoModal(false);
+    const email = role === "ADMIN" ? "admin@gmail.com" : "user@gmail.com";
+    const password = "12345678";
+    
+    // Auto fill for visual feedback but password will be hidden by type="password"
+    setFormData({ email, password });
+
+    // Auto submit
+    try {
+      setLoading(true);
+      const response = await loginAPI({ email, password });
+      if (response.success && response.data) {
+        dispatch(
+          login({
+            user: response.data.userData,
+            accessToken: response.data.accessToken,
+          })
+        );
+        if(response.data.userData.isAdmin){
+          router.push("/admin/dashboard");
+        }else{
+          router.push("/user/home")
+        }
+        toast.success(`Logged in as ${role === 'ADMIN' ? 'Admin' : 'User'}`);
+      } else {
+        toast.error(response?.message || "Something went wrong while login");
+      }
+    } catch (error) {
+      console.error("demo login submit error", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)] relative overflow-hidden px-4">
@@ -226,6 +262,40 @@ export default function LoginPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Demo Credentials Modal */}
+      {showDemoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <button 
+              onClick={() => setShowDemoModal(false)}
+              className="absolute top-4 right-4 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
+            >
+              <X size={20} />
+            </button>
+            
+            <h2 className="text-xl font-black mb-2 text-center text-[var(--foreground)]">Demo Access</h2>
+            <p className="text-sm text-center text-[var(--foreground-muted)] mb-6">
+              This is a demo project. Select a role below to automatically log in.
+            </p>
+            
+            <div className="space-y-3">
+              <Button 
+                onClick={() => handleDemoLogin("ADMIN")}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-12 rounded-xl font-bold shadow-lg shadow-emerald-600/20"
+              >
+                Login as Admin
+              </Button>
+              <Button 
+                onClick={() => handleDemoLogin("USER")}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 rounded-xl font-bold shadow-lg shadow-blue-600/20"
+              >
+                Login as User
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -376,6 +376,26 @@ export const getAllOrders = async():Promise<normalAPIResponse>=>{
   }
 }
 
+export const getAddressesAPI = async (): Promise<normalAPIResponse> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/address`, { withCredentials: true })
+    return response.data
+  } catch (error: any) {
+    console.error("get addresses error", error)
+    return { success: false, message: error.response?.data?.message || "Internal Server error" }
+  }
+}
+
+export const addAddressAPI = async (payload: any): Promise<normalAPIResponse> => {
+  try {
+    const response = await api.post(`${BACKEND_URL}/address`, payload, { withCredentials: true })
+    return response.data
+  } catch (error: any) {
+    console.error("add address error", error)
+    return { success: false, message: error.response?.data?.message || "Internal Server error" }
+  }
+}
+
 
 export const getUserProfile = async(userId:string):Promise<normalAPIResponse>=>{
   try {

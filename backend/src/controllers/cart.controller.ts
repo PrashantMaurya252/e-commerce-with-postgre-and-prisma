@@ -117,7 +117,14 @@ export const applyCoupon = async (req: AuthRequest, res: Response) => {
 
 export const checkout = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.userId
-  const { couponCode } = req.body
+  const { couponCode, addressId, paymentMethod } = req.body
+
+  if (!addressId || !paymentMethod) {
+    return res.status(400).json({
+      success: false,
+      message: "Address and Payment Method are required",
+    })
+  }
 
   if (!userId) {
     return res.status(401).json({
@@ -235,12 +242,14 @@ export const checkout = async (req: AuthRequest, res: Response) => {
       }
 
       // 🧾 Create order
+      const finalTotal = Math.max(subTotal - discount, 0);
       const order = await tx.order.create({
         data: {
           userId,
+          addressId,
           subTotal,
           discountAmount: discount,
-          total: Math.max(subTotal - discount, 0),
+          total: finalTotal,
           couponId: coupon?.id,
           couponCode: coupon?.code,
           status: "PENDING",
@@ -250,6 +259,13 @@ export const checkout = async (req: AuthRequest, res: Response) => {
               quantity: item.quantity,
             })),
           },
+          payment: {
+            create: {
+              amount: finalTotal,
+              currency: 'INR',
+              status: "PENDING",
+            }
+          }
         },
       })
 

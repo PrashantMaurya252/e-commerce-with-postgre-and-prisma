@@ -109,13 +109,10 @@ export default function CartPage() {
     );
   }
 
-  const handleCheckout = async()=>{
-    // console.log("appleied coupon",appliedCoupon)
-    const response = await checkout({couponCode:appliedCoupon?.coupon || ""})
-    if(response.success){
-      router.push(`/user/cart/checkout/${response.data.orderId}`)
-    }
-  }
+  const handleCheckout = () => {
+    // Navigate to new checkout flow where user selects address & payment
+    router.push(`/user/cart/checkout?coupon=${appliedCoupon?.coupon || ""}`);
+  };
 
   console.log("Publishable key",process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
