@@ -1,48 +1,48 @@
-import {createApi,fetchBaseQuery} from "@reduxjs/toolkit/query/react"
-import { BACKEND_URL } from "@/utils/api"
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL as string;
 
 
 export const cartApi = createApi({
-    reducerPath:"cartApi",
-    baseQuery:fetchBaseQuery({
-        baseUrl:BACKEND_URL,
-        prepareHeaders:(headers,{getState})=>{
+    reducerPath: "cartApi",
+    baseQuery: fetchBaseQuery({
+        baseUrl: BACKEND_URL,
+        prepareHeaders: (headers, { getState }) => {
             const token = (getState() as any).auth.accessToken
-            if(token){
-                headers.set("authorization",`Bearer ${token}`)
+            if (token) {
+                headers.set("authorization", `Bearer ${token}`)
             }
             return headers
-            
+
         },
     }),
-    tagTypes:["Cart"],
-    endpoints:(builder)=>({
-        getCartItems:builder.query<any,void>({
-            query:()=>"/cart/cartItems",
-            providesTags:["Cart"]
+    tagTypes: ["Cart"],
+    endpoints: (builder) => ({
+        getCartItems: builder.query<any, void>({
+            query: () => "/cart/cartItems",
+            providesTags: ["Cart"]
         }),
-        addToCart:builder.mutation<any,string>({
-            query:(productId)=>({
-                url:`/cart/add-to-cart/${productId}`,
-                method:"PUT"
+        addToCart: builder.mutation<any, string>({
+            query: (productId) => ({
+                url: `/cart/add-to-cart/${productId}`,
+                method: "PUT"
             }),
-            invalidatesTags:["Cart"]
+            invalidatesTags: ["Cart"]
         }),
-        decreaseFromCart:builder.mutation<any,string>({
-            query:(productId)=>({
-                url:`/cart/decrease-from-cart/${productId}`,
-                method:"PUT"
+        decreaseFromCart: builder.mutation<any, string>({
+            query: (productId) => ({
+                url: `/cart/decrease-from-cart/${productId}`,
+                method: "PUT"
             }),
-            invalidatesTags:["Cart"]
+            invalidatesTags: ["Cart"]
         }),
-        deleteFromCart:builder.mutation<any,string>({
-            query:(productId)=>({
-                url:`/cart/delete-cart-item/${productId}`,
-                method:"DELETE"
+        deleteFromCart: builder.mutation<any, string>({
+            query: (productId) => ({
+                url: `/cart/delete-cart-item/${productId}`,
+                method: "DELETE"
             }),
-            invalidatesTags:["Cart"]
+            invalidatesTags: ["Cart"]
         })
     })
 })
 
-export const {useGetCartItemsQuery,useAddToCartMutation,useDecreaseFromCartMutation,useDeleteFromCartMutation} = cartApi
+export const { useGetCartItemsQuery, useAddToCartMutation, useDecreaseFromCartMutation, useDeleteFromCartMutation } = cartApi

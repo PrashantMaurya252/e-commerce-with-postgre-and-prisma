@@ -34,8 +34,9 @@ export const cartTotal =(items:any[]):number=>{
     try {
         let subTotal =0
         for(const item of items){
-            const price = item?.product?.isOfferActive && item?.product.offerPrice ? item?.product.offerPrice : item?.product.price
-            subTotal += price*item.quantity
+            const p = item?.product;
+            const price = p?.offerPrice && p?.sellingPrice > p?.offerPrice ? p.offerPrice : (p?.sellingPrice || p?.price || 0);
+            subTotal += price * item.quantity;
         }
         return subTotal
     } catch (error) {

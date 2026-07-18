@@ -48,10 +48,13 @@ const authSlice = createSlice({
     updateAccessToken:(state,action:PayloadAction<string>)=>{
       state.accessToken = action.payload
     },
-
-    
-    
-
+    updateUser: (state, action: PayloadAction<User>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+      } else {
+        state.user = action.payload;
+      }
+    }
   },
   extraReducers:(builder)=>{
       builder.addCase(fetchMe.fulfilled,(state,action)=>{
@@ -76,5 +79,5 @@ const authSlice = createSlice({
     }
 });
 
-export const { login, logout,updateAccessToken } = authSlice.actions;
+export const { login, logout, updateAccessToken, updateUser } = authSlice.actions;
 export default authSlice.reducer;

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 import { loadStripe } from "@stripe/stripe-js"
 import {
   Elements,
@@ -33,7 +34,7 @@ const PaymentForm = () => {
     })
 
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
     }
 
     setLoading(false)

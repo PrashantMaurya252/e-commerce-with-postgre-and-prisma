@@ -1,5 +1,5 @@
 import express from 'express'
-import { addIntoCart, applyCoupon, cartItems, checkout, decreaseFromCart, deleteCartItem, getAllCoupons, getCartItems } from '../controllers/cart.controller.js'
+import { addIntoCart, applyCoupon, cartItems, checkout, decreaseFromCart, deleteCartItem, getAllCoupons, getCartItems, clearCart } from '../controllers/cart.controller.js'
 import { auth } from '../middlewares/auth.js'
 
 
@@ -15,5 +15,6 @@ cartRouter.put("/add-to-cart/:productId",auth,addIntoCart)
 cartRouter.put("/decrease-from-cart/:productId",auth,decreaseFromCart)
 cartRouter.delete("/delete-cart-item/:productId",auth,deleteCartItem)
 cartRouter.get("/get-all-coupons",auth,getAllCoupons)
+cartRouter.delete("/clear",auth,clearCart)
 
 export default cartRouter

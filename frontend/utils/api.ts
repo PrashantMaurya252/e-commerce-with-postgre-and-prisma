@@ -5,7 +5,7 @@ import axios from "axios"
 import api from "./interceptor";
 
 
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL as string;
 
 
 
@@ -108,7 +108,9 @@ export const fetchAllProducts = async (
           limit: filter.limit,
           search: filter.search,
           category: filter.category !== "ALL" ? filter.category : undefined,
-          price: filter.price,
+          minPrice: filter.minPrice,
+          maxPrice: filter.maxPrice,
+          brand: filter.brand,
         },
         withCredentials: true,
       }
@@ -124,6 +126,111 @@ export const fetchAllProducts = async (
   }
 };
 
+export const fetchBrands = async (): Promise<{ success: boolean; data: string[] }> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/product/brands`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, data: [] };
+  }
+};
+
+export const fetchCategories = async (): Promise<{ success: boolean; data: any[] }> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/category/get-all-category`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, data: [] };
+  }
+};
+
+export const getAllFaqsAPI = async (): Promise<{ success: boolean; data: any[] }> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/faq`);
+    return response.data;
+  } catch (error: any) {
+    console.error("fetch faqs error", error);
+    return { success: false, data: [] };
+  }
+};
+
+/* -------------------------------------------------------------------------- */
+/*                              BANNER APIs                                   */
+/* -------------------------------------------------------------------------- */
+
+export const getPublicBannersAPI = async (position?: string, limit?: number) => {
+  try {
+    const params = new URLSearchParams();
+    if (position) params.append("position", position);
+    if (limit) params.append("limit", limit.toString());
+    const response = await api.get(`${BACKEND_URL}/banner/public?${params.toString()}`);
+    return response.data;
+  } catch (error: any) {
+    return { success: false, data: [] };
+  }
+};
+
+export const getAdminBannersAPI = async (params: { page?: number; limit?: number; position?: string; isActive?: boolean; includeDeleted?: boolean }) => {
+  try {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page.toString());
+    if (params.limit) query.append("limit", params.limit.toString());
+    if (params.position) query.append("position", params.position);
+    if (params.isActive !== undefined) query.append("isActive", params.isActive.toString());
+    if (params.includeDeleted !== undefined) query.append("includeDeleted", params.includeDeleted.toString());
+
+    const response = await api.get(`${BACKEND_URL}/banner/admin?${query.toString()}`, { withCredentials: true });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, data: [], pagination: {} };
+  }
+};
+
+export const createBannerAPI = async (formData: FormData) => {
+  try {
+    const response = await api.post(`${BACKEND_URL}/banner`, formData, {
+      withCredentials: true,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, message: error.response?.data?.message || "Failed to create banner" };
+  }
+};
+
+export const updateBannerAPI = async (id: string, formData: FormData) => {
+  try {
+    const response = await api.put(`${BACKEND_URL}/banner/${id}`, formData, {
+      withCredentials: true,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, message: error.response?.data?.message || "Failed to update banner" };
+  }
+};
+
+export const toggleBannerStatusAPI = async (id: string) => {
+  try {
+    const response = await api.patch(`${BACKEND_URL}/banner/${id}/toggle`, {}, { withCredentials: true });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, message: error.response?.data?.message || "Failed to toggle banner" };
+  }
+};
+
+export const deleteBannerAPI = async (id: string) => {
+  try {
+    const response = await api.delete(`${BACKEND_URL}/banner/${id}`, { withCredentials: true });
+    return response.data;
+  } catch (error: any) {
+    return { success: false, message: error.response?.data?.message || "Failed to delete banner" };
+  }
+};
 
 export const meAPI = async()=>{
 
@@ -266,6 +373,26 @@ export const getAllOrders = async():Promise<normalAPIResponse>=>{
       success:false,
       message:error.response.data.message || "Internal Server error"
     }
+  }
+}
+
+export const getAddressesAPI = async (): Promise<normalAPIResponse> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/address`, { withCredentials: true })
+    return response.data
+  } catch (error: any) {
+    console.error("get addresses error", error)
+    return { success: false, message: error.response?.data?.message || "Internal Server error" }
+  }
+}
+
+export const addAddressAPI = async (payload: any): Promise<normalAPIResponse> => {
+  try {
+    const response = await api.post(`${BACKEND_URL}/address`, payload, { withCredentials: true })
+    return response.data
+  } catch (error: any) {
+    console.error("add address error", error)
+    return { success: false, message: error.response?.data?.message || "Internal Server error" }
   }
 }
 

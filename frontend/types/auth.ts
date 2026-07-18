@@ -51,5 +51,14 @@ export interface verifyForgotPasswordOtpResponse{
 export interface normalAPIResponse{
     success:boolean,
     message?:string,
-    data?:any
+    data?:any,
+    // Pagination fields returned by admin list endpoints
+    page?: number,
+    limit?: number,
+    totalPages?: number,
+    totalOrders?: number,
+    totalUsers?: number,
+    totalProducts?: number,
+    total?: number,
+    totalNotifications?: number,
 }

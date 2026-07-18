@@ -62,6 +62,12 @@ export default function CartPage() {
     toast.success(`Coupon ${res.data.coupon} applied`);
   };
 
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCoupon("");
+    toast.success("Coupon removed");
+  };
+
   /* ================= CART ================= */
 
   const handleIncrease = async (productId: string) => {
@@ -103,21 +109,18 @@ export default function CartPage() {
     );
   }
 
-  const handleCheckout = async()=>{
-    // console.log("appleied coupon",appliedCoupon)
-    const response = await checkout({couponCode:appliedCoupon?.coupon || ""})
-    if(response.success){
-      router.push(`/user/cart/checkout/${response.data.orderId}`)
-    }
-  }
+  const handleCheckout = () => {
+    // Navigate to new checkout flow where user selects address & payment
+    router.push(`/user/cart/checkout?coupon=${appliedCoupon?.coupon || ""}`);
+  };
 
   console.log("Publishable key",process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
   return (
     <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
       {(isFetching || isProcessing) && (
-        <div className="absolute inset-0 bg-white/70 z-20 flex items-center justify-center">
-          <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 bg-[var(--background)]/70 backdrop-blur-sm z-20 flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
@@ -127,18 +130,18 @@ export default function CartPage() {
 
         {items.map((item: any) => {
           const p = item.product;
-          const price = p.isOfferActive ? p.offerPrice : p.price;
+          const price = p.offerPrice && p.sellingPrice > p.offerPrice ? p.offerPrice : p.sellingPrice;
 
           return (
-            <div key={item.id} className="flex gap-4 border rounded-xl p-4">
+            <div key={item.id} className="flex gap-4 border border-[var(--border)] bg-[var(--card)] rounded-xl p-4">
               <div className="relative w-24 h-24">
-                <Image src={p.files[0]?.url} alt={p.title} fill />
+                <Image src={p.files[0]?.url} alt={p.title} fill className="object-cover rounded-md" />
               </div>
 
               <div className="flex-1">
-                <h3>{p.title}</h3>
-                <p className="text-sm text-gray-500">{p.description}</p>
-                <p className="font-semibold">₹{price}</p>
+                <h3 className="text-[var(--foreground)]">{p.title}</h3>
+                <p className="text-sm text-[var(--foreground-muted)]">{p.description}</p>
+                <p className="font-semibold text-primary">₹{price}</p>
 
                 <div className="flex gap-3 mt-3">
                   <button onClick={() => handleDecrease(p.id, item.quantity)}>−</button>
@@ -160,8 +163,8 @@ export default function CartPage() {
       </div>
 
       {/* RIGHT */}
-      <div className="border rounded-xl p-6 space-y-6">
-        <h2 className="text-lg font-semibold">Order Summary</h2>
+      <div className="border border-[var(--border)] bg-[var(--card)] rounded-xl p-6 space-y-6">
+        <h2 className="text-lg font-semibold text-[var(--foreground)]">Order Summary</h2>
 
         <span
           onClick={() => setShowCouponsModal(true)}
@@ -175,14 +178,24 @@ export default function CartPage() {
             value={coupon}
             onChange={(e) => setCoupon(e.target.value)}
             placeholder="Enter coupon"
-            className="flex-1 border px-3 py-2"
+            disabled={!!appliedCoupon}
+            className="flex-1 border border-[var(--border)] bg-[var(--surface-2)] text-[var(--foreground)] rounded-md px-3 py-2 outline-none focus:border-primary transition-colors disabled:opacity-50"
           />
-          <button
-            onClick={() => handleApplyCoupon()}
-            className="bg-black text-white px-4"
-          >
-            Apply
-          </button>
+          {!appliedCoupon ? (
+            <button
+              onClick={() => handleApplyCoupon()}
+              className="bg-primary text-white font-semibold rounded-md px-4 hover:bg-primary-hover transition-colors"
+            >
+              Apply
+            </button>
+          ) : (
+            <button
+              onClick={handleRemoveCoupon}
+              className="bg-rose-500 text-white font-semibold rounded-md px-4 hover:bg-rose-600 transition-colors"
+            >
+              Remove
+            </button>
+          )}
         </div>
 
         <div className="text-sm space-y-2">
@@ -204,15 +217,15 @@ export default function CartPage() {
             </>
           )}
 
-          <div className="border-t pt-2 flex justify-between font-semibold">
-            <span>Total</span>
-            <span>₹{appliedCoupon?.total ?? total}</span>
+          <div className="border-t border-[var(--border)] pt-2 flex justify-between font-semibold">
+            <span className="text-[var(--foreground)]">Total</span>
+            <span className="text-primary">₹{appliedCoupon?.total ?? total}</span>
           </div>
         </div>
 
         <button
           onClick={handleCheckout}
-          className="w-full bg-blue-600 text-white py-3 rounded-md"
+          className="w-full bg-primary text-white font-semibold py-3 rounded-md hover:bg-primary-hover transition-colors"
         >
           Proceed to Checkout
         </button>
@@ -220,14 +233,14 @@ export default function CartPage() {
 
       {/* COUPON MODAL */}
       {showCouponsModal && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-          <div className="bg-white w-full max-w-md p-5 rounded-xl">
-            <h2 className="font-semibold mb-4">Available Coupons</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center">
+          <div className="bg-[var(--card)] w-full max-w-md p-6 rounded-2xl shadow-xl">
+            <h2 className="font-bold mb-4 text-[var(--foreground)]">Available Coupons</h2>
 
             {allCoupons.map(c => (
-              <div key={c.id} className="border p-4 mb-3">
-                <p className="font-semibold text-blue-600">{c.code}</p>
-                <p className="text-sm">
+              <div key={c.id} className="border border-[var(--border)] rounded-xl p-4 mb-3 hover:border-primary/50 transition-colors">
+                <p className="font-bold text-primary">{c.code}</p>
+                <p className="text-sm text-[var(--foreground)] mt-1">
                   {c.discountType === "FLAT"
                     ? `₹${c.discountValue} OFF`
                     : `${c.discountValue}% OFF (Max ₹${c.maxDiscount})`}
@@ -245,7 +258,7 @@ export default function CartPage() {
 
             <button
               onClick={() => setShowCouponsModal(false)}
-              className="w-full text-sm text-gray-500"
+              className="w-full mt-4 text-sm font-semibold text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
             >
               Close
             </button>

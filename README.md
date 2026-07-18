@@ -1,5 +1,12 @@
 # E‑Commerce Platform (Next.js, Node.js, PostgreSQL, Prisma)
 
+<div align="center">
+  <img src="./screen_shot/ScreenShot_1.png" alt="Home Page" width="400" />
+  <img src="./screen_shot/ScreenShot_2.png" alt="Products Page" width="400" />
+  <img src="./screen_shot/ScreensShot_3.png" alt="Checkout Page" width="400" />
+  <img src="./screen_shot/ScreenShot_4.png" alt="Admin Dashboard" width="400" />
+</div>
+
 Full‑stack e‑commerce application with a modern Next.js frontend and a scalable Node.js/Express backend, powered by PostgreSQL + Prisma, Redis, Stripe payments, Cloudinary media storage, and background job processing via BullMQ.
 
 ---
@@ -31,6 +38,7 @@ Full‑stack e‑commerce application with a modern Next.js frontend and a scala
 ### User Features
 
 - Email/password authentication with JWT access & refresh tokens
+- Demo access mode (One-click Login as Admin or User)
 - Google OAuth login (`@react-oauth/google`)
 - Email OTP flows for:
   - Email verification
@@ -39,15 +47,22 @@ Full‑stack e‑commerce application with a modern Next.js frontend and a scala
   - Categories (Electronics, Clothes, Daily Usage, etc.)
   - Product images and galleries (Cloudinary integration)
   - Ratings and reviews with average rating and review count
+  - Smart pricing displays (Original price strikethrough, dynamic % OFF badges)
+- Dynamic Banners & Promotions:
+  - Position-based banners (Home Top, Home Middle, etc.)
+  - Pop-up promotional banners on product pages
 - Shopping cart:
   - Persistent cart per user (PostgreSQL + Prisma models `Cart` & `CartItem`)
   - Increment/decrement/delete items from cart
+  - Dynamic navbar cart badge
 - Coupon system:
   - Percentage/flat discounts
   - Min cart values, usage limits, expiration dates
 - Checkout and orders:
+  - Dedicated multi-step checkout flow UI
   - Order creation and order items
-  - Address management
+  - Multiple Address management (Save, Select, Default Address)
+  - Payment method selection (Cash on Delivery vs Pay Online)
   - Order statuses (Pending, Paid, Shipped, Delivered, Cancelled, etc.)
 - Stripe payments:
   - Payment Intents in INR
@@ -58,11 +73,17 @@ Full‑stack e‑commerce application with a modern Next.js frontend and a scala
 
 - Admin area (under `frontend/app/admin/...`)
 - Manage products (list, create, update, disable)
+- Manage categories (create, update, manage taxonomy)
+- Manage Dynamic Banners (create, update, schedule, position storefront banners)
+- Notification & Campaign Management (broadcast targeted campaigns to users)
 - View and manage orders
 - Access control via role-based guards (`RoleGuard`, `isAdmin` flag on `User`)
 
-### System / Platform Features
+### System / Platform & AI Features
 
+- **AI Search & Recommendations (Vector Embeddings)**:
+  - Product embeddings stored in PostgreSQL via `pgvector`
+  - FAQ and semantic search capabilities
 - PostgreSQL + Prisma schema containing:
   - `User`, `Product`, `Order`, `OrderItem`, `Cart`, `CartItem`
   - `Coupon`, `CouponUsage`, `Review`, `Payment`, `File`, `RefreshToken`, `Otp`
