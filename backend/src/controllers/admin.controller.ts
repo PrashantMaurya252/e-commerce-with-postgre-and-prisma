@@ -2,10 +2,7 @@ import { Request, Response } from "express";
 import z from "zod";
 import { prisma } from "../config/prisma.js";
 import { v2 as cloudinary } from "cloudinary";
-import { OrderStatus } from "@prisma/client";
-
-
-
+import { OrderStatus, PaymentStatus } from "@prisma/client";
 const couponSchema = z.object({
     code: z.string().trim().toUpperCase(),
     discountType: z.enum(["PERCENT", "FLAT"]),
@@ -207,6 +204,7 @@ export const getAllOrdersForAdmin = async (req: Request, res: Response) => {
                 user: { select: { name: true, email: true } },
                 items: { include: { product: true } },
                 address: true,
+                payment: true,
             }
         });
 
@@ -259,6 +257,70 @@ export const updateOrderAdmin = async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error("Update order admin error", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+};
+
+export const getAdminOrderById = async (req: Request, res: Response) => {
+    try {
+        const { orderId } = req.params;
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                user: { select: { name: true, email: true } },
+                items: { include: { product: { include: { files: true } } } },
+                address: true,
+                payment: true,
+            }
+        });
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Order fetched successfully",
+            data: order,
+        });
+    } catch (error) {
+        console.error("Get admin order by id error", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+};
+
+const updatePaymentSchema = z.object({
+    status: z.nativeEnum(PaymentStatus)
+});
+
+export const updatePaymentStatusAdmin = async (req: Request, res: Response) => {
+    try {
+        const { orderId } = req.params;
+        const parsed = updatePaymentSchema.safeParse(req.body);
+
+        if (!parsed.success) {
+            return res.status(400).json({ success: false, message: parsed.error });
+        }
+
+        const { status } = parsed.data;
+
+        const existingPayment = await prisma.payment.findUnique({ where: { orderId } });
+        if (!existingPayment) {
+            return res.status(404).json({ success: false, message: "Payment not found for this order" });
+        }
+
+        const updatedPayment = await prisma.payment.update({
+            where: { orderId },
+            data: { status },
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Payment status updated successfully",
+            data: updatedPayment,
+        });
+    } catch (error) {
+        console.error("Update payment status admin error", error);
         return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };

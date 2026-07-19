@@ -1,7 +1,7 @@
 import express from 'express'
 import { auth } from '../middlewares/auth.js'
 import { authorize } from '../middlewares/authorize.js'
-import { createCoupon, deleteCoupon, getAllCoupon, updateCoupon, wipeAllData, getAllOrdersForAdmin, updateOrderAdmin, getDashboardStats, getAdminUsers, toggleUserStatus, getAdminProductsWithReviews, deleteReviewAdmin } from '../controllers/admin.controller.js'
+import { createCoupon, deleteCoupon, getAllCoupon, updateCoupon, wipeAllData, getAllOrdersForAdmin, updateOrderAdmin, getDashboardStats, getAdminUsers, toggleUserStatus, getAdminProductsWithReviews, deleteReviewAdmin, getAdminOrderById, updatePaymentStatusAdmin } from '../controllers/admin.controller.js'
 
 const adminRoutes = express.Router()
 
@@ -15,7 +15,9 @@ adminRoutes.get("/get-all-coupons",getAllCoupon)
 
 // Orders
 adminRoutes.get("/orders", getAllOrdersForAdmin)
+adminRoutes.get("/orders/:orderId", getAdminOrderById)
 adminRoutes.patch("/orders/:orderId", updateOrderAdmin)
+adminRoutes.patch("/orders/:orderId/payment", updatePaymentStatusAdmin)
 
 // Dashboard Stats
 adminRoutes.get("/dashboard-stats", getDashboardStats)
