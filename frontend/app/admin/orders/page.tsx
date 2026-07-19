@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getAdminOrders, updateOrderStatus } from "@/utils/adminApi";
 import {
   ClipboardList,
@@ -8,9 +9,6 @@ import {
   ChevronRight,
   RefreshCw,
   Loader2,
-  ChevronDown,
-  MapPin,
-  Package,
 } from "lucide-react";
 import { toast } from "sonner";
 import clsx from "clsx";
@@ -26,7 +24,7 @@ interface OrderItem {
   id: string;
   quantity: number;
   price: number;
-  product: { name: string; files?: { url: string }[] };
+  product: { title: string; files?: { url: string }[] };
 }
 
 interface Address {
@@ -39,7 +37,8 @@ interface Address {
 interface Order {
   id: string;
   status: OrderStatus;
-  totalAmount: number;
+  payment?: { status: string };
+  total: number;
   createdAt: string;
   user: { name: string; email: string };
   items: OrderItem[];
@@ -65,13 +64,13 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
 const FILTER_OPTIONS = ["ALL", ...STATUS_OPTIONS];
 
 export default function AdminOrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const fetchOrders = async (pg = page, filter = statusFilter) => {
@@ -171,12 +170,8 @@ export default function AdminOrdersPage() {
             >
               {/* Order Header Row */}
               <div
-                className="flex flex-wrap items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 cursor-pointer"
-                onClick={() =>
-                  setExpandedId(
-                    expandedId === order.id ? null : order.id
-                  )
-                }
+                className="flex flex-wrap items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 cursor-pointer hover:bg-[var(--surface-2)]"
+                onClick={() => router.push(`/admin/orders/${order.id}`)}
               >
                 {/* Order ID */}
                 <div className="flex-1 min-w-[120px] sm:min-w-[140px]">
@@ -207,7 +202,7 @@ export default function AdminOrdersPage() {
                     Amount
                   </p>
                   <p className="text-xs sm:text-sm font-bold text-emerald-500">
-                    ₹{Number(order.totalAmount).toLocaleString()}
+                    ₹{Number(order.total).toLocaleString()}
                   </p>
                 </div>
 
@@ -225,98 +220,46 @@ export default function AdminOrdersPage() {
                   </p>
                 </div>
 
-                {/* Status selector */}
-                <div
-                  className="flex items-center gap-2 sm:gap-3"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <select
-                    value={order.status}
-                    disabled={updatingId === order.id}
-                    onChange={(e) =>
-                      handleStatusChange(order.id, e.target.value)
-                    }
-                    className={clsx(
-                      "px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold border focus:outline-none transition-colors cursor-pointer appearance-none",
-                      STATUS_STYLES[order.status]
-                    )}
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s} className="bg-[var(--surface)] text-[var(--foreground)]">
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                  {updatingId === order.id && (
-                    <Loader2 size={14} className="animate-spin text-[var(--foreground-muted)]" />
-                  )}
-                </div>
-
-                {/* Expand icon */}
-                <ChevronDown
-                  size={16}
-                  className={clsx(
-                    "text-[var(--foreground-muted)] transition-transform duration-200 flex-shrink-0",
-                    expandedId === order.id && "rotate-180"
-                  )}
-                />
-              </div>
-
-              {/* Expanded Details */}
-              {expandedId === order.id && (
-                <div className="border-t border-[var(--border)] px-4 sm:px-5 py-4 space-y-4">
-                  {/* Items */}
-                  <div>
-                    <p className="text-[10px] font-black text-[var(--foreground-muted)] uppercase tracking-widest mb-3">
-                      Items ({order.items.length})
-                    </p>
-                    <div className="space-y-2">
-                      {order.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between py-2 px-3 rounded-xl bg-[var(--surface-2)]"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-[var(--surface-3)]">
-                              <Package size={14} className="text-[var(--foreground-muted)]" />
-                            </div>
-                            <p className="text-xs sm:text-sm font-semibold text-[var(--foreground)]">
-                              {item.product.name}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
-                            <span className="text-[var(--foreground-muted)] font-medium">
-                              x{item.quantity}
-                            </span>
-                            <span className="font-bold text-emerald-500">
-                              ₹{Number(item.price).toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
+                {/* Status selectors */}
+                <div className="flex flex-col gap-2 sm:gap-3 items-end" onClick={(e) => e.stopPropagation()}>
+                  {/* Order Status */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-[var(--foreground-muted)] uppercase">Order:</span>
+                    <select
+                      value={order.status}
+                      disabled={updatingId === order.id}
+                      onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                      className={clsx(
+                        "px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold border focus:outline-none transition-colors cursor-pointer appearance-none",
+                        STATUS_STYLES[order.status] || STATUS_STYLES["PENDING"]
+                      )}
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s} value={s} className="bg-[var(--surface)] text-[var(--foreground)]">
+                          {s}
+                        </option>
                       ))}
+                    </select>
+                    {updatingId === order.id && (
+                      <Loader2 size={14} className="animate-spin text-[var(--foreground-muted)]" />
+                    )}
+                  </div>
+                  
+                  {/* Payment Status Display */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-[var(--foreground-muted)] uppercase">Payment:</span>
+                    <div className={clsx(
+                      "px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold border",
+                      order.payment?.status === "SUCCEEDED" ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/30" :
+                      order.payment?.status === "FAILED" ? "bg-rose-500/15 text-rose-500 border-rose-500/30" :
+                      order.payment?.status === "REFUNDED" ? "bg-slate-500/15 text-slate-500 border-slate-500/30" :
+                      "bg-amber-500/15 text-amber-500 border-amber-500/30"
+                    )}>
+                      {order.payment?.status || "PENDING"}
                     </div>
                   </div>
-
-                  {/* Address */}
-                  {order.address && (
-                    <div>
-                      <p className="text-[10px] font-black text-[var(--foreground-muted)] uppercase tracking-widest mb-2">
-                        Delivery Address
-                      </p>
-                      <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[var(--surface-2)]">
-                        <MapPin
-                          size={14}
-                          className="text-[var(--foreground-muted)] mt-0.5 flex-shrink-0"
-                        />
-                        <p className="text-xs sm:text-sm text-[var(--foreground)] font-medium leading-snug">
-                          {order.address.street}, {order.address.city},{" "}
-                          {order.address.state} – {order.address.pincode}
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              )}
+              </div>
             </div>
           ))
         )}

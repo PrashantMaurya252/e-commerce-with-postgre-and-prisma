@@ -26,7 +26,12 @@ export const getAdminOrders = async (
 ): Promise<normalAPIResponse> => {
   try {
     const res = await api.get(`${BACKEND_URL}/admin/orders`, {
-      params: { page, limit, status: status !== "ALL" ? status : undefined },
+      params: { 
+        page, 
+        limit, 
+        status: status !== "ALL" ? status : undefined,
+        t: new Date().getTime()
+      },
       withCredentials: true,
     });
     return res.data;
@@ -45,6 +50,42 @@ export const updateOrderStatus = async (
   try {
     const res = await api.patch(
       `${BACKEND_URL}/admin/orders/${orderId}`,
+      { status },
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const getAdminOrderById = async (
+  orderId: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.get(`${BACKEND_URL}/admin/orders/${orderId}`, {
+      params: { t: new Date().getTime() },
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const updatePaymentStatus = async (
+  orderId: string,
+  status: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.patch(
+      `${BACKEND_URL}/admin/orders/${orderId}/payment`,
       { status },
       { withCredentials: true }
     );
