@@ -203,7 +203,15 @@ export const checkout = async (req: AuthRequest, res: Response) => {
     }
 
     /* ----------------------------------
-       3️⃣ SHORT & FAST TRANSACTION
+       3️⃣ FETCH ADMINS FOR NOTIFICATION
+    ---------------------------------- */
+    const admins = await prisma.user.findMany({
+      where: { isAdmin: true },
+      select: { id: true },
+    })
+
+    /* ----------------------------------
+       4️⃣ SHORT & FAST TRANSACTION
     ---------------------------------- */
     const order = await prisma.$transaction(async (tx) => {
       // 🔒 Lock cart
@@ -292,6 +300,33 @@ export const checkout = async (req: AuthRequest, res: Response) => {
           lockedAt: null,
         },
       })
+
+      // 🔔 Create Notifications
+      const notificationsData: any[] = [
+        {
+          title: "Order Placed Successfully",
+          description: `Your order #${order.id.slice(0, 8).toUpperCase()} has been placed.`,
+          receiverId: userId,
+          channel: "IN_APP",
+          type: "SUCCESS",
+        }
+      ]
+
+      admins.forEach((admin) => {
+        notificationsData.push({
+          title: "New Order Received",
+          description: `Order #${order.id.slice(0, 8).toUpperCase()} was placed.`,
+          receiverId: admin.id,
+          channel: "IN_APP",
+          type: "INFO",
+        })
+      })
+
+      if (notificationsData.length > 0) {
+        await tx.notification.createMany({
+          data: notificationsData,
+        })
+      }
 
       return order
     })

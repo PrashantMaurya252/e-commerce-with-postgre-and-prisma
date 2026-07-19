@@ -111,6 +111,17 @@ const handlePaymentSucceeded = async (
     },
   });
 
+  // 🔔 Create Notification
+  await prisma.notification.create({
+    data: {
+      title: "Payment Successful",
+      description: `Payment for order #${orderId.slice(0, 8).toUpperCase()} was successful.`,
+      receiverId: userId,
+      channel: "IN_APP",
+      type: "SUCCESS",
+    }
+  });
+
   console.log(`✅ Payment succeeded for orderId: ${orderId}`);
 };
 
@@ -136,6 +147,17 @@ const handlePaymentFailed = async (
     update: {
       status: "FAILED",
     },
+  });
+
+  // 🔔 Create Notification
+  await prisma.notification.create({
+    data: {
+      title: "Payment Failed",
+      description: `Payment for order #${orderId.slice(0, 8).toUpperCase()} failed.`,
+      receiverId: userId,
+      channel: "IN_APP",
+      type: "ERROR",
+    }
   });
 
   console.log(`❌ Payment failed for orderId: ${orderId}`);
