@@ -409,3 +409,35 @@ export const getUserProfile = async(userId:string):Promise<normalAPIResponse>=>{
     }
   }
 }
+
+// --- Notifications ---
+
+export const getNotificationsAPI = async (): Promise<normalAPIResponse> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/notifications`, { withCredentials: true })
+    return response.data
+  } catch (error: any) {
+    console.error("get notifications error", error)
+    return { success: false, message: error.response?.data?.message || "Internal Server error", data: [] }
+  }
+}
+
+export const markNotificationAsReadAPI = async (id: string): Promise<normalAPIResponse> => {
+  try {
+    const response = await api.patch(`${BACKEND_URL}/notifications/${id}/read`, {}, { withCredentials: true })
+    return response.data
+  } catch (error: any) {
+    console.error("mark notification as read error", error)
+    return { success: false, message: error.response?.data?.message || "Internal Server error" }
+  }
+}
+
+export const markAllNotificationsAsReadAPI = async (): Promise<normalAPIResponse> => {
+  try {
+    const response = await api.patch(`${BACKEND_URL}/notifications/mark-all-read`, {}, { withCredentials: true })
+    return response.data
+  } catch (error: any) {
+    console.error("mark all notifications as read error", error)
+    return { success: false, message: error.response?.data?.message || "Internal Server error" }
+  }
+}

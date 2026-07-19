@@ -17,14 +17,16 @@ import {
   Sun,
   Moon,
   LogIn,
-  Heart
+  Heart,
+  Bell
 } from 'lucide-react'
 import { useTheme } from "next-themes"
-import {logoutHandler } from '@/utils/api'
+import { logoutHandler, getNotificationsAPI, markNotificationAsReadAPI, markAllNotificationsAsReadAPI } from '@/utils/api'
 import { toast } from 'sonner'
 import { logout } from '@/redux/slices/authSlice'
 import { useRouter, usePathname } from 'next/navigation'
 import clsx from 'clsx'
+import { useState, useEffect } from 'react'
 
 type Role = 'USER' | 'ADMIN'
 
@@ -46,6 +48,34 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
     skip: !isAuthenticated || role !== 'USER' 
   });
   const cartItemsCount = cartData?.data?.items?.reduce((total: number, item: any) => total + item.quantity, 0) || 0;
+
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
+  
+  const unreadCount = notifications.filter(n => !n.isRead).length
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications()
+    }
+  }, [isAuthenticated])
+  
+  const fetchNotifications = async () => {
+    const res = await getNotificationsAPI()
+    if (res.success) {
+      setNotifications(res.data || [])
+    }
+  }
+  
+  const handleMarkAsRead = async (id: string) => {
+    await markNotificationAsReadAPI(id)
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
+  }
+  
+  const handleMarkAllAsRead = async () => {
+    await markAllNotificationsAsReadAPI()
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+  }
 
   const userOptions = [
     {
@@ -199,6 +229,58 @@ const Navbar = ({ role = 'USER' }: NavbarProps) => {
           </ul>
           
           <div className="hidden lg:flex items-center gap-3">
+            {isAuthenticated && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-2.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors relative"
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center shadow-sm">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 overflow-hidden">
+                    <div className="p-3 border-b border-[var(--border)] flex justify-between items-center bg-[var(--surface-2)]">
+                      <h3 className="font-bold text-sm">Notifications</h3>
+                      {unreadCount > 0 && (
+                        <button onClick={handleMarkAllAsRead} className="text-[10px] text-primary font-medium hover:underline">
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-[var(--foreground-muted)]">No notifications</div>
+                      ) : (
+                        notifications.map(n => (
+                          <div 
+                            key={n.id} 
+                            onClick={() => {
+                              if (!n.isRead) handleMarkAsRead(n.id)
+                            }}
+                            className={clsx(
+                              "p-3 border-b border-[var(--border)] last:border-0 cursor-pointer transition-colors",
+                              !n.isRead ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-[var(--surface-2)]"
+                            )}
+                          >
+                            <h4 className="text-sm font-semibold text-[var(--foreground)]">{n.title}</h4>
+                            <p className="text-xs text-[var(--foreground-muted)] mt-1">{n.description}</p>
+                            <span className="text-[10px] text-[var(--foreground-muted)] mt-2 block">
+                              {new Date(n.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={() => setTheme(isDark ? "light" : "dark")}
               className="p-2.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
