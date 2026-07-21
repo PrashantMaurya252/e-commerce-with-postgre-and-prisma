@@ -53,7 +53,7 @@ const tools = [
 const SYSTEM_PROMPT = `You are an intelligent AI shopping assistant for DesiMarket. 
 You help users find products, provide details, and add items to their cart.
 CRITICAL RULE: ONLY provide information about products that are explicitly returned by your tools. If a tool returns no results, you MUST tell the user that no products were found. DO NOT hallucinate, invent, or suggest products that were not provided by the tools.
-CRITICAL RULE FOR TOOLS: When invoking a tool, DO NOT output any conversational text before the tool call. You must directly invoke the tool without saying "Let me search..." or similar.
+CRITICAL RULE FOR TOOLS: To use a tool, you must ONLY use the native function calling API. Do not write out the tool call manually in text. Do not output any conversational text before calling a tool.
 ALWAYS format your responses using beautiful Markdown. Use bullet points, bold text, and clear paragraphs to make your answers easy to read. 
 Never output raw JSON to the user. Always interpret tool results and present them in a friendly, conversational, and highly readable format.
 If you are asked about the services provided by this website, explain that you are an e-commerce platform offering a variety of products, fast delivery, and secure payments.`;
@@ -95,7 +95,7 @@ export const processUserMessage = async (userId: string | null, message: string,
         try {
           if (functionName === "search_products") {
             const embedRes = await ai.models.embedContent({
-              model: 'gemini-embedding-2',
+              model: 'gemini-embedding-001',
               contents: args.query,
               config: { outputDimensionality: 768 }
             });
@@ -104,6 +104,8 @@ export const processUserMessage = async (userId: string | null, message: string,
               toolResponse = "Failed to generate embeddings for search query.";
               continue;
             }
+
+            console.log("Embeddings in line 108", embedding)
 
             // pgvector distance query
             let products: any[] = [];
@@ -121,6 +123,8 @@ export const processUserMessage = async (userId: string | null, message: string,
               console.error("Vector search error", err);
             }
 
+            console.log("Products in line 124", products)
+
             // Fallback to text search if no embeddings exist for the products
             if (!products || products.length === 0) {
               const searchPattern = `%${args.query.split(' ')[0]}%`; // basic first-word text match
@@ -133,17 +137,9 @@ export const processUserMessage = async (userId: string | null, message: string,
                `;
             }
 
-            // Final fallback to just return what's available so the bot has REAL context
-            if (!products || products.length === 0) {
-              products = await prisma.$queryRaw`
-                 SELECT id, title, description, "sellingPrice", "offerPrice", "isOfferActive"
-                 FROM "Product"
-                 WHERE "isDeleted" = false AND "isActive" = true
-                 LIMIT 5;
-               `;
-            }
-
             toolResponse = JSON.stringify(products);
+
+            console.log("Tool Response in line 138", toolResponse)
 
           } else if (functionName === "get_product_details") {
             const p = await prisma.product.findUnique({ where: { id: args.productId } });
@@ -195,7 +191,11 @@ export const processUserMessage = async (userId: string | null, message: string,
       responseMessage = response.choices[0].message;
     }
 
-    return responseMessage.content;
+    let finalContent = responseMessage.content || "";
+    // Clean up any leaked function call tags from Llama 3 models
+    finalContent = finalContent.replace(/<?function=.*?>.*?<\/function>/gs, "");
+    finalContent = finalContent.replace(/<?function=.*?>/gs, "");
+    return finalContent.trim();
   } catch (error) {
     console.error("Chat completion error", error);
     throw error;

@@ -31,9 +31,9 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: ["http://localhost:3000",process.env.DEPLOYED_FRONTEND_LINK as string,"https://e-commerce-with-postgre-and-prisma.vercel.app"],
+    origin: ["http://localhost:3000", process.env.DEPLOYED_FRONTEND_LINK as string, "https://e-commerce-with-postgre-and-prisma.vercel.app", "https://desi-market.vercel.app"],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
@@ -117,12 +117,12 @@ app.use("/api/v1/wishlist", wishlistRoutes);
 app.use("/api/v1/address", addressRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/chatbot", chatBotRoutes);
-app.get("/metrics",async(req:Request,res:Response)=>{
-  res.set("Content-Type",register.contentType)
+app.get("/metrics", async (req: Request, res: Response) => {
+  res.set("Content-Type", register.contentType)
   res.end(await register.metrics())
 })
 
-app.get("/health",(req,res)=>{
+app.get("/health", (req, res) => {
   res.status(200).send("OKK")
 })
 
