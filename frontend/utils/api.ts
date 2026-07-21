@@ -441,3 +441,26 @@ export const markAllNotificationsAsReadAPI = async (): Promise<normalAPIResponse
     return { success: false, message: error.response?.data?.message || "Internal Server error" }
   }
 }
+
+// --- Chat Bot ---
+
+export const sendChatMessageAPI = async (message: string, chatId?: string): Promise<normalAPIResponse> => {
+  try {
+    const payload = { message, chatId }
+    const response = await api.post(`${BACKEND_URL}/chatbot/chat`, payload, { withCredentials: true })
+    return response.data
+  } catch (error: any) {
+    console.error("send chat message error", error)
+    return { success: false, message: error.response?.data?.message || "Internal Server error" }
+  }
+}
+
+export const getChatHistoryAPI = async (): Promise<normalAPIResponse> => {
+  try {
+    const response = await api.get(`${BACKEND_URL}/chatbot/history`, { withCredentials: true })
+    return response.data
+  } catch (error: any) {
+    console.error("get chat history error", error)
+    return { success: false, message: error.response?.data?.message || "Internal Server error", data: [] }
+  }
+}

@@ -3,6 +3,7 @@
 import AuthGuard from "@/components/guards/AuthGuard"
 import RoleGuard from "@/components/guards/RoleGuard"
 import Navbar from "@/components/Navbar"
+import ChatBot from "@/components/ChatBot"
 
 export default function UserClientLayout({
   children,
@@ -13,6 +14,7 @@ export default function UserClientLayout({
     <>
       <Navbar role="USER"/>
       <main className="pt-[72px] pb-[72px]">{children}</main>
+      <ChatBot />
     </>
   )
 }
