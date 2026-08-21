@@ -1,0 +1,14 @@
+model Coupon {
+  id            String        @id @default(uuid())
+  code          String        @unique
+  discountType  DiscountType
+  discountValue Int           @default(0)
+  maxDiscount   Int?
+  usageLimit    Int?
+  minCartValue  Int           @default(0)
+  expiresAt     DateTime
+  isActive      Boolean       @default(true)
+  isDeleted     Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  couponUsages  CouponUsage[]
+}

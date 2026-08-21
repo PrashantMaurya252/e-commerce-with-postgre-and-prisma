@@ -1,0 +1,28 @@
+model Product {
+  id            String            @id @default(uuid())
+  title         String
+  description   String
+  sellingPrice  Int
+  costPrice     Int
+  offerPrice    Int
+  isOfferActive Boolean           @default(false)
+  files         File[]
+  reviews       Review[]
+  averageRating Float             @default(0)
+  categoryId    String
+  category      Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  totalReviews  Int               @default(0)
+  createdAt     DateTime          @default(now())
+  orderItems    OrderItem[]
+  itemLeft      Int               @default(0)
+  cartItems     CartItem[]
+  wishlistItem  WishlistItem[]
+  brand         String
+  isActive      Boolean           @default(true)
+  isDeleted     Boolean           @default(false)
+  disabled      Boolean           @default(false)
+  embedding     ProductEmbedding?
+  banners       Banner[]
+
+  @@index([title])
+}

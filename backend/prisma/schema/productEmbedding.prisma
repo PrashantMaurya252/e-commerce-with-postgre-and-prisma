@@ -1,0 +1,15 @@
+model ProductEmbedding {
+  id String @id @default(uuid())
+
+  productId String  @unique @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  content   String  @db.Text
+  metaData  Json?
+
+  embedding Unsupported("vector(768)")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_embeddings")
+}

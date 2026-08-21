@@ -125,6 +125,7 @@ export const login = async (req: Request, res: Response) => {
       userId: user.id,
       email: user.email,
       name: user.name ?? "",
+      roles:user?.userRoles.map(role=>role.role.name),
       isAdmin: user.isAdmin,
     };
     const { password: _, createdAt, ...userData } = user;

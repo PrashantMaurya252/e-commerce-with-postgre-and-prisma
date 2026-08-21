@@ -398,9 +398,11 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
       where,
       skip,
       take: limit,
+
       orderBy: { createdAt: "desc" },
       include: {
         files: true,
+        category: true,
         cartItems: userId ? {
           where: {
             cart: {
@@ -460,7 +462,10 @@ export const productDetails = async (req: AuthRequest, res: Response) => {
     const product = await prisma.product.findUnique({
       where: { id: productId },
       include: {
-        files: true,
+        category: true,
+        files: {
+          include: { order: true, category: true },
+        },
         cartItems: userId ? {
           where: {
             cart: {

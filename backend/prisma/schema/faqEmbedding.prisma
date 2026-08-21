@@ -1,0 +1,13 @@
+model FaqEmbedding {
+  id String @id @default(uuid())
+
+  faqId    String @unique @map("faid")
+  faq      Faq    @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  content  String @db.Text
+  metaData Json?
+
+  embedding Unsupported("vector(768)")
+  updatedAt DateTime                   @updatedAt
+
+  @@map("faq_embeddings")
+}

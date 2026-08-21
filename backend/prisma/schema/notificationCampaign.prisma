@@ -1,0 +1,16 @@
+model NotificationCampaign {
+  id String @id @default(uuid())
+
+  title       String
+  description String @db.Text
+
+  channel NotificationChannel
+
+  scheduledAt DateTime?
+
+  createdBy String
+
+  createdAt DateTime @default(now())
+
+  notifications Notification[]
+}

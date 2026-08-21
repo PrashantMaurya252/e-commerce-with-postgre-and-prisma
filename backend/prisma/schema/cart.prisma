@@ -1,0 +1,10 @@
+model Cart {
+  id        String     @id @default(uuid())
+  items     CartItem[]
+  total     Int        @default(0)
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locked    Boolean    @default(false)
+  lockedAt  DateTime?
+  updatedAt DateTime   @updatedAt
+}
