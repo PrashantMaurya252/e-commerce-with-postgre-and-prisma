@@ -521,6 +521,51 @@ export const createRole = asyncHandler(async (req: Request, res: Response) => {
     return new ApiResponse(201, { role }, 'New role created').send(res)
 })
 
+const updateRoleSchema = z.object({
+    name: z.string().optional(),
+    description: z.string().optional()
+})
+
+export const updateRole = asyncHandler(async (req: Request, res: Response) => {
+    const parsed: any = updateRoleSchema.safeParse(req.body)
+    if (!parsed.success) {
+        return new ApiError(400, parsed.error, [])
+    }
+    const { roleId } = req.params
+    const { name, description } = parsed.data
+    const roleExist = await prisma.role.findUnique({ where: { id: roleId } })
+    if (!roleExist) {
+        return new ApiError(404, "Role not found")
+    }
+    const roleNameExist = await prisma.role.findFirst({ where: { name: name, id: { not: roleId } } })
+    if (roleNameExist) {
+        return new ApiError(400, "Role name already exists")
+    }
+    const role = await prisma.role.update({
+        where: { id: roleId },
+        data: {
+            name: name?.toLowerCase(),
+            description: description?.toLowerCase()
+        }
+
+    })
+    return new ApiResponse(200, { role }, 'Role updated successfully').send(res)
+})
+
+export const deleteRole = asyncHandler(async (req: Request, res: Response) => {
+    const { roleId } = req.params
+    const role = await prisma.role.findUnique({ where: { id: roleId } })
+    if (!role) {
+        return new ApiError(404, "Role not found")
+    }
+    const isAssigned = await prisma.userRole.findFirst({ where: { roleId } })
+    if (isAssigned) {
+        return new ApiError(400, "Role is assigned to some users so it cannot be deleted")
+    }
+    await prisma.role.delete({ where: { id: roleId } })
+    return new ApiResponse(200, {}, "Role deleted successfully").send(res)
+})
+
 const assignPermissionSchema = z.object({
     roleId: z.string(),
     permissionIds: z.array(z.string())
@@ -543,24 +588,54 @@ export const assignPermissionToRoles = asyncHandler(async (req: Request, res: Re
     if (permissions.length !== permissionIds.length) {
         return new ApiError(400, "Invalid permission Ids")
     }
-    await prisma.rolePermission.createMany({
-        data: permissionIds.map((permissionId: string) => ({
-            roleId,
-            permissionId
-        })),
-        skipDuplicates: true
+    await prisma.$transaction(async (tx) => {
+
+        // Remove permissions that are not in the new list
+        await tx.rolePermission.deleteMany({
+            where: {
+                roleId,
+                permissionId: {
+                    notIn: permissionIds
+                }
+            }
+        });
+
+        // Add new permissions
+        await tx.rolePermission.createMany({
+            data: permissionIds.map((permissionId: string) => ({
+                roleId,
+                permissionId
+            })),
+            skipDuplicates: true
+        });
+
     });
 
     return new ApiResponse(200, {}, 'Permissions assigned successfully').send(res)
 })
 
+export const getAssignedPermissions = asyncHandler(async (req: Request, res: Response) => {
+    const { roleId } = req.params
+    const role = await prisma.role.findUnique({
+        where: { id: roleId }
+    })
+    if (!role) {
+        return new ApiError(404, "Role not found")
+    }
+
+    const permissions = await prisma.rolePermission.findMany({
+        where: { roleId }, include: { permission: true }
+    })
+    return new ApiResponse(200, { permissions }, 'Assigned permissions fetched successfully').send(res)
+})
+
 const assignRolesToUserSchema = z.object({
     userId: z.string(),
-    rolesIds: z.array(z.string())
+    roleIds: z.array(z.string())
 })
 
 export const assignRolesToUser = asyncHandler(async (req: Request, res: Response) => {
-    const parsed: any = assignPermissionSchema.safeParse(req.body)
+    const parsed: any = assignRolesToUserSchema.safeParse(req.body)
     if (!parsed.success) {
         return new ApiError(400, parsed.error, [])
     }
@@ -576,12 +651,43 @@ export const assignRolesToUser = asyncHandler(async (req: Request, res: Response
     if (roles.length !== roleIds.length) {
         return new ApiError(400, "Invalid role Ids")
     }
-    const userRole = await prisma.userRole.createMany({
-        data: roleIds.map((roleId: string) => ({
-            userId,
-            roleId
-        })),
-        skipDuplicates: true
+    await prisma.$transaction(async (tx) => {
+
+        await tx.userRole.deleteMany({
+            where: {
+                userId,
+                roleId: {
+                    notIn: roleIds
+                }
+            }
+        });
+
+        await tx.userRole.createMany({
+            data: roleIds.map((roleId: string) => ({
+                userId,
+                roleId
+            })),
+            skipDuplicates: true
+        });
+
+    });
+    return new ApiResponse(200, {}, "Roles assigned successfully").send(res)
+})
+
+export const getAssignedRoles = asyncHandler(async (req: Request, res: Response) => {
+    const { userId } = req.params
+    const user = prisma.user.findUnique({
+        where: { id: userId }
     })
-    return new ApiResponse(200,{},"Roles assigned successfully").send(res)
+    if (!user) {
+        return new ApiError(404, "User not found", [])
+    }
+
+    const userRoles = await prisma.userRole.findMany({
+        where: { userId },
+        include: {
+            role: true
+        }
+    })
+    return new ApiResponse(200, { userRoles }, "Roles fetched successfully")
 })
