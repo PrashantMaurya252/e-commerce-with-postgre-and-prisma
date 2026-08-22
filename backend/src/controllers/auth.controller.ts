@@ -91,6 +91,13 @@ export const login = async (req: Request, res: Response) => {
       where: {
         email,
       },
+      include: {
+        userRoles: {
+          include: {
+            role: true
+          }
+        }
+      }
     });
     if (user && user.provider === "GOOGLE") {
       return res
@@ -125,7 +132,7 @@ export const login = async (req: Request, res: Response) => {
       userId: user.id,
       email: user.email,
       name: user.name ?? "",
-      roles:user?.userRoles.map(role=>role.role.name),
+      userRoles: user?.userRoles.map(role => role.role.name),
       isAdmin: user.isAdmin,
     };
     const { password: _, createdAt, ...userData } = user;
@@ -323,6 +330,13 @@ export const refreshToken = async (req: Request, res: Response) => {
     ) as any;
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
+      include: {
+        userRoles: {
+          include: {
+            role: true
+          }
+        }
+      }
     });
     if (!user) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -333,6 +347,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       email: user.email,
       name: user.name ?? "",
       isAdmin: user.isAdmin,
+      userRoles: user.userRoles.map((userRole) => userRole.role.name)
     };
     const newAccessToken = generateAccessToken(userPayload);
     return res.status(200).json({ success: true, accessToken: newAccessToken });
@@ -418,7 +433,15 @@ export const googleAuth = async (req: Request, res: Response) => {
     }
     const { email, sub, name, picture } = payload;
 
-    const userExist = await prisma.user.findUnique({ where: { email } });
+    const userExist = await prisma.user.findUnique({
+      where: { email }, include: {
+        userRoles: {
+          include: {
+            role: true
+          }
+        }
+      }
+    });
     if (userExist && userExist.provider === "LOCAL") {
       return res.status(400).json({
         success: false,
@@ -439,6 +462,13 @@ export const googleAuth = async (req: Request, res: Response) => {
           avatar: picture,
           isVerified: true,
         },
+        include: {
+          userRoles: {
+            include: {
+              role: true,
+            },
+          },
+        },
       });
     }
 
@@ -447,6 +477,7 @@ export const googleAuth = async (req: Request, res: Response) => {
       email: user.email,
       name: user.name ?? "",
       isAdmin: user.isAdmin,
+      userRoles: user.userRoles.map((userRole) => userRole.role.name)
     };
     const { password: _, createdAt, ...userData } = user;
     const accessToken = generateAccessToken(userPayload);
