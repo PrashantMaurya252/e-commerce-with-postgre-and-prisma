@@ -689,5 +689,5 @@ export const getAssignedRoles = asyncHandler(async (req: Request, res: Response)
             role: true
         }
     })
-    return new ApiResponse(200, { userRoles }, "Roles fetched successfully")
+    return new ApiResponse(200, { userRoles }, "Roles fetched successfully").send(res)
 })

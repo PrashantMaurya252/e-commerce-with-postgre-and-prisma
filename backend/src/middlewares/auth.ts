@@ -14,6 +14,7 @@ export const auth = async (
   try {
     const token =
       req.headers?.authorization?.split(" ")[1] || req.cookies["access-token"];
+    console.log("Token", token)
 
     if (!token) {
       return res
@@ -29,6 +30,7 @@ export const auth = async (
     req.user = decoded;
     next();
   } catch (error: any) {
+    console.log("Auth Middleware Error", error)
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
