@@ -15,6 +15,42 @@ export const authorize = async (req: AuthRequest, res: Response, next: NextFunct
     }
 }
 
+export const authorizeRoles = (...requiredRoles: string[]) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            if(!req.user){
+                return res.status(401).json({success:false,message:"Unauthorized"})
+            }
+            const {userId} = req.user
+            const user = await prisma.user.findUnique({
+                where:{id:userId},
+                include:{
+                    userRoles:{
+                        include:{
+                            role:true
+                        }
+                    }
+                }
+            })
+            
+            if(!user){
+                return res.status(404).json({success:false,message:"User not found"})
+            }
+
+            const userRoles = user?.userRoles.map((userRole)=>userRole.role.name)
+            const hasRequiredRoles = requiredRoles.some((role)=>userRoles.includes(role))
+            if(!hasRequiredRoles){
+                return res.status(403).json({success:false,message:"You don't have permission to perform this action"})
+            }
+            next()
+        } catch (error) {
+            console.log("Authorized roles error", error)
+            return res.status(500).json({ success: false, message: "Internal Server Error" })
+        }
+    }
+
+}
+
 export const authorizPermissions = (...requiredPermissions: string[]) => {
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {

@@ -24,6 +24,7 @@ import logger from "./utils/logger.js";
 import morgan from "morgan";
 import { globalErrorHandler } from "./middlewares/errorHandler.js";
 import { httpRequestCounter, httpRequestDuration, register } from "./utils/metrics.js";
+import { ApiError } from "./utils/responseHandler.js";
 
 const app = express();
 app.use("/api/stripe", stripeRoutes);
@@ -124,6 +125,10 @@ app.get("/metrics", async (req: Request, res: Response) => {
 
 app.get("/health", (req, res) => {
   res.status(200).send("OKK")
+})
+
+app.use((req, res, next) => {
+  next(new ApiError(404, `Route ${req.originalUrl} not found`));
 })
 
 app.use(globalErrorHandler);

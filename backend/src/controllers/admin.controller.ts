@@ -3,6 +3,8 @@ import z from "zod";
 import { prisma } from "../config/prisma.js";
 import { v2 as cloudinary } from "cloudinary";
 import { OrderStatus, PaymentStatus } from "@prisma/client";
+import { AuthRequest } from "../middlewares/auth.js";
+import { ApiError, ApiResponse, asyncHandler } from "../utils/responseHandler.js";
 const couponSchema = z.object({
     code: z.string().trim().toUpperCase(),
     discountType: z.enum(["PERCENT", "FLAT"]),
@@ -493,3 +495,9 @@ export const deleteReviewAdmin = async (req: Request, res: Response) => {
         return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
+
+export const getRolesAndPermissions = asyncHandler(async(req:AuthRequest,res:Response)=>{
+    const roles = await prisma.role.findMany({})
+    const permissions = await prisma.permission.findMany({})
+    return new ApiResponse(200,{roles,permissions},"All roles and permissions are fetched").send(res)
+})
