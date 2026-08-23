@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   Image as ImageIcon,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
@@ -88,6 +89,12 @@ const navItems = [
     route: "/admin/banners",
     icon: ImageIcon,
     description: "Manage Banners",
+  },
+  {
+    label: "Roles & Permissions",
+    route: "/admin/roles-permissions",
+    icon: Shield,
+    description: "Manage Access",
   },
 ];
 

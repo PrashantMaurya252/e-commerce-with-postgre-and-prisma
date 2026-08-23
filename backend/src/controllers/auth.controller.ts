@@ -128,14 +128,16 @@ export const login = async (req: Request, res: Response) => {
         message: "Credentials wrong",
       });
     }
+    const isAdminCalculated = user.userRoles?.some((ur) => ur.role.isSystemRole) ?? false;
     const userPayload = {
       userId: user.id,
       email: user.email,
       name: user.name ?? "",
       userRoles: user?.userRoles.map(role => role.role.name),
-      isAdmin: user.isAdmin,
+      isAdmin: isAdminCalculated,
     };
-    const { password: _, createdAt, ...userData } = user;
+    const { password: _, createdAt, isAdmin: _dbAdmin, ...rest } = user;
+    const userData = { ...rest, isAdmin: isAdminCalculated };
     const accessToken = generateAccessToken(userPayload);
     const refreshToken = generateRefreshToken({ userId: user.id });
 
@@ -347,11 +349,12 @@ export const refreshToken = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
+    const isAdminCalculated = user.userRoles?.some((ur) => ur.role.isSystemRole) ?? false;
     const userPayload = {
       userId: user.id,
       email: user.email,
       name: user.name ?? "",
-      isAdmin: user.isAdmin,
+      isAdmin: isAdminCalculated,
       userRoles: user.userRoles.map((userRole) => userRole.role.name)
     };
     const newAccessToken = generateAccessToken(userPayload);
@@ -371,7 +374,7 @@ export const me = async (req: AuthRequest, res: Response) => {
     }
     const user = await prisma.user.findUnique({
       where: { id: req.user?.userId },
-      select: { id: true, email: true, name: true, isAdmin: true },
+      select: { id: true, email: true, name: true, isAdmin: true, userRoles: { include: { role: true } } },
     });
 
     if (!user) {
@@ -380,7 +383,11 @@ export const me = async (req: AuthRequest, res: Response) => {
         .json({ success: false, message: "User not found" });
     }
 
-    return res.status(200).json({ success: true, user });
+    const isAdminCalculated = user.userRoles?.some((ur) => ur.role.isSystemRole) ?? false;
+    const { userRoles: _, isAdmin: _dbAdmin, ...rest } = user;
+    const responseUser = { ...rest, isAdmin: isAdminCalculated };
+
+    return res.status(200).json({ success: true, user: responseUser });
   } catch (error) {
     console.error("me controller error", error);
     return res
@@ -404,6 +411,12 @@ export const logout = async (req: AuthRequest, res: Response) => {
       where: { userId: userId },
     });
     res.clearCookie("refresh-token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
+
+    res.clearCookie("access-token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
@@ -477,14 +490,16 @@ export const googleAuth = async (req: Request, res: Response) => {
       });
     }
 
+    const isAdminCalculated = user.userRoles?.some((ur) => ur.role.isSystemRole) ?? false;
     const userPayload = {
       userId: user.id,
       email: user.email,
       name: user.name ?? "",
-      isAdmin: user.isAdmin,
+      isAdmin: isAdminCalculated,
       userRoles: user.userRoles.map((userRole) => userRole.role.name)
     };
-    const { password: _, createdAt, ...userData } = user;
+    const { password: _, createdAt, isAdmin: _dbAdmin, ...rest } = user;
+    const userData = { ...rest, isAdmin: isAdminCalculated };
     const accessToken = generateAccessToken(userPayload);
     const refreshToken = generateRefreshToken({ userId: user.id });
 

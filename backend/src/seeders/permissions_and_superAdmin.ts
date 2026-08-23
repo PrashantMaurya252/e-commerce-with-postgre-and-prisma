@@ -80,6 +80,7 @@ async function seedAdminRole() {
     create: {
       name: "SUPER_ADMIN",
       description: "All permissions granted",
+      isSystemRole: true
     },
   });
 
@@ -124,7 +125,7 @@ async function seedAdminRole() {
     },
 
     update: {
-      // You can choose whether to update password here
+      
     },
 
     create: {
@@ -137,6 +138,7 @@ async function seedAdminRole() {
       userRoles: {
         create: {
           roleId: superAdminRole.id,
+
         },
       },
     },
