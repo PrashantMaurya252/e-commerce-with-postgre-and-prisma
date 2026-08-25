@@ -3,6 +3,7 @@ import { prisma } from "../config/prisma.js";
 import { cartTotal } from "../utils/helper.js";
 import { AuthRequest } from "../middlewares/auth.js";
 import { orderEmailQueue } from "../queues/order-email.queue.js";
+import { scheduleCartRecovery, cancelCartRecovery } from "../queues/cart.queue.js";
 
 export const applyCoupon = async (req: AuthRequest, res: Response) => {
   try {
@@ -296,6 +297,8 @@ export const checkout = async (req: AuthRequest, res: Response) => {
         where: { cartId: cart.id },
       })
 
+      await cancelCartRecovery(cart.id)
+
       await tx.cart.update({
         where: { id: cart.id },
         data: {
@@ -498,6 +501,8 @@ export const addIntoCart = async (req: AuthRequest, res: Response) => {
         },
       }),
     ]);
+
+    await scheduleCartRecovery(userId, cart.id);
 
     return res
       .status(200)
@@ -735,6 +740,8 @@ export const clearCart = async (req: AuthRequest, res: Response) => {
         data: { total: 0 }
       })
     ]);
+
+    await cancelCartRecovery(cart.id);
 
     return res.status(200).json({ success: true, message: "Cart cleared successfully" });
   } catch (error) {

@@ -43,6 +43,16 @@ const permissions = [
     resource: "PRODUCT",
     action: "DELETE",
   },
+  {
+    name: "QUEUE_READ",
+    resource: "QUEUE",
+    action: "READ",
+  },
+  {
+    name: "QUEUE_MANAGE",
+    resource: "QUEUE",
+    action: "MANAGE",
+  },
 ];
 
 async function seedPermissions() {

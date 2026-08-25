@@ -20,6 +20,7 @@ import {
   Moon,
   Image as ImageIcon,
   Shield,
+  Activity,
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
@@ -95,6 +96,12 @@ const navItems = [
     route: "/admin/roles-permissions",
     icon: Shield,
     description: "Manage Access",
+  },
+  {
+    label: "Queues",
+    route: "/admin/queues",
+    icon: Activity,
+    description: "Manage Background Jobs",
   },
 ];
 

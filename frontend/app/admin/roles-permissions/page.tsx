@@ -230,6 +230,7 @@ export default function RolesPermissionsPage() {
         onClose={() => setIsRoleModalOpen(false)}
         onSuccess={fetchRolesAndPermissions}
         roleData={selectedRoleForEdit}
+        allPermissions={permissions}
       />
 
       <ManagePermissionsModal

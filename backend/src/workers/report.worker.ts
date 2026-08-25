@@ -1,6 +1,7 @@
 import { Worker } from "bullmq";
 import { prisma } from "../config/prisma.js";
 import { connection } from "../redis.js";
+import { sendEmail } from "../services/email.service.js";
 
 
 
@@ -31,5 +32,24 @@ new Worker('sales-report', async () => {
       <p>Top products: ${topProducts.map(p => p.productId).join(', ')}</p>
     `;
 
-    // await sendMail(process.env.ADMIN_EMAIL!, 'Daily Sales Digest', html);
-}, { connection, concurrency: 1 })
+    const admins = await prisma.user.findMany({
+        where: { isAdmin: true }
+    });
+
+    for (const admin of admins) {
+        if (admin.email) {
+            await sendEmail(admin.email, 'Daily Sales Digest', html);
+        }
+        await prisma.notification.create({
+            data: {
+                title: 'Daily Sales Digest',
+                description: `Orders: ${orderCount} | Revenue: ₹${revenue._sum.total ?? 0}`,
+                receiverId: admin.id,
+                channel: "IN_APP",
+                type: "INFO"
+            }
+        });
+    }
+}, {
+    connection, concurrency: 1
+});
