@@ -11,6 +11,8 @@
     "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
+    "@bull-board/api": "^9.4.0",
+    "@bull-board/express": "^9.4.0",
     "@google/genai": "^2.8.0",
     "@langchain/google-genai": "^2.1.31",
     "@prisma/adapter-pg": "^7.1.0",

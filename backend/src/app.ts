@@ -25,6 +25,8 @@ import morgan from "morgan";
 import { globalErrorHandler } from "./middlewares/errorHandler.js";
 import { httpRequestCounter, httpRequestDuration, register } from "./utils/metrics.js";
 import { ApiError } from "./utils/responseHandler.js";
+import { serverAdapter } from "./dashboard.js";
+import { authorizeRoles } from "./middlewares/authorize.js";
 
 const app = express();
 app.use("/api/stripe", stripeRoutes);
@@ -122,6 +124,8 @@ app.get("/metrics", async (req: Request, res: Response) => {
   res.set("Content-Type", register.contentType)
   res.end(await register.metrics())
 })
+
+app.use("/admin/queues", authorizeRoles("SUPER_ADMIN"), serverAdapter.getRouter())
 
 app.get("/health", (req, res) => {
   res.status(200).send("OKK")
