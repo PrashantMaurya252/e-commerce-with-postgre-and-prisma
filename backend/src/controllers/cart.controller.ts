@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
 import { cartTotal } from "../utils/helper.js";
 import { AuthRequest } from "../middlewares/auth.js";
+import { orderEmailQueue } from "../queues/order-email.queue.js";
 
 export const applyCoupon = async (req: AuthRequest, res: Response) => {
   try {
@@ -275,6 +276,9 @@ export const checkout = async (req: AuthRequest, res: Response) => {
             }
           }
         },
+        include: {
+          items: true
+        }
       })
 
       // 🏷️ Mark coupon as used
@@ -330,6 +334,55 @@ export const checkout = async (req: AuthRequest, res: Response) => {
 
       return order
     })
+
+    const finalTotal = order.total
+    const itemCount = order.items.reduce(
+      (total, item) => total + item.quantity,
+      0
+    );
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } })
+
+    if (user) {
+      await orderEmailQueue.add('user-confirmation', {
+        type: 'user-confirmation',
+        orderId: order.id,
+        recipientEmail: user.email,
+        recipientName: user.name || "",
+        total: Number(finalTotal),
+        itemCount,
+      });
+    }
+
+    // one email per admin (you already have `admins` fetched)
+    const adminUsers = await prisma.user.findMany({
+      where: {
+        userRoles: {
+          some: {
+            role: {
+              name: "SUPER_ADMIN"
+            }
+          }
+        },
+        isActive: true,
+        isDeleted: false
+      },
+      select: { email: true, name: true }
+    });
+
+    await Promise.all(
+      adminUsers.map((admin) =>
+        orderEmailQueue.add('admin-alert', {
+          type: 'admin-alert',
+          orderId: order.id,
+          recipientEmail: admin.email,
+          recipientName: admin.name || "Admin",
+          total: Number(finalTotal),
+          itemCount,
+        })
+      )
+    );
+
 
     /* ----------------------------------
        4️⃣ RESPONSE
