@@ -8,6 +8,8 @@ import { getRandomImagesFromFolder } from "../utils/localImageUploader.js";
 import path from "path";
 import { AuthRequest } from "../middlewares/auth.js";
 import { generateEmbedding, semanticProductSearch } from "../utils/gemeni-helper.js";
+import { redisKeys } from "../utils/redis.keys.js";
+import redisService from "../services/redis.service.js";
 
 
 
@@ -357,6 +359,14 @@ export const deleteAllProducts = async (req: AuthRequest, res: Response) => {
   }
 };
 
+type CachedProduct = {
+  page: number,
+  limit: number,
+  totalProducts: number,
+  totalPages: number,
+  data: any[]
+}
+
 export const getAllProducts = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -370,90 +380,157 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
       ? Number(req.query.maxPrice)
       : undefined;
 
-    const search = req.query.search as string | undefined;
-    const brand = req.query.brand as string | undefined;
+    const search = req.query.search ? String(req.query.search) : undefined;
+    const brand = req.query.brand ? String(req.query.brand) : undefined;
+    const brandList = brand ? brand.split(",").map(b => b.trim()).filter(Boolean) : []
     const skip = (page - 1) * limit;
 
-    const cacheKey = `products:page=${page}:limit=${limit}:cat=${categoryId || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}:brand=${brand || "none"}`;
-
-    let where: any = {};
-
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
-
-    if (minPrice || maxPrice) {
-      where.offerPrice = {};
-      if (minPrice) where.offerPrice.gte = minPrice;
-      if (maxPrice) where.offerPrice.lte = maxPrice;
-    }
-
-    if (brand) {
-      const brandList = brand.split(',').map(b => b.trim()).filter(Boolean);
-      if (brandList.length > 0) {
-        where.brand = { in: brandList };
+    const cacheKey = redisKeys.products({ page, limit, categoryId, minPrice, maxPrice, search, brand: brandList })
+    const cached = await redisService.get<CachedProduct>(cacheKey)
+    let products: any[]
+    let totalProducts: number
+    if (cached) {
+      console.log("Product Cache hit", cached)
+      products = cached.data
+      totalProducts = cached.totalProducts
+    } else {
+      console.log("Products cached miss", cacheKey)
+      const where: any = {}
+      if (categoryId) {
+        where.categoryId = categoryId
       }
-    }
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        where.offerPrice = {}
+        if (minPrice !== undefined) {
+          where.offerPrice.gte = minPrice
+        }
+        if (maxPrice !== undefined) {
+          where.offerPrice.lte = maxPrice
+        }
+      }
 
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { brand: { contains: search, mode: "insensitive" } }
-      ];
-    }
-    const products = await prisma.product.findMany({
-      where,
-      skip,
-      take: limit,
+      if (brandList.length > 0) {
+        where.brand = {
+          in: brandList
+        }
+      }
 
-      orderBy: { createdAt: "desc" },
-      include: {
-        files: true,
-        category: true,
-        cartItems: userId ? {
-          where: {
-            cart: {
-              userId
+      if (search) {
+        where.OR = [
+          {
+            title: {
+              contains: search,
+              mode: "insensitive"
             }
           },
-          select: {
-            quantity: true
-          }
-        } : false,
-        wishlistItem: userId ? {
-          where: {
-            wishlist: {
-              userId
+          {
+            brand: {
+              contains: search,
+              mode: "insensitive"
             }
-          },
-          select: {
-            id: true
           }
-        } : false
-      },
-    });
+        ]
+      }
 
-    const totalProducts = await prisma.product.count({ where });
-    const formattedProducts = products?.map((item) => ({
-      ...item,
-      isInCart: item.cartItems.length > 0,
-      cartQuantity: item.cartItems[0]?.quantity || 0,
-      cartItems: undefined,
-      isInWishlist: item.wishlistItem ? item.wishlistItem.length > 0 : false,
-      wishlistItem: undefined
-    }))
+      const [dbProducts,dbTotalProducts] = await Promise.all([
+        prisma.product.findMany({where,skip,take:limit,orderBy:{createdAt:"desc"},include:{files:true,category:true}}),
+        prisma.product.count({where})
+      ])
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "all products are fetched",
-        page,
-        limit,
+      products = dbProducts
+      totalProducts = dbTotalProducts
+
+      const totalPages = Math.ceil(totalProducts/limit)
+
+      const cached = {
+        page:page,
+        limit:limit,
+        totalPages,
         totalProducts,
-        totalPages: Math.ceil(totalProducts / limit),
-        data: formattedProducts,
-      });
+        data:products
+      }
+
+      await redisService.set(cacheKey,cached,60*5)
+
+    }
+    // let where: any = {};
+
+    // if (categoryId) {
+    //   where.categoryId = categoryId;
+    // }
+
+    // if (minPrice || maxPrice) {
+    //   where.offerPrice = {};
+    //   if (minPrice) where.offerPrice.gte = minPrice;
+    //   if (maxPrice) where.offerPrice.lte = maxPrice;
+    // }
+
+    // if (brand) {
+    //   const brandList = brand.split(',').map(b => b.trim()).filter(Boolean);
+    //   if (brandList.length > 0) {
+    //     where.brand = { in: brandList };
+    //   }
+    // }
+
+    // if (search) {
+    //   where.OR = [
+    //     { title: { contains: search, mode: "insensitive" } },
+    //     { brand: { contains: search, mode: "insensitive" } }
+    //   ];
+    // }
+    // const products = await prisma.product.findMany({
+    //   where,
+    //   skip,
+    //   take: limit,
+
+    //   orderBy: { createdAt: "desc" },
+    //   include: {
+    //     files: true,
+    //     category: true,
+    //     cartItems: userId ? {
+    //       where: {
+    //         cart: {
+    //           userId
+    //         }
+    //       },
+    //       select: {
+    //         quantity: true
+    //       }
+    //     } : false,
+    //     wishlistItem: userId ? {
+    //       where: {
+    //         wishlist: {
+    //           userId
+    //         }
+    //       },
+    //       select: {
+    //         id: true
+    //       }
+    //     } : false
+    //   },
+    // });
+
+    // const totalProducts = await prisma.product.count({ where });
+    // const formattedProducts = products?.map((item) => ({
+    //   ...item,
+    //   isInCart: item.cartItems.length > 0,
+    //   cartQuantity: item.cartItems[0]?.quantity || 0,
+    //   cartItems: undefined,
+    //   isInWishlist: item.wishlistItem ? item.wishlistItem.length > 0 : false,
+    //   wishlistItem: undefined
+    // }))
+
+    // return res
+    //   .status(200)
+    //   .json({
+    //     success: true,
+    //     message: "all products are fetched",
+    //     page,
+    //     limit,
+    //     totalProducts,
+    //     totalPages: Math.ceil(totalProducts / limit),
+    //     data: formattedProducts,
+    //   });
   } catch (error) {
     console.error("getAllProducts Error", error);
     return res
@@ -461,6 +538,8 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
+
+
 
 export const productDetails = async (req: AuthRequest, res: Response) => {
   try {

@@ -6,6 +6,39 @@ export const redisKeys = {
     wishlist: (userId: string) => `wishlist:${userId}`,
     rateLimit: (ip: string) => `rateLimit:${ip}`,
     reviews: (productId: string) => `reviews:${productId}`,
-    products: "products",
-    productsByCategory: (categoryId: string) => `products:category:${categoryId}`
+    products: (params: {
+    page: number;
+    limit: number;
+    categoryId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    search?: string;
+    brand?: string[];
+  }) => {
+    const {
+      page,
+      limit,
+      categoryId = "all",
+      minPrice = "none",
+      maxPrice = "none",
+      search = "none",
+      brand = [],
+    } = params;
+
+    const normalizedBrand = [...brand]
+      .map((b) => b.trim().toLowerCase())
+      .sort()
+      .join(",");
+
+    return [
+      "products",
+      `page=${page}`,
+      `limit=${limit}`,
+      `category=${categoryId}`,
+      `minPrice=${minPrice}`,
+      `maxPrice=${maxPrice}`,
+      `search=${search || "none"}`,
+      `brand=${normalizedBrand || "none"}`,
+    ].join(":");
+  },
 }
