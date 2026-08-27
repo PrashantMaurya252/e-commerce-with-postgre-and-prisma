@@ -2,7 +2,7 @@ import {GoogleGenAI} from "@google/genai"
 import { prisma } from "../config/prisma.js"
 
 const ai = new GoogleGenAI({
-    apiKey:process.env.GEMENI_API_KEY,
+    apiKey:process.env.GOOGLE_GENAI_API_KEY,
 })
 
 export async function generateEmbedding(text:string){

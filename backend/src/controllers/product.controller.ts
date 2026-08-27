@@ -41,11 +41,18 @@ const productSchema = z
 
 export const addProduct = async (req: AuthRequest, res: Response) => {
   try {
+    console.log("Req Body in line 44", req.body)
+    console.log("FILES ", req.files)
     const parsed = productSchema.safeParse(req.body);
+    console.log("Parsed Data in line 46", parsed)
     if (!parsed.success) {
       return res.status(400).json({ success: false, message: parsed.error });
     }
     const { title, description, sellingPrice, costPrice, offerPrice, brand, categoryId, itemLeft, isOfferActive } = parsed.data;
+    const category = await prisma.category.findUnique({ where: { id: categoryId } })
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found" })
+    }
     let uploadedFiles: any[] = [];
     if (req.files && Array.isArray(req.files)) {
       for (const file of req.files) {
