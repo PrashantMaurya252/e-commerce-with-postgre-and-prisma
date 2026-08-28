@@ -388,7 +388,7 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
 
     const cacheKey = redisKeys.products({ page, limit, categoryId, minPrice, maxPrice, search, brand: brandList })
     const cached = await redisService.get<CachedProduct>(cacheKey)
-    let totalPages:number = 0
+    let totalPages: number = 0
     let products: any[]
     let totalProducts: number
     if (cached) {
@@ -463,6 +463,8 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
       const cartKey = redisKeys.cart(userId)
       const wishlistKey = redisKeys.wishlist(userId)
 
+      console.log("CartKey", cartKey, "WishlistKey", wishlistKey)
+
       const [cartCacheExist, wishlistCacheExist] = await Promise.all([redisService.exists(cartKey), redisService.exists(wishlistKey)])
       if (cartCacheExist) {
         console.log("Cart Cache hit")
@@ -473,75 +475,80 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
             cart[productId] = quantities[index] as string
           }
         })
-      }else{
+      } else {
         console.log("Cart database hit")
-        const cartItems = await prisma.cartItem.findMany({where:{cart:{
-          userId
-        }},select:{productId:true,quantity:true}})
-        if(cartItems.length > 0){
+        const cartItems = await prisma.cartItem.findMany({
+          where: {
+            cart: {
+              userId
+            }
+          }, select: { productId: true, quantity: true }
+        })
+        if (cartItems.length > 0) {
           const cartPipeline = redis.pipeline()
-          for(const items of cartItems){
+          for (const items of cartItems) {
             cartPipeline.hset(cartKey, items.productId, String(items.quantity))
           }
           await cartPipeline.exec()
-          for(const item of cartItems){
+          for (const item of cartItems) {
             cart[item.productId] = item.quantity.toString()
           }
         }
+
       }
 
-      if(wishlistCacheExist){
+      if (wishlistCacheExist) {
         console.log("Wishlist cache hit ")
-        const wishlistResult = await redis.sisMember(wishlistKey,...productIds)
-        productIds.forEach((productId,index)=>{
-          if(wishlistResult[index] === 1){
+        const wishlistResult = await redisService.isMembers(wishlistKey, productIds)
+        productIds.forEach((productId, index) => {
+          if (wishlistResult[index] === 1) {
             wishlist.push(productId)
           }
         })
-      }else{
+      } else {
         console.log("Wishlist databadse hit")
         const wishListItems = await prisma.wishlistItem.findMany({
-          where:{
-            wishlist:{
+          where: {
+            wishlist: {
               userId
             }
           },
-          select:{
-            productId:true
+          select: {
+            productId: true
           }
         })
 
-        if(wishListItems.length > 0){
+        if (wishListItems.length > 0) {
 
-          const wishListProductIds = wishListItems.map((item)=>item.productId)
+          const wishListProductIds = wishListItems.map((item) => item.productId)
 
-          await redisService.addToSet(wishlistKey,wishListProductIds)
+          await redisService.addToSet(wishlistKey, wishListProductIds)
 
           const productIdSet = new Set(productIds)
 
-          wishlist = wishListProductIds.filter((productId)=>productIdSet.has(productId))
+          wishlist = wishListProductIds.filter((productId) => productIdSet.has(productId))
         }
       }
     }
 
     const wishListSet = new Set(wishlist)
 
-    const formattedProducts = products.map((product)=>({
+    const formattedProducts = products.map((product) => ({
       ...product,
-      isInCart:Boolean(cart[product.id]),
-      cartQuantity:Number(cart[product.id]) || 0,
-      isWishListed:wishListSet.has(product.id)
+      isInCart: Boolean(cart[product.id]),
+      cartQuantity: Number(cart[product.id]) || 0,
+      isWishListed: wishListSet.has(product.id)
     }))
 
     return res.status(200).json({
-      success:true,
-      message:"Products fetched successfully",
-      data:{
+      success: true,
+      message: "Products fetched successfully",
+      data: {
         page,
         limit,
         totalPages,
         totalProducts,
-        data:formattedProducts
+        data: formattedProducts
       }
     })
     // let where: any = {};
@@ -630,53 +637,82 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
   }
 };
 
-
-
 export const productDetails = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId
     const { productId } = req.params;
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-      include: {
-        category: true,
-        files: {
-          include: { order: true, category: true },
+    const productKey = redisKeys.product(productId)
+    const isProductCached = await redisService.exists(productKey)
+    let productDetails: any
+    if (isProductCached) {
+      productDetails = await redisService.get(productKey)
+    } else {
+      productDetails = await prisma.product.findUnique({
+        where: { id: productId },
+        include: {
+          category: true,
+          files: {
+            include: { order: true, category: true },
+          },
         },
-        cartItems: userId ? {
-          where: {
-            cart: {
-              userId
-            }
-          },
-          select: {
-            quantity: true
-          }
-        } : false,
-        wishlistItem: userId ? {
-          where: {
-            wishlist: {
-              userId
-            }
-          },
-          select: {
-            id: true
-          }
-        } : false
-      },
-    });
-    if (!product) {
+      });
+    }
+
+    if (!productDetails) {
       return res
         .status(404)
         .json({ success: false, message: "No product found for given id" });
     }
 
+    await redisService.set(productKey, productDetails, 60 * 5)
+
+    let isInCart = false;
+    let cartQuantity = 0;
+    let isInWishlist = false;
+
+    if (userId) {
+      const cartKey = redisKeys.cart(userId)
+      const wishlistKey = redisKeys.wishlist(userId)
+      const [isCartCacheExist, isWishlistCacheExist] = await Promise.all([redisService.exists(cartKey), redisService.exists(wishlistKey)])
+
+      if (isCartCacheExist) {
+        const quantity = await redisService.getHashValue(cartKey, productId)
+        if (quantity !== null) {
+          isInCart = true
+          cartQuantity = Number(quantity)
+        }
+      } else {
+        const cartItem = await prisma.cartItem.findFirst({
+          where: { productId, cart: { userId } }, select: { quantity: true }
+        })
+
+        if (cartItem) {
+          isInCart = true
+          cartQuantity = cartItem.quantity
+
+          await redisService.setHashValue(cartKey, productId, String(cartItem.quantity))
+        }
+      }
+
+      if (isWishlistCacheExist) {
+        isInWishlist = await redisService.isMember(wishlistKey, productId)
+      } else {
+        const wishListItem = await prisma.wishlistItem.findFirst({ where: { productId, wishlist: { userId } }, select: { id: true } })
+        if (wishListItem) {
+          isInWishlist = true
+
+          await redisService.addToSet(wishlistKey, [productId])
+        }
+      }
+    }
+
+
     const formattedProducts = {
-      ...product,
-      isInCart: product.cartItems.length > 0,
-      cartQuantity: product.cartItems[0]?.quantity || 0,
+      ...productDetails,
+      isInCart,
+      cartQuantity,
       cartItems: undefined,
-      isInWishlist: product.wishlistItem ? product.wishlistItem.length > 0 : false,
+      isInWishlist,
       wishlistItem: undefined
     }
     return res.status(200).json({ success: true, data: formattedProducts });

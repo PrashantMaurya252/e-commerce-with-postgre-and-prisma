@@ -44,6 +44,13 @@ class RedisService {
     return (await redis.sismember(key, value)) === 1
   }
 
+  async isMembers(
+    key: string,
+    values: string[]
+  ): Promise<number[]> {
+    return await redis.smismember(key, ...values);
+  }
+
 
 
   async setHashValue(key: string, field: string, value: string): Promise<void> {
@@ -58,8 +65,8 @@ class RedisService {
     return await redis.hget(key, field)
   }
 
-  async getHashValues(key:string,fields:string[]):Promise<(string | null)[]>{
-    return await redis.hmget(key,...fields)
+  async getHashValues(key: string, fields: string[]): Promise<(string | null)[]> {
+    return await redis.hmget(key, ...fields)
   }
 
   async deleteHashValue(key: string, field: string): Promise<void> {
