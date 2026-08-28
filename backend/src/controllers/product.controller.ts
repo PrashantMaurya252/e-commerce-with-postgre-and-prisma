@@ -10,6 +10,7 @@ import { AuthRequest } from "../middlewares/auth.js";
 import { generateEmbedding, semanticProductSearch } from "../utils/gemeni-helper.js";
 import { redisKeys } from "../utils/redis.keys.js";
 import redisService from "../services/redis.service.js";
+import redis from "../config/redis.js";
 
 
 
@@ -387,6 +388,7 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
 
     const cacheKey = redisKeys.products({ page, limit, categoryId, minPrice, maxPrice, search, brand: brandList })
     const cached = await redisService.get<CachedProduct>(cacheKey)
+    let totalPages:number = 0
     let products: any[]
     let totalProducts: number
     if (cached) {
@@ -432,27 +434,116 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
         ]
       }
 
-      const [dbProducts,dbTotalProducts] = await Promise.all([
-        prisma.product.findMany({where,skip,take:limit,orderBy:{createdAt:"desc"},include:{files:true,category:true}}),
-        prisma.product.count({where})
+      const [dbProducts, dbTotalProducts] = await Promise.all([
+        prisma.product.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" }, include: { files: true, category: true } }),
+        prisma.product.count({ where })
       ])
 
       products = dbProducts
       totalProducts = dbTotalProducts
 
-      const totalPages = Math.ceil(totalProducts/limit)
+      totalPages = Math.ceil(totalProducts / limit)
 
       const cached = {
-        page:page,
-        limit:limit,
+        page: page,
+        limit: limit,
         totalPages,
         totalProducts,
-        data:products
+        data: products
       }
 
-      await redisService.set(cacheKey,cached,60*5)
+      await redisService.set(cacheKey, cached, 60 * 5)
 
     }
+
+    let cart: Record<string, string> | null = {}
+    let wishlist: string[] = []
+    if (userId && products.length > 0) {
+      const productIds = products.map(p => p.id)
+      const cartKey = redisKeys.cart(userId)
+      const wishlistKey = redisKeys.wishlist(userId)
+
+      const [cartCacheExist, wishlistCacheExist] = await Promise.all([redisService.exists(cartKey), redisService.exists(wishlistKey)])
+      if (cartCacheExist) {
+        console.log("Cart Cache hit")
+        const quantities = await redisService.getHashValues(cartKey, productIds)
+        console.log("hmget quantities", quantities)
+        productIds.forEach((productId, index) => {
+          if (quantities[index] !== null) {
+            cart[productId] = quantities[index] as string
+          }
+        })
+      }else{
+        console.log("Cart database hit")
+        const cartItems = await prisma.cartItem.findMany({where:{cart:{
+          userId
+        }},select:{productId:true,quantity:true}})
+        if(cartItems.length > 0){
+          const cartPipeline = redis.pipeline()
+          for(const items of cartItems){
+            cartPipeline.hset(cartKey, items.productId, String(items.quantity))
+          }
+          await cartPipeline.exec()
+          for(const item of cartItems){
+            cart[item.productId] = item.quantity.toString()
+          }
+        }
+      }
+
+      if(wishlistCacheExist){
+        console.log("Wishlist cache hit ")
+        const wishlistResult = await redis.sisMember(wishlistKey,...productIds)
+        productIds.forEach((productId,index)=>{
+          if(wishlistResult[index] === 1){
+            wishlist.push(productId)
+          }
+        })
+      }else{
+        console.log("Wishlist databadse hit")
+        const wishListItems = await prisma.wishlistItem.findMany({
+          where:{
+            wishlist:{
+              userId
+            }
+          },
+          select:{
+            productId:true
+          }
+        })
+
+        if(wishListItems.length > 0){
+
+          const wishListProductIds = wishListItems.map((item)=>item.productId)
+
+          await redisService.addToSet(wishlistKey,wishListProductIds)
+
+          const productIdSet = new Set(productIds)
+
+          wishlist = wishListProductIds.filter((productId)=>productIdSet.has(productId))
+        }
+      }
+    }
+
+    const wishListSet = new Set(wishlist)
+
+    const formattedProducts = products.map((product)=>({
+      ...product,
+      isInCart:Boolean(cart[product.id]),
+      cartQuantity:Number(cart[product.id]) || 0,
+      isWishListed:wishListSet.has(product.id)
+    }))
+
+    return res.status(200).json({
+      success:true,
+      message:"Products fetched successfully",
+      data:{
+        page,
+        limit,
+        totalPages,
+        totalProducts,
+        data:formattedProducts
+      }
+    })
     // let where: any = {};
 
     // if (categoryId) {

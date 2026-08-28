@@ -28,8 +28,8 @@ class RedisService {
     await redis.expire(key, seconds)
   }
 
-  async addToSet(key: string, value: string): Promise<void> {
-    await redis.sadd(key, value)
+  async addToSet(key: string, value: string[]): Promise<void> {
+    await redis.sadd(key, ...value)
   }
 
   async removeFromSet(key: string, value: string): Promise<void> {
@@ -56,6 +56,10 @@ class RedisService {
 
   async getHashValue(key: string, field: string): Promise<string | null> {
     return await redis.hget(key, field)
+  }
+
+  async getHashValues(key:string,fields:string[]):Promise<(string | null)[]>{
+    return await redis.hmget(key,...fields)
   }
 
   async deleteHashValue(key: string, field: string): Promise<void> {
