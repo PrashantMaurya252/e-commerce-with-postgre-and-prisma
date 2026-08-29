@@ -59,7 +59,7 @@ export const authorizPermissions = (...requiredPermissions: string[]) => {
                 return res.status(401).json({ success: false, message: "Unauthorized" })
             }
 
-            if (req.user.userRoles.includes("SuperAdmin")) {
+            if (req.user.userRoles.includes("super_admin")) {
                 return next()
             }
 

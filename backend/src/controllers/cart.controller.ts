@@ -4,6 +4,8 @@ import { cartTotal } from "../utils/helper.js";
 import { AuthRequest } from "../middlewares/auth.js";
 import { orderEmailQueue } from "../queues/order-email.queue.js";
 import { scheduleCartRecovery, cancelCartRecovery } from "../queues/cart.queue.js";
+import redisService from "../services/redis.service.js";
+import { redisKeys } from "../utils/redis.keys.js";
 
 export const applyCoupon = async (req: AuthRequest, res: Response) => {
   try {
@@ -363,7 +365,7 @@ export const checkout = async (req: AuthRequest, res: Response) => {
         userRoles: {
           some: {
             role: {
-              name: "SUPER_ADMIN"
+              name: "super_admin"
             }
           }
         },
@@ -386,6 +388,7 @@ export const checkout = async (req: AuthRequest, res: Response) => {
       )
     );
 
+    await redisService.delete(redisKeys.cart(userId));
 
     /* ----------------------------------
        4️⃣ RESPONSE
@@ -425,6 +428,14 @@ export const cartItems = async (req: AuthRequest, res: Response) => {
 
     if (!cart) {
       return res.status(200).json({ success: true, data: [], totalAmount: 0 });
+    }
+
+    if (cart.items.length > 0) {
+      const hashValues: Record<string, string> = {};
+      for (const item of cart.items) {
+        hashValues[item.productId] = item.quantity.toString();
+      }
+      await redisService.setHashValues(redisKeys.cart(userId), hashValues);
     }
 
     return res
@@ -476,7 +487,7 @@ export const addIntoCart = async (req: AuthRequest, res: Response) => {
     }
 
     // 3️⃣ Atomic transaction (short & safe)
-    await prisma.$transaction([
+    const [cartItem] = await prisma.$transaction([
       prisma.cartItem.upsert({
         where: {
           cartId_productId: {
@@ -503,6 +514,8 @@ export const addIntoCart = async (req: AuthRequest, res: Response) => {
     ]);
 
     await scheduleCartRecovery(userId, cart.id);
+
+    await redisService.setHashValue(redisKeys.cart(userId), productId, cartItem.quantity);
 
     return res
       .status(200)
@@ -565,6 +578,7 @@ export const decreaseFromCart = async (req: AuthRequest, res: Response) => {
           data: { total: { decrement: price } },
         }),
       ]);
+      await redisService.setHashValue(redisKeys.cart(userId), productId, cartItem.quantity - 1);
     } else {
       await prisma.$transaction([
         prisma.cartItem.delete({ where: { id: cartItem.id } }),
@@ -573,6 +587,7 @@ export const decreaseFromCart = async (req: AuthRequest, res: Response) => {
           data: { total: { decrement: price } },
         }),
       ]);
+      await redisService.deleteHashValue(redisKeys.cart(userId), productId);
     }
 
     return res
@@ -635,6 +650,8 @@ export const deleteCartItem = async (req: AuthRequest, res: Response) => {
       }),
     ]);
 
+    await redisService.deleteHashValue(redisKeys.cart(userId), productId);
+
     return res.status(200).json({
       success: true,
       message: "Item removed from cart successfully",
@@ -668,8 +685,17 @@ export const getCartItems = async (req: AuthRequest, res: Response) => {
       },
     });
     if (!cart) {
-      return res.status(200).json({ success: true, data: [], total: 0 });
+      return res.status(200).json({ success: true, data: { items: [], total: 0 } });
     }
+
+    if (cart.items.length > 0) {
+      const hashValues: Record<string, string> = {};
+      for (const item of cart.items) {
+        hashValues[item.productId] = item.quantity.toString();
+      }
+      await redisService.setHashValues(redisKeys.cart(userId), hashValues);
+    }
+
     return res
       .status(200)
       .json({ success: true, data: { items: cart.items, total: cart.total } });
@@ -742,6 +768,8 @@ export const clearCart = async (req: AuthRequest, res: Response) => {
     ]);
 
     await cancelCartRecovery(cart.id);
+
+    await redisService.delete(redisKeys.cart(userId));
 
     return res.status(200).json({ success: true, message: "Cart cleared successfully" });
   } catch (error) {

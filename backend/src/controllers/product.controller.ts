@@ -98,6 +98,8 @@ export const addProduct = async (req: AuthRequest, res: Response) => {
         NOW()
       )
     `;
+
+    await redisService.deleteByPattern("products:*")
     return res.status(201).json({
       success: true,
       message: "Product Created successfully",
@@ -249,6 +251,8 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
         console.error("Product embedding update failed (non-fatal):", embeddingError);
       }
     }
+
+    await Promise.all([redisService.deleteByPattern("products:*"), redisService.delete(redisKeys.product(updatedProduct.id))])
     return res.status(200).json({
       success: true,
       message: "product updated successfully",
@@ -392,6 +396,7 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
     let products: any[]
     let totalProducts: number
     if (cached) {
+
       console.log("Product Cache hit", cached)
       products = cached.data
       totalProducts = cached.totalProducts

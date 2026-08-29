@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
 import { AuthRequest } from "../middlewares/auth.js";
+import redisService from "../services/redis.service.js";
+import { redisKeys } from "../utils/redis.keys.js";
 
 export const getWishlistItems = async (req: AuthRequest, res: Response) => {
   try {
@@ -37,6 +39,12 @@ export const getWishlistItems = async (req: AuthRequest, res: Response) => {
 
     if (!wishlist) {
       return res.status(200).json({ success: true, data: { items: [], total: 0 } });
+    }
+
+    if (wishlist.items.length > 0) {
+      const wishListProductIds = wishlist.items.map((item) => item.productId);
+      await redisService.delete(redisKeys.wishlist(userId));
+      await redisService.addToSet(redisKeys.wishlist(userId), wishListProductIds);
     }
 
     return res.status(200).json({
@@ -96,6 +104,7 @@ export const toggleWishlistItem = async (req: AuthRequest, res: Response) => {
           data: { total: { decrement: 1 } },
         }),
       ]);
+      await redisService.removeFromSet(redisKeys.wishlist(userId), productId);
       return res
         .status(200)
         .json({ success: true, message: "Removed from wishlist" });
@@ -113,6 +122,7 @@ export const toggleWishlistItem = async (req: AuthRequest, res: Response) => {
           data: { total: { increment: 1 } },
         }),
       ]);
+      await redisService.addToSet(redisKeys.wishlist(userId), [productId]);
       return res
         .status(200)
         .json({ success: true, message: "Added to wishlist" });
