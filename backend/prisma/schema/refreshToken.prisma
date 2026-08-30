@@ -8,6 +8,7 @@ model RefreshToken {
   userAgent    String?  @db.Text
   lastUsedAt   DateTime @default(now())
   isRevoked    Boolean  @default(false)
+  revokedAt    DateTime?
   expiresAt DateTime
   createdAt DateTime @default(now())
 

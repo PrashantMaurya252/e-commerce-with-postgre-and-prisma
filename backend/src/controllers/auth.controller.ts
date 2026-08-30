@@ -7,6 +7,9 @@ import { generateOtp, sendOtpMail } from "../utils/mailer.js";
 import jwt from "jsonwebtoken";
 import { AuthRequest } from "../middlewares/auth.js";
 import { OAuth2Client } from "google-auth-library";
+import { createSession } from "../services/auth.service.js";
+
+
 // import { emailQueues } from "../queues/email.queues.js";
 
 const signupSchema = z.object({
@@ -139,17 +142,9 @@ export const login = async (req: Request, res: Response) => {
     const { password: _, createdAt, isAdmin: _dbAdmin, ...rest } = user;
     const userData = { ...rest, isAdmin: isAdminCalculated };
     const accessToken = generateAccessToken(userPayload);
-    const refreshToken = generateRefreshToken({ userId: user.id });
+    const session = await createSession(user.id, req);
 
-    await prisma.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    });
-
-    res.cookie("refresh-token", refreshToken, {
+    res.cookie("refresh-token", session.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
@@ -331,6 +326,11 @@ export const refreshToken = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
+    await prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { lastUsedAt: new Date() }
+    })
+
     const payload = jwt.verify(
       token,
       process.env.JWT_REFRESH_TOKEN_SECRET!,
@@ -399,16 +399,19 @@ export const me = async (req: AuthRequest, res: Response) => {
 export const logout = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
-    if (!userId) {
+    const refreshToken = req.cookies["refresh-token"];
+    if (!userId || !refreshToken) {
       return res.status(401).json({ success: false, message: "Unauthorized in logout" });
     }
     const user = await prisma.user.findUnique({ where: { id: userId } });
+
     if (!user) {
       return res.status(401).json({ success: false, message: "Unauthorized in logout" });
     }
 
-    await prisma.refreshToken.deleteMany({
-      where: { userId: userId },
+    await prisma.refreshToken.updateMany({
+      where: { userId: userId, token: refreshToken },
+      data: { isRevoked: true, revokedAt: new Date() }
     });
     res.clearCookie("refresh-token", {
       httpOnly: true,
@@ -433,6 +436,58 @@ export const logout = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const logoutFromAllDevices = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId
+    const user = await prisma.user.findFirst({ where: { id: userId } })
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" })
+    }
+    await prisma.refreshToken.updateMany({ where: { userId }, data: { isRevoked: true, revokedAt: new Date() } })
+
+    res.clearCookie("refresh-token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
+
+    res.clearCookie("access-token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
+    return res
+      .status(200)
+      .json({ success: true, message: "User logout from all devices successfully" });
+  } catch (error) {
+    console.log("Logout from all devices error", error)
+    return res.status(500).json({ success: false, message: "Internal Server Error" })
+  }
+}
+
+export const logoutFromParticularDevice = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.userId
+    const { sessionId } = req.body
+    const user = await prisma.refreshToken.findUnique({ where: { id: userId } })
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" })
+    }
+    const session = await prisma.refreshToken.findUnique({ where: { id: sessionId } })
+    if (!session || session.userId !== userId) {
+      return res.status(401).json({ success: false, message: "Invalid Session" })
+    }
+    await prisma.refreshToken.update({
+      where: { id: sessionId },
+      data: { isRevoked: true, revokedAt: new Date() }
+    })
+
+    return res.status(200).json({ success: true, message: "User logout from particular device successfully" })
+  } catch (error) {
+    console.log("Logout from particular device error", error)
+    return res.status(500).json({ success: false, message: "Internal Server Error" })
+  }
+}
 export const googleAuth = async (req: Request, res: Response) => {
   try {
     const { token } = req.body;
@@ -531,3 +586,30 @@ export const googleAuth = async (req: Request, res: Response) => {
       .json({ success: false, message: "Internal Server Error" });
   }
 };
+
+export const getSessions = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.userId
+    const sessions = await prisma.refreshToken.findMany({
+      where: { userId, isRevoked: false, expiresAt: { gt: new Date() } },
+      select: {
+        id: true,
+        deviceName: true,
+        ipAddress: true,
+        userAgent: true,
+        createdAt: true,
+        lastUsedAt: true,
+        expiresAt: true,
+      },
+      orderBy: { lastUsedAt: "desc" }
+    })
+    return res.status(200).json({
+      success: true,
+      message: "Sessions fetched successfully",
+      data: { sessions }
+    })
+  } catch (error) {
+    console.log("Get sessions error", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" })
+  }
+}

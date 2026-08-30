@@ -1,44 +1,44 @@
 
-import rateLimit, { Options } from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator, Options } from 'express-rate-limit';
 
 interface RateLimiterConfig {
-    windowMs: number;
-    max: number;
-    message?: string;
-    skipSuccessfulRequests?: boolean;
+  windowMs: number;
+  max: number;
+  message?: string;
+  skipSuccessfulRequests?: boolean;
 }
 
 export const createRateLimiter = ({
+  windowMs,
+  max,
+  message = "Too many requests. Please try again later.",
+  skipSuccessfulRequests = false,
+}: RateLimiterConfig) => {
+  return rateLimit({
     windowMs,
     max,
-    message = "Too many requests. Please try again later.",
-    skipSuccessfulRequests = false,
-}: RateLimiterConfig) => {
-    return rateLimit({
-        windowMs,
-        max,
-        standardHeaders: true,
-        legacyHeaders: false,
-        skipSuccessfulRequests,
-        message: {
-            success: false,
-            message,
-        },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests,
+    message: {
+      success: false,
+      message,
+    },
 
-        keyGenerator: (req, res) => {
-            return (req as any).user?.id || req.ip;
-        },
-    });
+    keyGenerator: (req, res) => {
+      return (req as any).user?.id || ipKeyGenerator(req.ip || "");
+    },
+  });
 };
 
 
 
 
 export const loginLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, 
+  windowMs: 15 * 60 * 1000,
   max: 5,
   message: "Too many login attempts. Please try again after 15 minutes.",
-  skipSuccessfulRequests: true, 
+  skipSuccessfulRequests: true,
 });
 
 
