@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react'
 import { useAppSelector } from '@/redux/hooks'
-import { User, MapPin, Package, LogOut } from 'lucide-react'
+import { User, MapPin, Package, LogOut, ShieldCheck } from 'lucide-react'
 import ProfileInfo from '@/components/profile/ProfileInfo'
 import ManageAddresses from '@/components/profile/ManageAddresses'
 import OrderHistory from '@/components/profile/OrderHistory'
+import SessionManagement from '@/components/profile/SessionManagement'
 import { useGetProfileQuery, useGetUserOrdersQuery } from '@/redux/services/profileApi'
 import { logoutHandler } from '@/utils/api'
 import { logout } from '@/redux/slices/authSlice'
@@ -17,7 +18,7 @@ export default function Profile() {
   const { user } = useAppSelector((state) => state.auth)
   const router = useRouter()
   const dispatch = useDispatch()
-  const [activeTab, setActiveTab] = useState<'info' | 'addresses' | 'orders'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'addresses' | 'orders' | 'sessions'>('info')
 
   const { data: profileData, isLoading: profileLoading } = useGetProfileQuery(user?.id || '', {
     skip: !user?.id
@@ -38,6 +39,7 @@ export default function Profile() {
     { id: 'info', label: 'Profile Info', icon: User },
     { id: 'addresses', label: 'Addresses', icon: MapPin },
     { id: 'orders', label: 'My Orders', icon: Package },
+    { id: 'sessions', label: 'Sessions', icon: ShieldCheck },
   ]
 
   if (profileLoading || ordersLoading) {
@@ -97,6 +99,7 @@ export default function Profile() {
           {activeTab === 'info' && <ProfileInfo user={fullProfile} />}
           {activeTab === 'addresses' && <ManageAddresses addresses={addresses} />}
           {activeTab === 'orders' && <OrderHistory orders={userOrders} userReviews={userReviews} />}
+          {activeTab === 'sessions' && <SessionManagement />}
         </div>
       </div>
     </div>
