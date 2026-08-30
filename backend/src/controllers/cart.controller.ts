@@ -210,7 +210,15 @@ export const checkout = async (req: AuthRequest, res: Response) => {
        3️⃣ FETCH ADMINS FOR NOTIFICATION
     ---------------------------------- */
     const admins = await prisma.user.findMany({
-      where: { isAdmin: true },
+      where: {
+        userRoles: {
+          some: {
+            role: {
+              isSystemRole: true
+            }
+          }
+        }
+      },
       select: { id: true },
     })
 

@@ -82,13 +82,13 @@ async function seedAdminRole() {
   // 1. Create SUPER_ADMIN role
   const superAdminRole = await prisma.role.upsert({
     where: {
-      name: "SUPER_ADMIN",
+      name: "super_admin",
     },
 
     update: {},
 
     create: {
-      name: "SUPER_ADMIN",
+      name: "super_admin",
       description: "All permissions granted",
       isSystemRole: true
     },
@@ -135,7 +135,7 @@ async function seedAdminRole() {
     },
 
     update: {
-      
+
     },
 
     create: {

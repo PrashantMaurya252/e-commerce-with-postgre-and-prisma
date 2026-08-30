@@ -33,7 +33,15 @@ new Worker('sales-report', async () => {
     `;
 
     const admins = await prisma.user.findMany({
-        where: { isAdmin: true }
+        where: {
+            userRoles: {
+                some: {
+                    role: {
+                        isSystemRole: true
+                    }
+                }
+            }
+        }
     });
 
     for (const admin of admins) {

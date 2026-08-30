@@ -27,10 +27,14 @@ import { httpRequestCounter, httpRequestDuration, register } from "./utils/metri
 import { ApiError } from "./utils/responseHandler.js";
 import { serverAdapter } from "./dashboard.js";
 import { authorizeRoles } from "./middlewares/authorize.js";
-
+import { auth } from "./middlewares/auth.js";
 const app = express();
 app.use("/api/stripe", stripeRoutes);
-app.use(helmet({ frameguard: false }));
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  frameguard: false,
+}));
 
 app.use(
   cors({
@@ -125,7 +129,7 @@ app.get("/metrics", async (req: Request, res: Response) => {
   res.end(await register.metrics())
 })
 
-app.use("/admin/queues", authorizeRoles("super_admin"), serverAdapter.getRouter())
+app.use("/admin/queues", auth, authorizeRoles("super_admin"), serverAdapter.getRouter())
 
 app.get("/health", (req, res) => {
   res.status(200).send("OKK")

@@ -47,7 +47,7 @@ export const signUp = async (req: Request, res: Response) => {
         email: email,
         name: username,
         password: hashedPassword,
-        isAdmin: false,
+
       },
     });
 
@@ -102,6 +102,8 @@ export const login = async (req: Request, res: Response) => {
         }
       }
     });
+
+    console.log("User", user)
     if (user && user.provider === "GOOGLE") {
       return res
         .status(400)
@@ -131,6 +133,8 @@ export const login = async (req: Request, res: Response) => {
         message: "Credentials wrong",
       });
     }
+
+    console.log("User Roles", user.userRoles)
     const isAdminCalculated = user.userRoles?.some((ur) => ur.role.isSystemRole) ?? false;
     const userPayload = {
       userId: user.id,
@@ -139,7 +143,7 @@ export const login = async (req: Request, res: Response) => {
       userRoles: user?.userRoles.map(role => role.role.name),
       isAdmin: isAdminCalculated,
     };
-    const { password: _, createdAt, isAdmin: _dbAdmin, ...rest } = user;
+    const { password: _, createdAt, ...rest } = user;
     const userData = { ...rest, isAdmin: isAdminCalculated };
     const accessToken = generateAccessToken(userPayload);
     const session = await createSession(user.id, req);
@@ -374,7 +378,7 @@ export const me = async (req: AuthRequest, res: Response) => {
     }
     const user = await prisma.user.findUnique({
       where: { id: req.user?.userId },
-      select: { id: true, email: true, name: true, isAdmin: true, userRoles: { include: { role: true } } },
+      select: { id: true, email: true, name: true, userRoles: { include: { role: true } } },
     });
 
     if (!user) {
@@ -384,7 +388,7 @@ export const me = async (req: AuthRequest, res: Response) => {
     }
 
     const isAdminCalculated = user.userRoles?.some((ur) => ur.role.isSystemRole) ?? false;
-    const { userRoles: _, isAdmin: _dbAdmin, ...rest } = user;
+    const { userRoles: _, ...rest } = user;
     const responseUser = { ...rest, isAdmin: isAdminCalculated };
 
     return res.status(200).json({ success: true, user: responseUser });
@@ -553,7 +557,7 @@ export const googleAuth = async (req: Request, res: Response) => {
       isAdmin: isAdminCalculated,
       userRoles: user.userRoles.map((userRole) => userRole.role.name)
     };
-    const { password: _, createdAt, isAdmin: _dbAdmin, ...rest } = user;
+    const { password: _, createdAt, ...rest } = user;
     const userData = { ...rest, isAdmin: isAdminCalculated };
     const accessToken = generateAccessToken(userPayload);
     const refreshToken = generateRefreshToken({ userId: user.id });

@@ -96,13 +96,13 @@ const navItems = [
     route: "/admin/roles-permissions",
     icon: Shield,
     description: "Manage Access",
-  },
-  {
-    label: "Queues",
-    route: "/admin/queues",
-    icon: Activity,
-    description: "Manage Background Jobs",
-  },
+  }
+  // {
+  //   label: "Queues",
+  //   route: "/admin/queues",
+  //   icon: Activity,
+  //   description: "Manage Background Jobs",
+  // },
 ];
 
 export default function AdminSidebar() {

@@ -151,32 +151,43 @@ export const wipeAllData = async (req: Request, res: Response) => {
             }
         }
 
-        // 2. Perform Database wipe in transaction to respect relations and constraints
-        await prisma.$transaction([
-            prisma.cartItem.deleteMany(),
-            prisma.cart.deleteMany(),
-            prisma.orderItem.deleteMany(),
-            prisma.payment.deleteMany(),
-            prisma.order.deleteMany(),
-            prisma.file.deleteMany(),
-            prisma.review.deleteMany(),
-            prisma.productEmbedding.deleteMany(),
-            prisma.product.deleteMany(),
-            prisma.category.deleteMany(),
-            prisma.couponUsage.deleteMany(),
-            prisma.coupon.deleteMany(),
-            prisma.otp.deleteMany(),
-            prisma.refreshToken.deleteMany(),
-            prisma.address.deleteMany(),
-            prisma.faqEmbedding.deleteMany(),
-            prisma.faq.deleteMany(),
-            // Delete users where isAdmin is false
-            prisma.user.deleteMany({
-                where: {
-                    isAdmin: false
+        // 2. Perform Database wipe sequentially to avoid transaction timeouts (P2028)
+        await prisma.chatMessage.deleteMany();
+        await prisma.chat.deleteMany();
+        await prisma.wishlistItem.deleteMany();
+        await prisma.wishlist.deleteMany();
+        await prisma.notificationCampaign.deleteMany();
+        await prisma.notification.deleteMany();
+        await prisma.banner.deleteMany();
+        await prisma.cartItem.deleteMany();
+        await prisma.cart.deleteMany();
+        await prisma.orderItem.deleteMany();
+        await prisma.payment.deleteMany();
+        await prisma.order.deleteMany();
+        await prisma.file.deleteMany();
+        await prisma.review.deleteMany();
+        await prisma.productEmbedding.deleteMany();
+        await prisma.product.deleteMany();
+        await prisma.category.deleteMany();
+        await prisma.couponUsage.deleteMany();
+        await prisma.coupon.deleteMany();
+        await prisma.otp.deleteMany();
+        await prisma.refreshToken.deleteMany();
+        await prisma.address.deleteMany();
+        await prisma.faqEmbedding.deleteMany();
+        await prisma.faq.deleteMany();
+        // Delete users where isAdmin is false
+        await prisma.user.deleteMany({
+            where: {
+                userRoles: {
+                    none: {
+                        role: {
+                            isSystemRole: true
+                        }
+                    }
                 }
-            })
-        ]);
+            }
+        });
 
         return res.status(200).json({ success: true, message: "Successfully wiped all data and media files." });
     } catch (error) {

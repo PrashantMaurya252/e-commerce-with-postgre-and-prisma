@@ -5,8 +5,8 @@ import { createCoupon, deleteCoupon, getAllCoupon, updateCoupon, wipeAllData, ge
 
 const adminRoutes = express.Router()
 
-adminRoutes.use(auth)
-adminRoutes.use(authorizeRoles("super_admin"))
+// adminRoutes.use(auth)
+// adminRoutes.use(authorizeRoles("super_admin"))
 
 adminRoutes.post("/create-coupon", createCoupon)
 adminRoutes.put("/update-coupon", updateCoupon)
