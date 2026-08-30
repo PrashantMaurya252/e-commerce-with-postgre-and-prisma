@@ -3,8 +3,6 @@ version: '3.8'
 services:
   redis:
     image: redis:alpine
-    ports:
-      - "6379:6379"
     restart: unless-stopped
     volumes:
       - redis_data:/data
@@ -14,7 +12,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5001:5000"
     env_file:
       - .env
     environment:
@@ -35,7 +33,7 @@ services:
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
         NEXT_PUBLIC_DEPLOYED_BACKEND_API_URL: ${NEXT_PUBLIC_DEPLOYED_BACKEND_API_URL}
     ports:
-      - "3000:3000"
+      - "3001:3000"
     env_file:
       - .env
     depends_on:
