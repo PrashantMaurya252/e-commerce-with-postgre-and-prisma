@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
 import { cartTotal } from "../utils/helper.js";
 import { AuthRequest } from "../middlewares/auth.js";
+import { orderEmailQueue } from "../queues/order-email.queue.js";
+import { scheduleCartRecovery, cancelCartRecovery } from "../queues/cart.queue.js";
+import redisService from "../services/redis.service.js";
+import { redisKeys } from "../utils/redis.keys.js";
 
 export const applyCoupon = async (req: AuthRequest, res: Response) => {
   try {
@@ -206,7 +210,15 @@ export const checkout = async (req: AuthRequest, res: Response) => {
        3️⃣ FETCH ADMINS FOR NOTIFICATION
     ---------------------------------- */
     const admins = await prisma.user.findMany({
-      where: { isAdmin: true },
+      where: {
+        userRoles: {
+          some: {
+            role: {
+              isSystemRole: true
+            }
+          }
+        }
+      },
       select: { id: true },
     })
 
@@ -275,6 +287,9 @@ export const checkout = async (req: AuthRequest, res: Response) => {
             }
           }
         },
+        include: {
+          items: true
+        }
       })
 
       // 🏷️ Mark coupon as used
@@ -291,6 +306,8 @@ export const checkout = async (req: AuthRequest, res: Response) => {
       await tx.cartItem.deleteMany({
         where: { cartId: cart.id },
       })
+
+      await cancelCartRecovery(cart.id)
 
       await tx.cart.update({
         where: { id: cart.id },
@@ -331,6 +348,56 @@ export const checkout = async (req: AuthRequest, res: Response) => {
       return order
     })
 
+    const finalTotal = order.total
+    const itemCount = order.items.reduce(
+      (total, item) => total + item.quantity,
+      0
+    );
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } })
+
+    if (user) {
+      await orderEmailQueue.add('user-confirmation', {
+        type: 'user-confirmation',
+        orderId: order.id,
+        recipientEmail: user.email,
+        recipientName: user.name || "",
+        total: Number(finalTotal),
+        itemCount,
+      });
+    }
+
+    // one email per admin (you already have `admins` fetched)
+    const adminUsers = await prisma.user.findMany({
+      where: {
+        userRoles: {
+          some: {
+            role: {
+              name: "super_admin"
+            }
+          }
+        },
+        isActive: true,
+        isDeleted: false
+      },
+      select: { email: true, name: true }
+    });
+
+    await Promise.all(
+      adminUsers.map((admin) =>
+        orderEmailQueue.add('admin-alert', {
+          type: 'admin-alert',
+          orderId: order.id,
+          recipientEmail: admin.email,
+          recipientName: admin.name || "Admin",
+          total: Number(finalTotal),
+          itemCount,
+        })
+      )
+    );
+
+    await redisService.delete(redisKeys.cart(userId));
+
     /* ----------------------------------
        4️⃣ RESPONSE
     ---------------------------------- */
@@ -369,6 +436,14 @@ export const cartItems = async (req: AuthRequest, res: Response) => {
 
     if (!cart) {
       return res.status(200).json({ success: true, data: [], totalAmount: 0 });
+    }
+
+    if (cart.items.length > 0) {
+      const hashValues: Record<string, string> = {};
+      for (const item of cart.items) {
+        hashValues[item.productId] = item.quantity.toString();
+      }
+      await redisService.setHashValues(redisKeys.cart(userId), hashValues);
     }
 
     return res
@@ -420,7 +495,7 @@ export const addIntoCart = async (req: AuthRequest, res: Response) => {
     }
 
     // 3️⃣ Atomic transaction (short & safe)
-    await prisma.$transaction([
+    const [cartItem] = await prisma.$transaction([
       prisma.cartItem.upsert({
         where: {
           cartId_productId: {
@@ -445,6 +520,10 @@ export const addIntoCart = async (req: AuthRequest, res: Response) => {
         },
       }),
     ]);
+
+    await scheduleCartRecovery(userId, cart.id);
+
+    await redisService.setHashValue(redisKeys.cart(userId), productId, cartItem.quantity);
 
     return res
       .status(200)
@@ -507,6 +586,7 @@ export const decreaseFromCart = async (req: AuthRequest, res: Response) => {
           data: { total: { decrement: price } },
         }),
       ]);
+      await redisService.setHashValue(redisKeys.cart(userId), productId, cartItem.quantity - 1);
     } else {
       await prisma.$transaction([
         prisma.cartItem.delete({ where: { id: cartItem.id } }),
@@ -515,6 +595,7 @@ export const decreaseFromCart = async (req: AuthRequest, res: Response) => {
           data: { total: { decrement: price } },
         }),
       ]);
+      await redisService.deleteHashValue(redisKeys.cart(userId), productId);
     }
 
     return res
@@ -577,6 +658,8 @@ export const deleteCartItem = async (req: AuthRequest, res: Response) => {
       }),
     ]);
 
+    await redisService.deleteHashValue(redisKeys.cart(userId), productId);
+
     return res.status(200).json({
       success: true,
       message: "Item removed from cart successfully",
@@ -610,8 +693,17 @@ export const getCartItems = async (req: AuthRequest, res: Response) => {
       },
     });
     if (!cart) {
-      return res.status(200).json({ success: true, data: [], total: 0 });
+      return res.status(200).json({ success: true, data: { items: [], total: 0 } });
     }
+
+    if (cart.items.length > 0) {
+      const hashValues: Record<string, string> = {};
+      for (const item of cart.items) {
+        hashValues[item.productId] = item.quantity.toString();
+      }
+      await redisService.setHashValues(redisKeys.cart(userId), hashValues);
+    }
+
     return res
       .status(200)
       .json({ success: true, data: { items: cart.items, total: cart.total } });
@@ -682,6 +774,10 @@ export const clearCart = async (req: AuthRequest, res: Response) => {
         data: { total: 0 }
       })
     ]);
+
+    await cancelCartRecovery(cart.id);
+
+    await redisService.delete(redisKeys.cart(userId));
 
     return res.status(200).json({ success: true, message: "Cart cleared successfully" });
   } catch (error) {

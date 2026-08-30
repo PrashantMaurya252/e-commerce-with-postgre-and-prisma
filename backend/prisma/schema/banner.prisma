@@ -1,0 +1,43 @@
+model Banner {
+  id String @id @default(uuid())
+
+  title    String
+  subtitle String? @db.Text
+
+  imageId String @unique
+  image   File   @relation("DesktopBanner", fields: [imageId], references: [id])
+
+  mobileImageId String? @unique
+  mobileImage   File?   @relation("MobileBanner", fields: [mobileImageId], references: [id])
+
+  actionType BannerActionType @default(NONE)
+  actionUrl  String?
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  position BannerPosition @default(HOME_TOP)
+
+  priority Int @default(0)
+
+  isActive Boolean @default(true)
+
+  startsAt DateTime?
+  endsAt   DateTime?
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([position])
+  @@index([priority])
+  @@index([isActive])
+}

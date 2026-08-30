@@ -6,7 +6,7 @@ cron.schedule("*/15 * * * *",async()=>{
         const refreshToken =await prisma.refreshToken.deleteMany({where:{
         expiresAt:{
             lt:new Date()
-        }
+        },
     }})
     console.log(`Deleted ${refreshToken.count} expired refresh token `)
     } catch (error) {

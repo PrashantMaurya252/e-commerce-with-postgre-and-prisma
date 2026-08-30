@@ -553,3 +553,134 @@ export const deleteCampaign = async (
     };
   }
 };
+
+// ──────────────────── Roles and Permissions ─────────────────────
+export const getRolesAndPermissions = async (): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.get(`${BACKEND_URL}/admin/roles-permissions`, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const createRole = async (
+  data: Record<string, any>
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.post(`${BACKEND_URL}/admin/add-role`, data, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const updateRole = async (
+  roleId: string,
+  data: Record<string, any>
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.put(
+      `${BACKEND_URL}/admin/update-role/${roleId}`,
+      data,
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const deleteRole = async (
+  roleId: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.delete(`${BACKEND_URL}/admin/delete-role/${roleId}`, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const assignRolesToUser = async (
+  data: { userId: string; roleIds: string[] }
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.post(`${BACKEND_URL}/admin/assign-role`, data, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const assignPermissionToRoles = async (
+  data: { roleId: string; permissionIds: string[] }
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.post(`${BACKEND_URL}/admin/assign-permissions`, data, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const getAssignedRoles = async (
+  userId: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.get(`${BACKEND_URL}/admin/get-user-roles/${userId}`, {
+      withCredentials: true,
+    });
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};
+
+export const getAssignedPermissions = async (
+  roleId: string
+): Promise<normalAPIResponse> => {
+  try {
+    const res = await api.get(
+      `${BACKEND_URL}/admin/get-assigned-permissions/${roleId}`,
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.response?.data?.message || "Internal Server Error",
+    };
+  }
+};

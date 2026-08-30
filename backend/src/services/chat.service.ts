@@ -55,6 +55,8 @@ You help users find products, provide details, and add items to their cart.
 CRITICAL RULE: ONLY provide information about products that are explicitly returned by your tools. If a tool returns no results, you MUST tell the user that no products were found. DO NOT hallucinate, invent, or suggest products that were not provided by the tools.
 CRITICAL RULE FOR TOOLS: To use a tool, you must ONLY use the native function calling API. Do not write out the tool call manually in text. Do not output any conversational text before calling a tool.
 ALWAYS format your responses using beautiful Markdown. Use bullet points, bold text, and clear paragraphs to make your answers easy to read. 
+If the tool response contains "NO_PRODUCTS_FOUND", you MUST tell the user no matching products exist on DesiMarket. Do not suggest, invent, or imply any products in this case — not even generic or example ones.
+You must use ONLY the exact titles, descriptions, and prices from the tool response. Do not add any product, brand, or detail not present in the JSON.
 Never output raw JSON to the user. Always interpret tool results and present them in a friendly, conversational, and highly readable format.
 If you are asked about the services provided by this website, explain that you are an e-commerce platform offering a variety of products, fast delivery, and secure payments.`;
 
@@ -72,7 +74,7 @@ export const processUserMessage = async (userId: string | null, message: string,
         ...messages
       ],
       tools: tools,
-      tool_choice: "auto",
+      tool_choice: "required",
     });
 
     console.log("Response in line 78", response)
@@ -137,7 +139,9 @@ export const processUserMessage = async (userId: string | null, message: string,
                `;
             }
 
-            toolResponse = JSON.stringify(products);
+            toolResponse = products && products.length > 0
+              ? JSON.stringify(products)
+              : "NO_PRODUCTS_FOUND: The database search returned zero results for this query.";
 
             console.log("Tool Response in line 138", toolResponse)
 
@@ -196,8 +200,18 @@ export const processUserMessage = async (userId: string | null, message: string,
     finalContent = finalContent.replace(/<?function=.*?>.*?<\/function>/gs, "");
     finalContent = finalContent.replace(/<?function=.*?>/gs, "");
     return finalContent.trim();
-  } catch (error) {
-    console.error("Chat completion error", error);
-    throw error;
+  } catch (error: any) {
+    if (error?.status === 400 && error?.error?.error?.code === "tool_use_failed") {
+      console.warn("Model attempted invalid tool, retrying with forced search_products");
+      let response = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+        tools,
+        tool_choice: { type: "function", function: { name: "search_products" } }, // force THIS specific tool
+      });
+      responseMessage = response.choices[0].message;
+    } else {
+      throw error;
+    }
   }
 }

@@ -1,0 +1,14 @@
+model Address {
+  id           String  @id @default(uuid())
+  line1        String
+  line2        String?
+  landmark     String?
+  phoneNumber1 String
+  phoneNumber2 String?
+  pincode      Int
+  city         String
+  userId       String
+  isDefault    Boolean @default(false)
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       Order[]
+}

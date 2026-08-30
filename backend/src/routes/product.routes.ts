@@ -3,6 +3,7 @@ import { auth } from '../middlewares/auth.js'
 import { authorize } from '../middlewares/authorize.js'
 import { upload } from '../utils/multer.js'
 import { addProduct, deleteAllProducts, getAllProducts, productDetails, productSearch, productSeeder, updateProduct, submitProductReview, updateProductReview, getAllBrands } from '../controllers/product.controller.js'
+import { searchLimiter } from '../middlewares/rateLimiter.js'
 
 const productRouter = express.Router()
 
@@ -13,7 +14,7 @@ productRouter.delete("/delete-all-products", auth, authorize, deleteAllProducts)
 productRouter.get("/all-products", auth, getAllProducts)
 productRouter.get("/brands", auth, getAllBrands)
 productRouter.get("/product-details/:productId", auth, productDetails)
-productRouter.post("/product-search", productSearch)
+productRouter.post("/product-search", searchLimiter, productSearch)
 
 // Review routes
 productRouter.post("/review/:productId", auth, submitProductReview)

@@ -1,0 +1,11 @@
+model Otp {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  type      OtpType
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, type])
+}

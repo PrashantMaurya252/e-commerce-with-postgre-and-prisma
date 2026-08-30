@@ -3,6 +3,8 @@ import z from "zod";
 import { prisma } from "../config/prisma.js";
 import { v2 as cloudinary } from "cloudinary";
 import { OrderStatus, PaymentStatus } from "@prisma/client";
+import { AuthRequest } from "../middlewares/auth.js";
+import { ApiError, ApiResponse, asyncHandler } from "../utils/responseHandler.js";
 const couponSchema = z.object({
     code: z.string().trim().toUpperCase(),
     discountType: z.enum(["PERCENT", "FLAT"]),
@@ -149,32 +151,43 @@ export const wipeAllData = async (req: Request, res: Response) => {
             }
         }
 
-        // 2. Perform Database wipe in transaction to respect relations and constraints
-        await prisma.$transaction([
-            prisma.cartItem.deleteMany(),
-            prisma.cart.deleteMany(),
-            prisma.orderItem.deleteMany(),
-            prisma.payment.deleteMany(),
-            prisma.order.deleteMany(),
-            prisma.file.deleteMany(),
-            prisma.review.deleteMany(),
-            prisma.productEmbedding.deleteMany(),
-            prisma.product.deleteMany(),
-            prisma.category.deleteMany(),
-            prisma.couponUsage.deleteMany(),
-            prisma.coupon.deleteMany(),
-            prisma.otp.deleteMany(),
-            prisma.refreshToken.deleteMany(),
-            prisma.address.deleteMany(),
-            prisma.faqEmbedding.deleteMany(),
-            prisma.faq.deleteMany(),
-            // Delete users where isAdmin is false
-            prisma.user.deleteMany({
-                where: {
-                    isAdmin: false
+        // 2. Perform Database wipe sequentially to avoid transaction timeouts (P2028)
+        await prisma.chatMessage.deleteMany();
+        await prisma.chat.deleteMany();
+        await prisma.wishlistItem.deleteMany();
+        await prisma.wishlist.deleteMany();
+        await prisma.notificationCampaign.deleteMany();
+        await prisma.notification.deleteMany();
+        await prisma.banner.deleteMany();
+        await prisma.cartItem.deleteMany();
+        await prisma.cart.deleteMany();
+        await prisma.orderItem.deleteMany();
+        await prisma.payment.deleteMany();
+        await prisma.order.deleteMany();
+        await prisma.file.deleteMany();
+        await prisma.review.deleteMany();
+        await prisma.productEmbedding.deleteMany();
+        await prisma.product.deleteMany();
+        await prisma.category.deleteMany();
+        await prisma.couponUsage.deleteMany();
+        await prisma.coupon.deleteMany();
+        await prisma.otp.deleteMany();
+        await prisma.refreshToken.deleteMany();
+        await prisma.address.deleteMany();
+        await prisma.faqEmbedding.deleteMany();
+        await prisma.faq.deleteMany();
+        // Delete users where isAdmin is false
+        await prisma.user.deleteMany({
+            where: {
+                userRoles: {
+                    none: {
+                        role: {
+                            isSystemRole: true
+                        }
+                    }
                 }
-            })
-        ]);
+            }
+        });
 
         return res.status(200).json({ success: true, message: "Successfully wiped all data and media files." });
     } catch (error) {
@@ -329,7 +342,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     try {
         const totalOrders = await prisma.order.count();
         const totalProducts = await prisma.product.count();
-        
+
         const categories = await prisma.category.findMany({
             include: {
                 _count: {
@@ -470,14 +483,14 @@ export const deleteReviewAdmin = async (req: Request, res: Response) => {
         await prisma.$transaction(async (tx) => {
             // Delete review
             await tx.review.delete({ where: { id: reviewId } });
-            
+
             // Recalculate average rating
             const stats = await tx.review.aggregate({
                 where: { productId: existingReview.productId },
                 _avg: { rating: true },
                 _count: { rating: true }
             });
-            
+
             await tx.product.update({
                 where: { id: existingReview.productId },
                 data: {
@@ -493,3 +506,199 @@ export const deleteReviewAdmin = async (req: Request, res: Response) => {
         return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
+
+export const getRolesAndPermissions = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const roles = await prisma.role.findMany({})
+    const permissions = await prisma.permission.findMany({})
+    return new ApiResponse(200, { roles, permissions }, "All roles and permissions are fetched").send(res)
+})
+
+const roleSchema = z.object({
+    name: z.string().trim().min(2, "Role name must be at least 2 characters long"),
+    description: z.string().trim().min(2, "Description atleast 2 characters long").optional()
+})
+export const createRole = asyncHandler(async (req: Request, res: Response) => {
+    const parsed: any = roleSchema.safeParse(req.body)
+    if (!parsed.success) {
+        return new ApiError(400, "Invalid request body", parsed.error)
+    }
+
+    const { name, description } = parsed.data
+    const roleExist = await prisma.role.findUnique({ where: { name: name?.toLowerCase() } })
+    if (roleExist) {
+        return new ApiError(400, "Role already exists", [])
+    }
+    const role = await prisma.role.create({ data: { name: name.toLowerCase(), description: description.toLowerCase() } })
+    return new ApiResponse(201, { role }, 'New role created').send(res)
+})
+
+const updateRoleSchema = z.object({
+    name: z.string().optional(),
+    description: z.string().optional()
+})
+
+export const updateRole = asyncHandler(async (req: Request, res: Response) => {
+    const parsed: any = updateRoleSchema.safeParse(req.body)
+    if (!parsed.success) {
+        return new ApiError(400, parsed.error, [])
+    }
+    const { roleId } = req.params
+    const { name, description } = parsed.data
+    const roleExist = await prisma.role.findUnique({ where: { id: roleId } })
+    if (!roleExist) {
+        return new ApiError(404, "Role not found")
+    }
+    const roleNameExist = await prisma.role.findFirst({ where: { name: name, id: { not: roleId } } })
+    if (roleNameExist) {
+        return new ApiError(400, "Role name already exists")
+    }
+    const role = await prisma.role.update({
+        where: { id: roleId },
+        data: {
+            name: name?.toLowerCase(),
+            description: description?.toLowerCase()
+        }
+
+    })
+    return new ApiResponse(200, { role }, 'Role updated successfully').send(res)
+})
+
+export const deleteRole = asyncHandler(async (req: Request, res: Response) => {
+    const { roleId } = req.params
+    const role = await prisma.role.findUnique({ where: { id: roleId } })
+    if (!role) {
+        return new ApiError(404, "Role not found")
+    }
+    const isAssigned = await prisma.userRole.findFirst({ where: { roleId } })
+    if (isAssigned) {
+        return new ApiError(400, "Role is assigned to some users so it cannot be deleted")
+    }
+    await prisma.role.delete({ where: { id: roleId } })
+    return new ApiResponse(200, {}, "Role deleted successfully").send(res)
+})
+
+const assignPermissionSchema = z.object({
+    roleId: z.string(),
+    permissionIds: z.array(z.string())
+})
+export const assignPermissionToRoles = asyncHandler(async (req: Request, res: Response) => {
+    const parsed: any = assignPermissionSchema.safeParse(req.body)
+    if (!parsed.success) {
+        return new ApiError(400, parsed.error, [])
+    }
+    const { roleId, permissionIds } = parsed.data
+    const role = await prisma.role.findUnique({ where: { id: roleId } })
+    if (!role) {
+        return new ApiError(404, "Role not found")
+    }
+    const permissions = await prisma.permission.findMany({ where: { id: { in: permissionIds }, isActive: true } })
+    if (permissions.length === 0) {
+        return new ApiError(404, "No permissions found")
+    }
+
+    if (permissions.length !== permissionIds.length) {
+        return new ApiError(400, "Invalid permission Ids")
+    }
+    await prisma.$transaction(async (tx) => {
+
+        // Remove permissions that are not in the new list
+        await tx.rolePermission.deleteMany({
+            where: {
+                roleId,
+                permissionId: {
+                    notIn: permissionIds
+                }
+            }
+        });
+
+        // Add new permissions
+        await tx.rolePermission.createMany({
+            data: permissionIds.map((permissionId: string) => ({
+                roleId,
+                permissionId
+            })),
+            skipDuplicates: true
+        });
+
+    });
+
+    return new ApiResponse(200, {}, 'Permissions assigned successfully').send(res)
+})
+
+export const getAssignedPermissions = asyncHandler(async (req: Request, res: Response) => {
+    const { roleId } = req.params
+    const role = await prisma.role.findUnique({
+        where: { id: roleId }
+    })
+    if (!role) {
+        return new ApiError(404, "Role not found")
+    }
+
+    const permissions = await prisma.rolePermission.findMany({
+        where: { roleId }, include: { permission: true }
+    })
+    return new ApiResponse(200, { permissions }, 'Assigned permissions fetched successfully').send(res)
+})
+
+const assignRolesToUserSchema = z.object({
+    userId: z.string(),
+    roleIds: z.array(z.string())
+})
+
+export const assignRolesToUser = asyncHandler(async (req: Request, res: Response) => {
+    const parsed: any = assignRolesToUserSchema.safeParse(req.body)
+    if (!parsed.success) {
+        return new ApiError(400, parsed.error, [])
+    }
+    const { userId, roleIds } = parsed.data
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
+        return new ApiError(404, "User not found")
+    }
+    const roles = await prisma.role.findMany({ where: { id: { in: roleIds }, isActive: true } })
+    if (roles.length === 0) {
+        return new ApiError(404, "No roles found")
+    }
+    if (roles.length !== roleIds.length) {
+        return new ApiError(400, "Invalid role Ids")
+    }
+    await prisma.$transaction(async (tx) => {
+
+        await tx.userRole.deleteMany({
+            where: {
+                userId,
+                roleId: {
+                    notIn: roleIds
+                }
+            }
+        });
+
+        await tx.userRole.createMany({
+            data: roleIds.map((roleId: string) => ({
+                userId,
+                roleId
+            })),
+            skipDuplicates: true
+        });
+
+    });
+    return new ApiResponse(200, {}, "Roles assigned successfully").send(res)
+})
+
+export const getAssignedRoles = asyncHandler(async (req: Request, res: Response) => {
+    const { userId } = req.params
+    const user = prisma.user.findUnique({
+        where: { id: userId }
+    })
+    if (!user) {
+        return new ApiError(404, "User not found", [])
+    }
+
+    const userRoles = await prisma.userRole.findMany({
+        where: { userId },
+        include: {
+            role: true
+        }
+    })
+    return new ApiResponse(200, { userRoles }, "Roles fetched successfully").send(res)
+})

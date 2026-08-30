@@ -1,0 +1,20 @@
+model File {
+  id            String      @id @default(uuid())
+  type          FileType
+  url           String
+  filePurpose   FilePurpose @default(OTHER)
+  publicId      String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  userId        String?
+  productId     String?
+  orderId       String?
+  categoryId    String?     @unique
+  desktopBanner Banner?     @relation("DesktopBanner")
+
+  mobileBanner Banner?   @relation("MobileBanner")
+  category     Category? @relation(fields: [categoryId], references: [id])
+  product      Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  order        Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}

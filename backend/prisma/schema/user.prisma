@@ -1,0 +1,26 @@
+model User {
+  id                    String         @id @default(uuid())
+  name                  String?
+  email                 String         @unique
+  googleId              String?        @unique
+  userRoles             UserRole[]
+  password              String?
+  provider              AuthProvider   @default(LOCAL)
+  avatar                String?
+  orders                Order[]
+  cart                  Cart?
+  wishlist              Wishlist?
+  createdAt             DateTime       @default(now())
+  files                 File[]
+  addresses             Address[]
+  couponUsages          CouponUsage[]
+  refreshTokens         RefreshToken[]
+  reviews               Review[]
+  chats                 Chat[]
+  banners               Banner[]
+  isActive              Boolean        @default(true)
+  isDeleted             Boolean        @default(false)
+  isVerified            Boolean        @default(false)
+  receivedNotifications Notification[] @relation("NotificationReceiver")
+  sentNotifications     Notification[] @relation("NotificationSender")
+}

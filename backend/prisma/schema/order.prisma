@@ -1,0 +1,18 @@
+model Order {
+  id             String      @id @default(uuid())
+  userId         String?
+  total          Int
+  subTotal       Int
+  discountAmount Int         @default(0)
+  couponId       String?
+  couponCode     String?
+  createdAt      DateTime    @default(now())
+  items          OrderItem[]
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status         OrderStatus @default(PENDING)
+  files          File[]
+  addressId      String?
+  address        Address?    @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  reviews        Review[]
+  payment        Payment?
+}

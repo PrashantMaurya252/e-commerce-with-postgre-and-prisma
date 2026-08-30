@@ -1,0 +1,13 @@
+model Payment {
+  id                    String        @id @default(uuid())
+  orderId               String        @unique
+  amount                Int // amount in smallest currency unit
+  currency              String        @default("INR")
+  status                PaymentStatus @default(PENDING)
+  stripePaymentIntentId String? // payment_intent id
+  stripeChargeId        String? // charge id (if applicable)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}

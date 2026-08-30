@@ -1,0 +1,88 @@
+enum OtpType {
+  EMAIL_VERIFICATION
+  FORGOT_PASSWORD
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+enum NotificationPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  PUSH
+  SMS
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+enum FilePurpose {
+  PROFILE
+  PRODUCT_MEDIA
+  ORDER_RECEIPT
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum DiscountType {
+  PERCENT
+  FLAT
+}
+
+enum BannerActionType {
+  NONE
+  PRODUCT
+  CATEGORY
+  BRAND
+  URL
+  SEARCH
+}
+
+enum BannerPosition {
+  HOME_TOP
+  HOME_MIDDLE
+  HOME_BOTTOM
+  CATEGORY
+  PRODUCT
+  APP_POPUP
+}

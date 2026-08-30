@@ -1,0 +1,10 @@
+generator client {
+  provider           = "prisma-client-js"
+  previewFeatures    = ["postgresqlExtensions"]
+  transactionTimeout = 10000
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [vector]
+}

@@ -8,6 +8,9 @@ import { getRandomImagesFromFolder } from "../utils/localImageUploader.js";
 import path from "path";
 import { AuthRequest } from "../middlewares/auth.js";
 import { generateEmbedding, semanticProductSearch } from "../utils/gemeni-helper.js";
+import { redisKeys } from "../utils/redis.keys.js";
+import redisService from "../services/redis.service.js";
+import redis from "../config/redis.js";
 
 
 
@@ -41,11 +44,18 @@ const productSchema = z
 
 export const addProduct = async (req: AuthRequest, res: Response) => {
   try {
+    console.log("Req Body in line 44", req.body)
+    console.log("FILES ", req.files)
     const parsed = productSchema.safeParse(req.body);
+    console.log("Parsed Data in line 46", parsed)
     if (!parsed.success) {
       return res.status(400).json({ success: false, message: parsed.error });
     }
     const { title, description, sellingPrice, costPrice, offerPrice, brand, categoryId, itemLeft, isOfferActive } = parsed.data;
+    const category = await prisma.category.findUnique({ where: { id: categoryId } })
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found" })
+    }
     let uploadedFiles: any[] = [];
     if (req.files && Array.isArray(req.files)) {
       for (const file of req.files) {
@@ -88,6 +98,8 @@ export const addProduct = async (req: AuthRequest, res: Response) => {
         NOW()
       )
     `;
+
+    await redisService.deleteByPattern("products:*")
     return res.status(201).json({
       success: true,
       message: "Product Created successfully",
@@ -239,6 +251,8 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
         console.error("Product embedding update failed (non-fatal):", embeddingError);
       }
     }
+
+    await Promise.all([redisService.deleteByPattern("products:*"), redisService.delete(redisKeys.product(updatedProduct.id))])
     return res.status(200).json({
       success: true,
       message: "product updated successfully",
@@ -350,6 +364,14 @@ export const deleteAllProducts = async (req: AuthRequest, res: Response) => {
   }
 };
 
+type CachedProduct = {
+  page: number,
+  limit: number,
+  totalProducts: number,
+  totalPages: number,
+  data: any[]
+}
+
 export const getAllProducts = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -363,88 +385,255 @@ export const getAllProducts = async (req: AuthRequest, res: Response) => {
       ? Number(req.query.maxPrice)
       : undefined;
 
-    const search = req.query.search as string | undefined;
-    const brand = req.query.brand as string | undefined;
+    const search = req.query.search ? String(req.query.search) : undefined;
+    const brand = req.query.brand ? String(req.query.brand) : undefined;
+    const brandList = brand ? brand.split(",").map(b => b.trim()).filter(Boolean) : []
     const skip = (page - 1) * limit;
 
-    const cacheKey = `products:page=${page}:limit=${limit}:cat=${categoryId || "all"}:minPrice=${minPrice || "none"}:maxPrice=${maxPrice || "none"}:search=${search || "none"}:brand=${brand || "none"}`;
+    const cacheKey = redisKeys.products({ page, limit, categoryId, minPrice, maxPrice, search, brand: brandList })
+    const cached = await redisService.get<CachedProduct>(cacheKey)
+    let totalPages: number = 0
+    let products: any[]
+    let totalProducts: number
+    if (cached) {
 
-    let where: any = {};
-
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
-
-    if (minPrice || maxPrice) {
-      where.offerPrice = {};
-      if (minPrice) where.offerPrice.gte = minPrice;
-      if (maxPrice) where.offerPrice.lte = maxPrice;
-    }
-
-    if (brand) {
-      const brandList = brand.split(',').map(b => b.trim()).filter(Boolean);
-      if (brandList.length > 0) {
-        where.brand = { in: brandList };
+      console.log("Product Cache hit", cached)
+      products = cached.data
+      totalProducts = cached.totalProducts
+    } else {
+      console.log("Products cached miss", cacheKey)
+      const where: any = {}
+      if (categoryId) {
+        where.categoryId = categoryId
       }
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        where.offerPrice = {}
+        if (minPrice !== undefined) {
+          where.offerPrice.gte = minPrice
+        }
+        if (maxPrice !== undefined) {
+          where.offerPrice.lte = maxPrice
+        }
+      }
+
+      if (brandList.length > 0) {
+        where.brand = {
+          in: brandList
+        }
+      }
+
+      if (search) {
+        where.OR = [
+          {
+            title: {
+              contains: search,
+              mode: "insensitive"
+            }
+          },
+          {
+            brand: {
+              contains: search,
+              mode: "insensitive"
+            }
+          }
+        ]
+      }
+
+      const [dbProducts, dbTotalProducts] = await Promise.all([
+        prisma.product.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" }, include: { files: true, category: true } }),
+        prisma.product.count({ where })
+      ])
+
+      products = dbProducts
+      totalProducts = dbTotalProducts
+
+      totalPages = Math.ceil(totalProducts / limit)
+
+      const cached = {
+        page: page,
+        limit: limit,
+        totalPages,
+        totalProducts,
+        data: products
+      }
+
+      await redisService.set(cacheKey, cached, 60 * 5)
+
     }
 
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { brand: { contains: search, mode: "insensitive" } }
-      ];
-    }
-    const products = await prisma.product.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        files: true,
-        cartItems: userId ? {
+    let cart: Record<string, string> | null = {}
+    let wishlist: string[] = []
+    if (userId && products.length > 0) {
+      const productIds = products.map(p => p.id)
+      const cartKey = redisKeys.cart(userId)
+      const wishlistKey = redisKeys.wishlist(userId)
+
+      console.log("CartKey", cartKey, "WishlistKey", wishlistKey)
+
+      const [cartCacheExist, wishlistCacheExist] = await Promise.all([redisService.exists(cartKey), redisService.exists(wishlistKey)])
+      if (cartCacheExist) {
+        console.log("Cart Cache hit")
+        const quantities = await redisService.getHashValues(cartKey, productIds)
+        console.log("hmget quantities", quantities)
+        productIds.forEach((productId, index) => {
+          if (quantities[index] !== null) {
+            cart[productId] = quantities[index] as string
+          }
+        })
+      } else {
+        console.log("Cart database hit")
+        const cartItems = await prisma.cartItem.findMany({
           where: {
             cart: {
               userId
             }
-          },
-          select: {
-            quantity: true
+          }, select: { productId: true, quantity: true }
+        })
+        if (cartItems.length > 0) {
+          const cartPipeline = redis.pipeline()
+          for (const items of cartItems) {
+            cartPipeline.hset(cartKey, items.productId, String(items.quantity))
           }
-        } : false,
-        wishlistItem: userId ? {
+          await cartPipeline.exec()
+          for (const item of cartItems) {
+            cart[item.productId] = item.quantity.toString()
+          }
+        }
+
+      }
+
+      if (wishlistCacheExist) {
+        console.log("Wishlist cache hit ")
+        const wishlistResult = await redisService.isMembers(wishlistKey, productIds)
+        productIds.forEach((productId, index) => {
+          if (wishlistResult[index] === 1) {
+            wishlist.push(productId)
+          }
+        })
+      } else {
+        console.log("Wishlist databadse hit")
+        const wishListItems = await prisma.wishlistItem.findMany({
           where: {
             wishlist: {
               userId
             }
           },
           select: {
-            id: true
+            productId: true
           }
-        } : false
-      },
-    });
+        })
 
-    const totalProducts = await prisma.product.count({ where });
-    const formattedProducts = products?.map((item) => ({
-      ...item,
-      isInCart: item.cartItems.length > 0,
-      cartQuantity: item.cartItems[0]?.quantity || 0,
-      cartItems: undefined,
-      isInWishlist: item.wishlistItem ? item.wishlistItem.length > 0 : false,
-      wishlistItem: undefined
+        if (wishListItems.length > 0) {
+
+          const wishListProductIds = wishListItems.map((item) => item.productId)
+
+          await redisService.addToSet(wishlistKey, wishListProductIds)
+
+          const productIdSet = new Set(productIds)
+
+          wishlist = wishListProductIds.filter((productId) => productIdSet.has(productId))
+        }
+      }
+    }
+
+    const wishListSet = new Set(wishlist)
+
+    const formattedProducts = products.map((product) => ({
+      ...product,
+      isInCart: Boolean(cart[product.id]),
+      cartQuantity: Number(cart[product.id]) || 0,
+      isWishListed: wishListSet.has(product.id)
     }))
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "all products are fetched",
+    return res.status(200).json({
+      success: true,
+      message: "Products fetched successfully",
+      data: {
         page,
         limit,
+        totalPages,
         totalProducts,
-        totalPages: Math.ceil(totalProducts / limit),
-        data: formattedProducts,
-      });
+        data: formattedProducts
+      }
+    })
+    // let where: any = {};
+
+    // if (categoryId) {
+    //   where.categoryId = categoryId;
+    // }
+
+    // if (minPrice || maxPrice) {
+    //   where.offerPrice = {};
+    //   if (minPrice) where.offerPrice.gte = minPrice;
+    //   if (maxPrice) where.offerPrice.lte = maxPrice;
+    // }
+
+    // if (brand) {
+    //   const brandList = brand.split(',').map(b => b.trim()).filter(Boolean);
+    //   if (brandList.length > 0) {
+    //     where.brand = { in: brandList };
+    //   }
+    // }
+
+    // if (search) {
+    //   where.OR = [
+    //     { title: { contains: search, mode: "insensitive" } },
+    //     { brand: { contains: search, mode: "insensitive" } }
+    //   ];
+    // }
+    // const products = await prisma.product.findMany({
+    //   where,
+    //   skip,
+    //   take: limit,
+
+    //   orderBy: { createdAt: "desc" },
+    //   include: {
+    //     files: true,
+    //     category: true,
+    //     cartItems: userId ? {
+    //       where: {
+    //         cart: {
+    //           userId
+    //         }
+    //       },
+    //       select: {
+    //         quantity: true
+    //       }
+    //     } : false,
+    //     wishlistItem: userId ? {
+    //       where: {
+    //         wishlist: {
+    //           userId
+    //         }
+    //       },
+    //       select: {
+    //         id: true
+    //       }
+    //     } : false
+    //   },
+    // });
+
+    // const totalProducts = await prisma.product.count({ where });
+    // const formattedProducts = products?.map((item) => ({
+    //   ...item,
+    //   isInCart: item.cartItems.length > 0,
+    //   cartQuantity: item.cartItems[0]?.quantity || 0,
+    //   cartItems: undefined,
+    //   isInWishlist: item.wishlistItem ? item.wishlistItem.length > 0 : false,
+    //   wishlistItem: undefined
+    // }))
+
+    // return res
+    //   .status(200)
+    //   .json({
+    //     success: true,
+    //     message: "all products are fetched",
+    //     page,
+    //     limit,
+    //     totalProducts,
+    //     totalPages: Math.ceil(totalProducts / limit),
+    //     data: formattedProducts,
+    //   });
   } catch (error) {
     console.error("getAllProducts Error", error);
     return res
@@ -457,44 +646,78 @@ export const productDetails = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId
     const { productId } = req.params;
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-      include: {
-        files: true,
-        cartItems: userId ? {
-          where: {
-            cart: {
-              userId
-            }
+    const productKey = redisKeys.product(productId)
+    const isProductCached = await redisService.exists(productKey)
+    let productDetails: any
+    if (isProductCached) {
+      productDetails = await redisService.get(productKey)
+    } else {
+      productDetails = await prisma.product.findUnique({
+        where: { id: productId },
+        include: {
+          category: true,
+          files: {
+            include: { order: true, category: true },
           },
-          select: {
-            quantity: true
-          }
-        } : false,
-        wishlistItem: userId ? {
-          where: {
-            wishlist: {
-              userId
-            }
-          },
-          select: {
-            id: true
-          }
-        } : false
-      },
-    });
-    if (!product) {
+        },
+      });
+    }
+
+    if (!productDetails) {
       return res
         .status(404)
         .json({ success: false, message: "No product found for given id" });
     }
 
+    await redisService.set(productKey, productDetails, 60 * 5)
+
+    let isInCart = false;
+    let cartQuantity = 0;
+    let isInWishlist = false;
+
+    if (userId) {
+      const cartKey = redisKeys.cart(userId)
+      const wishlistKey = redisKeys.wishlist(userId)
+      const [isCartCacheExist, isWishlistCacheExist] = await Promise.all([redisService.exists(cartKey), redisService.exists(wishlistKey)])
+
+      if (isCartCacheExist) {
+        const quantity = await redisService.getHashValue(cartKey, productId)
+        if (quantity !== null) {
+          isInCart = true
+          cartQuantity = Number(quantity)
+        }
+      } else {
+        const cartItem = await prisma.cartItem.findFirst({
+          where: { productId, cart: { userId } }, select: { quantity: true }
+        })
+
+        if (cartItem) {
+          isInCart = true
+          cartQuantity = cartItem.quantity
+
+          await redisService.setHashValue(cartKey, productId, String(cartItem.quantity))
+        }
+      }
+
+      if (isWishlistCacheExist) {
+        isInWishlist = await redisService.isMember(wishlistKey, productId)
+      } else {
+        const wishListItem = await prisma.wishlistItem.findFirst({ where: { productId, wishlist: { userId } }, select: { id: true } })
+        if (wishListItem) {
+          isInWishlist = true
+
+          await redisService.addToSet(wishlistKey, [productId])
+        }
+      }
+    }
+
+
     const formattedProducts = {
-      ...product,
-      isInCart: product.cartItems.length > 0,
-      cartQuantity: product.cartItems[0]?.quantity || 0,
+      ...productDetails,
+      isInCart,
+      cartQuantity,
       cartItems: undefined,
-      isInWishlist: product.wishlistItem ? product.wishlistItem.length > 0 : false,
+      isInWishlist,
       wishlistItem: undefined
     }
     return res.status(200).json({ success: true, data: formattedProducts });
