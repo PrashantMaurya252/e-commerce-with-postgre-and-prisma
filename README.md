@@ -7,6 +7,8 @@
   <img src="./screen_shot/ScreenShot_4.png" alt="Admin Dashboard" width="400" />
 </div>
 
+**🌍 Live Demo**: [https://shop.prashantmaurya.online](https://shop.prashantmaurya.online) | **💻 GitHub**: [Repository](https://github.com/PrashantMaurya252/e-commerce-with-postgre-and-prisma)
+
 Full‑stack e‑commerce application with a modern Next.js frontend and a scalable Node.js/Express backend, powered by PostgreSQL + Prisma, Redis, Stripe payments, Cloudinary media storage, and background job processing via BullMQ.
 
 ---
@@ -37,6 +39,7 @@ Full‑stack e‑commerce application with a modern Next.js frontend and a scala
 
 ### User Features
 
+- **Dark Mode & Theming**: Built-in support for seamless light/dark mode toggling.
 - Email/password authentication with JWT access & refresh tokens
 - Demo access mode (One-click Login as Admin or User)
 - Google OAuth login (`@react-oauth/google`)
@@ -72,6 +75,7 @@ Full‑stack e‑commerce application with a modern Next.js frontend and a scala
 ### Admin Features
 
 - Admin area (under `frontend/app/admin/...`)
+- **Advanced Role-Based Access Control (RBAC)**: Manage roles, permissions, and staff accounts.
 - Manage products (list, create, update, disable)
 - Manage categories (create, update, manage taxonomy)
 - Manage Dynamic Banners (create, update, schedule, position storefront banners)
@@ -81,9 +85,11 @@ Full‑stack e‑commerce application with a modern Next.js frontend and a scala
 
 ### System / Platform & AI Features
 
+- **AI Chatbot & Assistant**: Intelligent customer support using Groq and Google GenAI.
 - **AI Search & Recommendations (Vector Embeddings)**:
   - Product embeddings stored in PostgreSQL via `pgvector`
   - FAQ and semantic search capabilities
+- **Automated PDF Generation**: Generate dynamic invoices and reports using `pdfkit`.
 - PostgreSQL + Prisma schema containing:
   - `User`, `Product`, `Order`, `OrderItem`, `Cart`, `CartItem`
   - `Coupon`, `CouponUsage`, `Review`, `Payment`, `File`, `RefreshToken`, `Otp`
@@ -111,8 +117,10 @@ Full‑stack e‑commerce application with a modern Next.js frontend and a scala
 - **State Management**: Redux Toolkit, React Redux
 - **UI & Styling**:
   - Tailwind CSS v4
+  - Dark Mode support via `next-themes`
   - Radix UI primitives
   - Custom UI components (buttons, inputs, cards, sheets, skeletons, carousels)
+  - Notifications & toasts via `sonner`
   - `lucide-react` icons
 - **APIs & Auth**:
   - Axios with interceptors for automatic access token refresh
@@ -127,6 +135,8 @@ Full‑stack e‑commerce application with a modern Next.js frontend and a scala
 - **Framework**: Express 5
 - **Database**: PostgreSQL
 - **ORM**: Prisma (`@prisma/client`, `@prisma/adapter-pg`)
+- **AI & ML**: Google GenAI, Groq SDK, LangChain, and `pgvector` for embeddings
+- **Document Generation**: `pdfkit` for automated PDF and invoice generation
 - **Auth & Security**:
   - `jsonwebtoken` for JWT access and refresh tokens
   - `bcryptjs` for password hashing
