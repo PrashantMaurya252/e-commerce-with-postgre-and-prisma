@@ -38,7 +38,7 @@ app.use(helmet({
 
 app.use(
   cors({
-    origin: ["https://api.shop.prashantmaurya.online","http://localhost:3000", process.env.DEPLOYED_FRONTEND_LINK as string, "https://e-commerce-with-postgre-and-prisma.vercel.app", "https://desi-market.vercel.app"],
+    origin: ["https://shop.prashantmaurya.online", "http://localhost:3000", process.env.DEPLOYED_FRONTEND_LINK as string, "https://e-commerce-with-postgre-and-prisma.vercel.app", "https://desi-market.vercel.app"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
