@@ -80,6 +80,16 @@ const loginSchema = z.object({
   email: z.string(),
   password: z.string().min(6),
 });
+
+export const updatePassword = async(req:Request,res:Response)=>{
+  const {email,password} = req.body
+  const hashed = await bcrypt.hash(password,10)
+  await prisma.user.update({
+      where: { email },
+      data: { password: hashed },
+    });
+  return res.status(500).json({success:false,message:"Password updated suceessfully"})
+}
 export const login = async (req: Request, res: Response) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
@@ -115,13 +125,13 @@ export const login = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Credentials wrong",
+        message: "Credentials wrong email",
       });
     }
     if (!user.password) {
       return res.status(401).json({
         success: false,
-        message: "Credentials wrong",
+        message: "Credentials",
       });
     }
 
@@ -251,6 +261,12 @@ export const verifyEmailOtp = async (req: Request, res: Response) => {
 export const sendForgotPasswordOtp = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
+    if(!email){
+      return res
+      .status(400)
+      .json({ success: false, message: "Email is required" });
+  }
+    
     const user = await prisma.user.findUnique({ where: { email } });
     const otp = generateOtp();
     const record = await prisma.otp.create({
@@ -261,6 +277,13 @@ export const sendForgotPasswordOtp = async (req: Request, res: Response) => {
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
       },
     });
+
+    console.log("Record line 271",record)
+    const savedOtp = await prisma.otp.findUnique({
+  where: { id: record.id },
+});
+
+console.log("OTP exists immediately after creation:", Boolean(savedOtp));
 
     await sendOtpMail(email, otp, "Reset Password");
     return res
@@ -280,12 +303,17 @@ export const sendForgotPasswordOtp = async (req: Request, res: Response) => {
 export const verifyForgotPasswordOtp = async (req: Request, res: Response) => {
   try {
     const { email, otp, newPassword } = req.body;
+    console.log("Email received",email)
+    const users = await prisma.user.findMany({})
+    console.log("Users",users)
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
+
+    
 
     const record = await prisma.otp.findFirst({
       where: {

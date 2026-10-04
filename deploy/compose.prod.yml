@@ -1,0 +1,71 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes']
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  backend:
+    image: desimarket-backend:${RELEASE_SHA:?RELEASE_SHA required}
+    pull_policy: never
+    ports:
+      - '127.0.0.1:5001:5000'
+    env_file:
+      - /opt/desimarket/backend.env
+    environment:
+      NODE_ENV: production
+      PORT: '5000'
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      REDIS_URL: redis://redis:6379
+      RELEASE_SHA: ${RELEASE_SHA}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5000/health', {signal: AbortSignal.timeout(4000)}).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+
+  frontend:
+    image: desimarket-frontend:${RELEASE_SHA:?RELEASE_SHA required}
+    pull_policy: never
+    ports:
+      - '127.0.0.1:3001:3000'
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      RELEASE_SHA: ${RELEASE_SHA}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health', {signal: AbortSignal.timeout(4000)}).then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+
+volumes:
+  redis_data:
+    # REQUIRED: replace with the existing volume's exact name before cutover.
+    external: true
+    name: ${REDIS_VOLUME_NAME:?REDIS_VOLUME_NAME required}

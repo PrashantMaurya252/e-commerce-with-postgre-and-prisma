@@ -1,110 +1,167 @@
-name: CI/CD Pipeline
+name: Build Merge Deploy VPS
 
 on:
   push:
-    branches: [main, dev]
-  pull_request:
+    branches: [main, 'dev**', 'feat**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never cancel a running deployment. GitHub may replace older pending runs.
+concurrency:
+  group: vps-production
+  cancel-in-progress: false
 
 jobs:
-  build:
+  release:
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    env: 
-      DATABASE_URL: ${{ secrets.DATABASE_URL}}
-
+    timeout-minutes: 45
+    permissions:
+      contents: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: 20
-          cache : "npm"
-          cache-dependency-path: backend/package-lock.json
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Install backend dependencies
+      - name: Prepare exact merge candidate
+        id: candidate
+        env:
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          SOURCE_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          cd backend
-          npm ci
+          set -euo pipefail
+          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$AUTH"
+          git -c "http.extraheader=AUTHORIZATION: basic $AUTH" fetch origin main "$SOURCE_BRANCH"
+          BASE_SHA=$(git rev-parse origin/main)
+          LATEST_SOURCE=$(git rev-parse "origin/$SOURCE_BRANCH")
+          if [ "$SOURCE_SHA" != "$LATEST_SOURCE" ]; then
+            echo 'Branch advanced; skip this stale run.'
+            echo 'skip=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout --detach "$BASE_SHA"
+          if [ "$SOURCE_BRANCH" != main ]; then
+            git merge --no-ff "$SOURCE_SHA" -m "Merge $SOURCE_BRANCH into main [automated]"
+          fi
+          echo "base=$BASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo 'skip=false' >> "$GITHUB_OUTPUT"
 
-      - name: Create .env file
+      - name: Build backend Docker image
+        if: steps.candidate.outputs.skip == 'false'
+        env:
+          RELEASE_SHA: ${{ steps.candidate.outputs.sha }}
+        run: docker build -t "desimarket-backend:$RELEASE_SHA" backend
+
+      - name: Build frontend Docker image
+        if: steps.candidate.outputs.skip == 'false'
+        env:
+          RELEASE_SHA: ${{ steps.candidate.outputs.sha }}
+          API_URL: ${{ vars.NEXT_PUBLIC_BACKEND_API_URL }}
+          STRIPE_KEY: ${{ vars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          GOOGLE_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          DEPLOYED_API_URL: ${{ vars.NEXT_PUBLIC_DEPLOYED_BACKEND_API_URL }}
+        shell: bash
         run: |
-          echo "DATABASE_URL=${{secrets.DATABASE_URL}}" > backend/.env
+          set -euo pipefail
+          docker build \
+            --build-arg NEXT_PUBLIC_BACKEND_API_URL="$API_URL" \
+            --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="$STRIPE_KEY" \
+            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="$GOOGLE_ID" \
+            --build-arg NEXT_PUBLIC_DEPLOYED_BACKEND_API_URL="$DEPLOYED_API_URL" \
+            -t "desimarket-frontend:$RELEASE_SHA" frontend
 
-      - name: Debug ENV
-        run: echo "DATABASE_URL is set"
-        env: 
-          DATABASE_URL: ${{ secrets.DATABASE_URL}}
-
-
-      
-      - name: Generate Prisma Client
+      - name: Package the exact tested images
+        if: steps.candidate.outputs.skip == 'false'
+        env:
+          RELEASE_SHA: ${{ steps.candidate.outputs.sha }}
         run: |
-          cd backend
-          npx prisma generate
-        env: 
-          DATABASE_URL: ${{ secrets.DATABASE_URL}}
+          set -euo pipefail
+          docker save "desimarket-backend:$RELEASE_SHA" "desimarket-frontend:$RELEASE_SHA" | gzip > images.tar.gz
 
-      - name: Build backend
+      - name: Configure SSH
+        if: steps.candidate.outputs.skip == 'false'
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
-          cd backend
-          npm run build
-        env: 
-          DATABASE_URL: ${{ secrets.DATABASE_URL}}
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
 
-    timeout-minutes: 10
-
-  frontend:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install Frontend dependencies
+      - name: Check whether automatic deployment is paused
+        id: gate
+        if: steps.candidate.outputs.skip == 'false'
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          PORT: ${{ secrets.VPS_PORT }}
         run: |
-          cd frontend
-          npm ci
+          set -euo pipefail
+          STATUS=$(ssh -p "$PORT" -o BatchMode=yes "$USER@$HOST" \
+            'if [ -f /opt/desimarket/deployment-paused ]; then echo paused; else echo enabled; fi')
+          if [ "$STATUS" = paused ]; then
+            echo 'enabled=false' >> "$GITHUB_OUTPUT"
+            echo 'Build passed. Automatic merge/deployment skipped because an older release is pinned.' >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$STATUS" = enabled ]; then
+            echo 'enabled=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'Unexpected deployment status'; exit 1
+          fi
 
-      - name: Frontend Build
+      - name: Upload before merging (running app stays unchanged)
+        if: steps.candidate.outputs.skip == 'false' && steps.gate.outputs.enabled == 'true'
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          PORT: ${{ secrets.VPS_PORT }}
+          RELEASE_SHA: ${{ steps.candidate.outputs.sha }}
         run: |
-          cd frontend
-          npm run build
-    
-    timeout-minutes: 10
+          set -euo pipefail
+          ssh -p "$PORT" -o BatchMode=yes "$USER@$HOST" "mkdir -p /opt/desimarket/incoming/$RELEASE_SHA"
+          scp -P "$PORT" -o BatchMode=yes images.tar.gz "$USER@$HOST:/opt/desimarket/incoming/$RELEASE_SHA/images.tar.gz"
 
-  deploy: 
-    if: github.ref == 'refs/heads/main'
-    needs: [build,frontend]
-    runs-on: ubuntu-latest
-  
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Trigger Render Deploy
-        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
-      
-      - name: Health Check
+      - name: Publish the tested candidate to main
+        if: steps.candidate.outputs.skip == 'false' && steps.gate.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          SOURCE_SHA: ${{ github.sha }}
+          BASE_SHA: ${{ steps.candidate.outputs.base }}
         run: |
-          for i in {1..6}; do
-            echo "Checking health..."
-            if curl -f https://e-commerce-with-postgre-and-prisma-4.onrender.com/health; then
-              echo "App is healthy "
-              exit 0
-            fi
-            echo "Waiting for app to be ready..."
-            sleep 15
-          done
-          echo "Health Check Failed"
-          exit 1
-           
-    
-    timeout-minutes: 10
+          set -euo pipefail
+          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$AUTH"
+          git -c "http.extraheader=AUTHORIZATION: basic $AUTH" fetch origin main "$SOURCE_BRANCH"
+          test "$(git rev-parse origin/main)" = "$BASE_SHA" || { echo 'Main changed; rerun against latest main.'; exit 1; }
+          test "$(git rev-parse "origin/$SOURCE_BRANCH")" = "$SOURCE_SHA" || { echo 'Source changed; newer run must build it.'; exit 1; }
+          if [ "$SOURCE_BRANCH" != main ]; then
+            # Non-force push; a concurrent non-fast-forward update is rejected.
+            git -c "http.extraheader=AUTHORIZATION: basic $AUTH" push origin HEAD:main
+          fi
+
+      - name: Deploy and automatically restore previous healthy release on failure
+        if: steps.candidate.outputs.skip == 'false' && steps.gate.outputs.enabled == 'true'
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          PORT: ${{ secrets.VPS_PORT }}
+          RELEASE_SHA: ${{ steps.candidate.outputs.sha }}
+        run: |
+          set -euo pipefail
+          ssh -p "$PORT" -o BatchMode=yes "$USER@$HOST" \
+            "bash /opt/desimarket/deploy.sh $RELEASE_SHA"
+
+      - name: Remove SSH credentials
+        if: always()
+        run: rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"

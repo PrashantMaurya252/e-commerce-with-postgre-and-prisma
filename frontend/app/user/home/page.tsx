@@ -36,9 +36,11 @@ export default function Home() {
         getPublicBannersAPI("HOME_BOTTOM", 3),
       ]);
 
+      console.log("featured response",featuredRes)
+
       const mapProducts = (res: any) =>
         res?.success
-          ? res.data.map((p: any) => ({
+          ? res.data.data.map((p: any) => ({
               id: p.id,
               name: p.title,
               price: p.isOfferActive ? p.offerPrice : p.sellingPrice,

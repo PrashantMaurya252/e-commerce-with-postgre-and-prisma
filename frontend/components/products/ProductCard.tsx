@@ -199,7 +199,7 @@ export default function ProductCard({
       {/* INFO */}
       <div className="p-4 flex flex-col flex-grow">
         <div className="mb-1 flex items-center justify-between">
-          <span className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">{product.category}</span>
+          <span className="text-xs font-medium text-[var(--foreground-muted)] uppercase tracking-wider">{product?.category?.label || "N/A"}</span>
           <div className="flex items-center gap-1 bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded text-xs font-bold">
             <Star size={12} className="fill-current" />
             <span>{product.averageRating > 0 ? product.averageRating.toFixed(1) : "New"}</span>
