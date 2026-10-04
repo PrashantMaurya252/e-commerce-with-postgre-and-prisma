@@ -15,7 +15,7 @@ services:
     image: desimarket-backend:${RELEASE_SHA:?RELEASE_SHA required}
     pull_policy: never
     ports:
-      - '127.0.0.1:5001:5000'
+      - '5001:5000'
     env_file:
       - /opt/desimarket/backend.env
     environment:

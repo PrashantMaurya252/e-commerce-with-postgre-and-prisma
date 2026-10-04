@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+trap 'rc=$?; printf "Deployment setup failed at line %s (exit %s)\n" "$LINENO" "$rc" >&2; exit "$rc"' ERR
 cd /opt/desimarket
 exec 9>deploy.lock
 flock -n 9 || { echo 'Another deployment is active'; exit 1; }
@@ -25,9 +26,20 @@ case "$MODE" in
   *) echo 'Mode must be auto, pin, or resume'; exit 1 ;;
 esac
 [[ "$NEW_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid release SHA'; exit 1; }
-test -f backend.env
-test -f settings.env
+test -f backend.env || {
+  echo 'Missing /opt/desimarket/backend.env' >&2
+  exit 1
+}
 
+test -f settings.env || {
+  echo 'Missing /opt/desimarket/settings.env' >&2
+  exit 1
+}
+
+test -f compose.prod.yml || {
+  echo 'Missing /opt/desimarket/compose.prod.yml' >&2
+  exit 1
+}
 PREVIOUS_SHA=''
 if [ -f current-release ]; then
   PREVIOUS_SHA=$(cat current-release)
