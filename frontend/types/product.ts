@@ -4,14 +4,38 @@ export enum Category {
   DAILY_USAGE = "DAILY_USAGE",
 }
 
+export interface ProductCategory {
+  id: string;
+  name: string;
+  label: string;
+  isActive: boolean;
+  isDeleted: boolean;
+}
+
+// export interface Product {
+//   id: string;
+//   name: string;
+//   price: number; // This is the resolved price (offerPrice if active, else sellingPrice)
+//   sellingPrice: number;
+//   offerPrice: number;
+//   isOfferActive: boolean;
+//   category: string;
+//   image: string;
+//   isInCart: boolean;
+//   cartQuantity: number;
+//   isInWishlist?: boolean;
+//   averageRating: number;
+//   totalReviews: number;
+// }
+
 export interface Product {
   id: string;
   name: string;
-  price: number; // This is the resolved price (offerPrice if active, else sellingPrice)
+  price: number;
   sellingPrice: number;
   offerPrice: number;
   isOfferActive: boolean;
-  category: string;
+  category: ProductCategory | null;
   image: string;
   isInCart: boolean;
   cartQuantity: number;
