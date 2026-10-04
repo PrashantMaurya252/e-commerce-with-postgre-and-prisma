@@ -28,6 +28,8 @@ import { ApiError } from "./utils/responseHandler.js";
 import { serverAdapter } from "./dashboard.js";
 import { authorizeRoles } from "./middlewares/authorize.js";
 import { auth } from "./middlewares/auth.js";
+import { prisma } from "./config/prisma.js";
+import redis from "./config/redis.js";
 const app = express();
 app.use("/api/stripe", stripeRoutes);
 app.use(helmet({
@@ -131,9 +133,18 @@ app.get("/metrics", async (req: Request, res: Response) => {
 
 app.use("/admin/queues", auth, authorizeRoles("super_admin"), serverAdapter.getRouter())
 
-app.get("/health", (req, res) => {
-  res.status(200).send("OKK")
-})
+app.get('/health', async (req, res) => {
+  try {
+    await Promise.all([
+      prisma.$queryRaw`SELECT 1`,
+      redis.ping(),
+    ]);
+    res.set('Cache-Control', 'no-store');
+    res.json({ status: 'ok', release: process.env.RELEASE_SHA });
+  } catch {
+    res.status(503).json({ status: 'error', release: process.env.RELEASE_SHA });
+  }
+});
 
 app.use((req, res, next) => {
   next(new ApiError(404, `Route ${req.originalUrl} not found`));

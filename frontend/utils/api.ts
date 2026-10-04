@@ -7,11 +7,6 @@ import api from "./interceptor";
 
 export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL as string;
 
-
-
-
-
-
 export const signupAPI = async (payload: signupPayload): Promise<signupResponse> => {
   try {
     const response = await axios.post(`${BACKEND_URL}/auth/signup`, payload)
@@ -77,7 +72,7 @@ export const logoutHandler = async (): Promise<loginResponse> => {
 
 export const sendForgotPasswordOtpToEmail = async (email: string): Promise<sendOTPResponse> => {
   try {
-    const response = await axios.post(`${BACKEND_URL}/auth/send-forgot-password-otp`, email)
+    const response = await api.post(`${BACKEND_URL}/auth/send-forgot-password-otp`, {email:email})
     return response.data
   } catch (error: any) {
     console.log("sendForgotPasswordOTP api error", error)

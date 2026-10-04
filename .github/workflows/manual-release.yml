@@ -1,0 +1,72 @@
+name: Switch VPS Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Pin an existing release or resume the latest successful automatic release
+        type: choice
+        options: [pin, resume]
+        required: true
+      release_sha:
+        description: Full 40-character release SHA (required for pin; ignored for resume)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+# Same group as ci.yml: manual switches and automatic releases cannot overlap.
+concurrency:
+  group: vps-production
+  cancel-in-progress: false
+
+jobs:
+  switch:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Validate selection
+        env:
+          ACTION: ${{ inputs.action }}
+          SHA: ${{ inputs.release_sha }}
+        run: |
+          set -euo pipefail
+          case "$ACTION" in
+            pin) [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Enter a full lowercase 40-character SHA'; exit 1; } ;;
+            resume) ;;
+            *) exit 1 ;;
+          esac
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+
+      - name: Switch release with health checks and rollback
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          PORT: ${{ secrets.VPS_PORT }}
+          ACTION: ${{ inputs.action }}
+          SHA: ${{ inputs.release_sha }}
+        run: |
+          set -euo pipefail
+          if [ "$ACTION" = pin ]; then
+            ssh -p "$PORT" -o BatchMode=yes "$USER@$HOST" \
+              "bash /opt/desimarket/deploy.sh $SHA pin"
+          else
+            ssh -p "$PORT" -o BatchMode=yes "$USER@$HOST" \
+              'bash /opt/desimarket/deploy.sh latest resume'
+          fi
+
+      - name: Remove SSH credentials
+        if: always()
+        run: rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"

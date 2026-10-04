@@ -39,7 +39,7 @@ export interface sendOTPResponse{
 
 export interface verifyForgotPasswordOtpPayload{
     email:string,
-    otp:string,
+    otp:string[],
     newPassword:string
 }
 
