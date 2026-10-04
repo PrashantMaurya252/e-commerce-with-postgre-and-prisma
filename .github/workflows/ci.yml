@@ -131,6 +131,22 @@ jobs:
           ssh -p "$PORT" -o BatchMode=yes "$USER@$HOST" "mkdir -p /opt/desimarket/incoming/$RELEASE_SHA"
           scp -P "$PORT" -o BatchMode=yes images.tar.gz "$USER@$HOST:/opt/desimarket/incoming/$RELEASE_SHA/images.tar.gz"
 
+      - name: Upload deployment files
+        if: steps.candidate.outputs.skip == 'false' && steps.gate.outputs.enabled == 'true'
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          set -euo pipefail
+          test -f deploy/deploy.sh
+          test -f deploy/compose.prod.yml
+
+          scp -P "$PORT" -o BatchMode=yes \
+            deploy/deploy.sh \
+            deploy/compose.prod.yml \
+            "$USER@$HOST:/opt/desimarket/"
+
       - name: Publish the tested candidate to main
         if: steps.candidate.outputs.skip == 'false' && steps.gate.outputs.enabled == 'true'
         env:
