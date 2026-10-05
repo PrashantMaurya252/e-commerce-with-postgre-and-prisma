@@ -1,8 +1,9 @@
-import { logout, updateAccessToken } from "@/redux/slices/authSlice";
-import { store } from "@/redux/store";
 import axios from "axios"
 
-
+let store: any;
+export const injectStore = (_store: any) => {
+  store = _store;
+};
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
@@ -21,6 +22,17 @@ const processQueue = (error: any, token: string | null) => {
   });
   failedQueue = [];
 };
+
+api.interceptors.request.use(
+  (config) => {
+    const token = store?.getState()?.auth?.accessToken;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 api.interceptors.response.use(
   res => res,
@@ -54,7 +66,9 @@ api.interceptors.response.use(
 
         const newAccessToken = res.data.accessToken;
 
-        store.dispatch(updateAccessToken(newAccessToken));
+        if (store) {
+          store.dispatch({ type: 'auth/updateAccessToken', payload: newAccessToken });
+        }
 
         api.defaults.headers.common[
           "Authorization"
@@ -62,6 +76,7 @@ api.interceptors.response.use(
 
         processQueue(null, newAccessToken);
 
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);

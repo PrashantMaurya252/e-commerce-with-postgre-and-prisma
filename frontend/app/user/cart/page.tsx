@@ -140,7 +140,7 @@ export default function CartPage() {
 
               <div className="flex-1">
                 <h3 className="text-[var(--foreground)]">{p.title}</h3>
-                <p className="text-sm text-[var(--foreground-muted)]">{p.description}</p>
+                <p className="text-sm text-[var(--foreground-muted)] line-clamp-4 md:line-clamp-none">{p.description}</p>
                 <p className="font-semibold text-primary">₹{price}</p>
 
                 <div className="flex gap-3 mt-3">

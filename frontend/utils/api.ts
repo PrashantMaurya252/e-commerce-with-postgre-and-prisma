@@ -146,7 +146,7 @@ export const fetchAllProducts = async (
     return {
       success: false,
       message: error.response?.data?.message || "Something went wrong",
-      data: [],
+      data: { data: [] } as any,
     };
   }
 };
@@ -164,7 +164,7 @@ export const fetchBrands = async (): Promise<{ success: boolean; data: string[] 
 
 export const fetchCategories = async (): Promise<{ success: boolean; data: any[] }> => {
   try {
-    const response = await api.get(`${BACKEND_URL}/category/get-all-category`, {
+    const response = await api.get(`${BACKEND_URL}/category/all-categories`, {
       withCredentials: true,
     });
     return response.data;
@@ -489,3 +489,15 @@ export const getChatHistoryAPI = async (): Promise<normalAPIResponse> => {
     return { success: false, message: error.response?.data?.message || "Internal Server error", data: [] }
   }
 }
+
+export const verifyPayment = async (paymentIntentId: string): Promise<normalAPIResponse> => {
+  try {
+    const response = await api.post(`${BACKEND_URL}/payment/verify-payment`, { paymentIntentId });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Something went wrong",
+    };
+  }
+};

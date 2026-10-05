@@ -10,7 +10,7 @@ import SessionManagement from '@/components/profile/SessionManagement'
 import { useGetProfileQuery, useGetUserOrdersQuery } from '@/redux/services/profileApi'
 import { logoutHandler } from '@/utils/api'
 import { logout } from '@/redux/slices/authSlice'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 
@@ -18,7 +18,9 @@ export default function Profile() {
   const { user } = useAppSelector((state) => state.auth)
   const router = useRouter()
   const dispatch = useDispatch()
-  const [activeTab, setActiveTab] = useState<'info' | 'addresses' | 'orders' | 'sessions'>('info')
+  const searchParams = useSearchParams()
+  const initialTab = (searchParams.get('tab') as 'info' | 'addresses' | 'orders' | 'sessions') || 'info'
+  const [activeTab, setActiveTab] = useState<'info' | 'addresses' | 'orders' | 'sessions'>(initialTab)
 
   const { data: profileData, isLoading: profileLoading } = useGetProfileQuery(user?.id || '', {
     skip: !user?.id

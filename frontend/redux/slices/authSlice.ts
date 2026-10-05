@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { fetchMe, refreshMe } from "../thunks/authThunk";
-import api from "@/utils/interceptor";
 
 
 
@@ -69,7 +68,6 @@ const authSlice = createSlice({
         state.accessToken = action.payload
         state.isAuthenticated = true
         state.authInitialized = true
-        api.defaults.headers.common["Authorization"] = `Bearer ${action.payload}`
       })
       builder.addCase(refreshMe.rejected,(state)=>{
         state.accessToken=null

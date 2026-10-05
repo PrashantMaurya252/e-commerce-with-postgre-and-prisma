@@ -37,11 +37,13 @@ enum NotificationStatus {
 
 enum OrderStatus {
   PENDING
+  PLACED
   PAID
   SHIPPED
   OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
+  FAILED
 }
 
 enum FileType {

@@ -38,7 +38,7 @@ export default function Products() {
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
   const [brand, setBrand] = useState<string>("");
   const debouncedSearch = useDebounce(search);
-  const [loading,setLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   /* -------------------- Options -------------------- */
   const [categories, setCategories] = useState<any[]>([]);
@@ -68,8 +68,11 @@ export default function Products() {
       limit,
     });
 
+    console.log("Response in line 71", response)
+
     if (response?.success) {
-      const mapped = response.data.map((p: any) => ({
+      const productsList = response.data?.data || [];
+      const mapped = productsList.map((p: any) => ({
         id: p.id,
         name: p.title,
         price: p.isOfferActive ? p.offerPrice : p.sellingPrice, // Updated to use sellingPrice if no offer
@@ -85,7 +88,7 @@ export default function Products() {
         totalReviews: p.totalReviews,
       }));
       setProducts(mapped);
-      setTotalPages(response.totalPages || 1);
+      setTotalPages(response.data?.totalPages || 1);
 
       // startTransition(() => {
       //   setProducts(mapped);
@@ -102,32 +105,31 @@ export default function Products() {
     setLoading(false)
   };
 
-  const handleProductAddedToCart = (productId:string)=>{
-    setProducts((prev)=>prev.map((product)=>product.id ===productId ? {...product,isInCart:true,cartQuantity:(product.cartQuantity ?? 0)+1}:product))
+  const handleProductAddedToCart = (productId: string) => {
+    setProducts((prev) => prev.map((product) => product.id === productId ? { ...product, isInCart: true, cartQuantity: (product.cartQuantity ?? 0) + 1 } : product))
   }
 
-  const handleProductDecreaseFromCart = (productId:string)=>{
-    setProducts((prev)=> prev.map((product)=>
-      {
-        if(product.id === productId){
-          if(product.cartQuantity === 1){
-            return {...product,isInCart:false,cartQuantity:0}
-          }else{
-            return {...product,isInCart:true,cartQuantity:(product.cartQuantity ?? 1)-1}
-          }
-
-        }else{
-          return product
+  const handleProductDecreaseFromCart = (productId: string) => {
+    setProducts((prev) => prev.map((product) => {
+      if (product.id === productId) {
+        if (product.cartQuantity === 1) {
+          return { ...product, isInCart: false, cartQuantity: 0 }
+        } else {
+          return { ...product, isInCart: true, cartQuantity: (product.cartQuantity ?? 1) - 1 }
         }
-      }))
+
+      } else {
+        return product
+      }
+    }))
   }
 
-  const handleProductDeleteFromCart = (productId:string)=>{
-    setProducts((prev)=>prev.map((product)=>product.id ===productId ? {...product,isInCart:false,cartQuantity:0}:product))
+  const handleProductDeleteFromCart = (productId: string) => {
+    setProducts((prev) => prev.map((product) => product.id === productId ? { ...product, isInCart: false, cartQuantity: 0 } : product))
   }
-  
+
   const handleProductToggleWishlist = (productId: string) => {
-    setProducts((prev) => prev.map((product) => 
+    setProducts((prev) => prev.map((product) =>
       product.id === productId ? { ...product, isInWishlist: !product.isInWishlist } : product
     ));
   }
@@ -164,7 +166,14 @@ export default function Products() {
       });
 
       if (res?.success) {
-        setSearchResults(res.data);
+        const productsList = res.data?.data || [];
+        const mapped = productsList.map((p: any) => ({
+          id: p.id,
+          name: p.title,
+          price: p.isOfferActive ? p.offerPrice : p.sellingPrice,
+          image: p.files?.[0]?.url || "",
+        }));
+        setSearchResults(mapped);
         setShowDropdown(true);
       }
     };
@@ -214,22 +223,21 @@ export default function Products() {
           {/* Skeleton Overlay */}
           {loading && (
             <div className="">
-               {/* <Skeleton className="h-[300px] w-[300px] rounded-full bg-amber-500" /> */}
+              {/* <Skeleton className="h-[300px] w-[300px] rounded-full bg-amber-500" /> */}
               <ProductSkeleton />
             </div>
           )}
 
           {/* Product Grid */}
           <div
-            className={`transition-opacity duration-300 ${
-              loading ? "opacity-30" : "opacity-100"
-            }`}
+            className={`transition-opacity duration-300 ${loading ? "opacity-30" : "opacity-100"
+              }`}
           >
             {products?.length > 0 ? (
-              <ProductsGrid 
-                products={products} 
-                handleProductAddedToCart={handleProductAddedToCart} 
-                handleProductDecreaseFromCart={handleProductDecreaseFromCart} 
+              <ProductsGrid
+                products={products}
+                handleProductAddedToCart={handleProductAddedToCart}
+                handleProductDecreaseFromCart={handleProductDecreaseFromCart}
                 handleProductDeleteFromCart={handleProductDeleteFromCart}
                 handleProductToggleWishlist={handleProductToggleWishlist}
               />
