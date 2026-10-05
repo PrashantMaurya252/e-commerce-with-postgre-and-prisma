@@ -272,7 +272,7 @@ export const checkout = async (req: AuthRequest, res: Response) => {
           total: finalTotal,
           couponId: coupon?.id,
           couponCode: coupon?.code,
-          status: "PENDING",
+          status: paymentMethod === 'COD' ? "PLACED" : "PENDING",
           items: {
             create: cart.items.map((item) => ({
               productId: item.productId,
@@ -302,21 +302,31 @@ export const checkout = async (req: AuthRequest, res: Response) => {
         })
       }
 
-      // 🧹 Clear cart
-      await tx.cartItem.deleteMany({
-        where: { cartId: cart.id },
-      })
+      if (paymentMethod === 'COD') {
+        // 🧹 Clear cart
+        await tx.cartItem.deleteMany({
+          where: { cartId: cart.id },
+        })
 
-      await cancelCartRecovery(cart.id)
+        await cancelCartRecovery(cart.id)
 
-      await tx.cart.update({
-        where: { id: cart.id },
-        data: {
-          total: 0,
-          locked: false,
-          lockedAt: null,
-        },
-      })
+        await tx.cart.update({
+          where: { id: cart.id },
+          data: {
+            total: 0,
+            locked: false,
+            lockedAt: null,
+          },
+        })
+      } else {
+        await tx.cart.update({
+          where: { id: cart.id },
+          data: {
+            locked: false,
+            lockedAt: null,
+          },
+        })
+      }
 
       // 🔔 Create Notifications
       const notificationsData: any[] = [

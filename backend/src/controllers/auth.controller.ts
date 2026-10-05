@@ -390,6 +390,11 @@ export const refreshToken = async (req: Request, res: Response) => {
       userRoles: user.userRoles.map((userRole) => userRole.role.name)
     };
     const newAccessToken = generateAccessToken(userPayload);
+    res.cookie("access-token", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
     return res.status(200).json({ success: true, accessToken: newAccessToken });
   } catch (error) {
     console.error("refresh token error", error);
@@ -599,6 +604,12 @@ export const googleAuth = async (req: Request, res: Response) => {
     });
 
     res.cookie("refresh-token", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    });
+
+    res.cookie("access-token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",

@@ -56,7 +56,7 @@ export const profileApi = createApi({
 
     // ORDERS
     getUserOrders: builder.query<any, void>({
-      query: () => `/order/all-orders`,
+      query: () => `/orders/all-orders`,
       providesTags: ["Order"],
     }),
 

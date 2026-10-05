@@ -3,7 +3,19 @@ import React from 'react'
 import { CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
-const PaymentSuccess = () => {
+import { useSearchParams } from 'next/navigation'
+import { verifyPayment } from '@/utils/api'
+
+const PaymentSuccessContent = () => {
+  const searchParams = useSearchParams();
+  const paymentIntent = searchParams.get('payment_intent');
+
+  React.useEffect(() => {
+    if (paymentIntent) {
+      verifyPayment(paymentIntent);
+    }
+  }, [paymentIntent]);
+
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
       <div className="w-24 h-24 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20 animate-bounce">
@@ -15,7 +27,7 @@ const PaymentSuccess = () => {
       </p>
       
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
-        <Link href="/user/orders" className="flex-1 bg-primary text-white font-bold py-3 px-6 rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all text-center">
+        <Link href="/user/profile?tab=orders" className="flex-1 bg-primary text-white font-bold py-3 px-6 rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all text-center">
           View Orders
         </Link>
         <Link href="/user/home" className="flex-1 bg-[var(--surface-2)] text-[var(--foreground)] font-bold py-3 px-6 rounded-xl hover:bg-[var(--surface-3)] transition-all text-center border border-[var(--border)]">
@@ -23,6 +35,14 @@ const PaymentSuccess = () => {
         </Link>
       </div>
     </div>
+  )
+}
+
+const PaymentSuccess = () => {
+  return (
+    <React.Suspense fallback={<div className="min-h-[70vh] flex items-center justify-center"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
+      <PaymentSuccessContent />
+    </React.Suspense>
   )
 }
 

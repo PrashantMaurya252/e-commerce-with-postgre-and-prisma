@@ -111,6 +111,12 @@ const handlePaymentSucceeded = async (
     },
   });
 
+  const cart = await prisma.cart.findUnique({ where: { userId } });
+  if (cart) {
+    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+    await prisma.cart.update({ where: { id: cart.id }, data: { total: 0 } });
+  }
+
   // 🔔 Create Notification
   await prisma.notification.create({
     data: {
@@ -147,6 +153,11 @@ const handlePaymentFailed = async (
     update: {
       status: "FAILED",
     },
+  });
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { status: "FAILED" },
   });
 
   // 🔔 Create Notification

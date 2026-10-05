@@ -79,7 +79,7 @@ export default function CheckoutSelectionPage() {
       if (paymentMethod === "ONLINE") {
         router.push(`/user/cart/checkout/${res.data.orderId}`);
       } else {
-        router.push(`/user/orders`);
+        router.push(`/user/profile?tab=orders`);
       }
     } else {
       toast.error(res.message);

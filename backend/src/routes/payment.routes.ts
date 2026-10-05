@@ -57,6 +57,11 @@ router.post('/create-payment-intent',auth, async (req:AuthRequest, res:Response)
       // customer is OPTIONAL (explained below)
     });
 
+    await prisma.payment.update({
+      where: { orderId },
+      data: { stripePaymentIntentId: paymentIntent.id }
+    });
+
     return res.status(200).json({
       success:true,
       data:{
@@ -68,6 +73,63 @@ router.post('/create-payment-intent',auth, async (req:AuthRequest, res:Response)
   } catch (error: any) {
     console.error('Payment Intent Error:', error);
     return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/verify-payment', async (req: Request, res: Response) => {
+  try {
+    const { paymentIntentId } = req.body;
+    if (!paymentIntentId) {
+      return res.status(400).json({ success: false, message: "Missing payment intent ID" });
+    }
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (!paymentIntent) {
+      return res.status(404).json({ success: false, message: "Payment intent not found" });
+    }
+
+    const { orderId, userId } = paymentIntent.metadata;
+
+    if (paymentIntent.status === "succeeded") {
+      const existingOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+      });
+
+      if (existingOrder && existingOrder.status !== "PAID") {
+        await prisma.payment.upsert({
+          where: { orderId },
+          create: {
+            orderId,
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            status: "SUCCEEDED",
+            stripePaymentIntentId: paymentIntent.id,
+            stripeChargeId: (paymentIntent.latest_charge as string) || "",
+          },
+          update: {
+            status: "SUCCEEDED",
+            stripePaymentIntentId: paymentIntent.id,
+            stripeChargeId: (paymentIntent.latest_charge as string) || "",
+          },
+        });
+
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { status: "PAID" },
+        });
+
+        const cart = await prisma.cart.findUnique({ where: { userId } });
+        if (cart) {
+          await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+          await prisma.cart.update({ where: { id: cart.id }, data: { total: 0 } });
+        }
+      }
+    }
+
+    return res.status(200).json({ success: true, status: paymentIntent.status });
+  } catch (error: any) {
+    console.error('Verify Payment Error:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 });
 

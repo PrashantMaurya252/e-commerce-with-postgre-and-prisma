@@ -68,14 +68,16 @@ export interface Product2{
     files:string[]
 }
 
-export interface ProductAPIResponse{
-    success:boolean,
-    message:string,
-    page?:number,
-    limit?:number,
-    totalProducts?:number,
-    totalPages?:number,
-    data:Product2[]
+export interface ProductAPIResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    page?: number;
+    limit?: number;
+    totalProducts?: number;
+    totalPages?: number;
+    data: Product2[];
+  };
 }
 
 // types/product.ts

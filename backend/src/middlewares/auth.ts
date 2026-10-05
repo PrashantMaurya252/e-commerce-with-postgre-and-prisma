@@ -15,6 +15,8 @@ export const auth = async (
     const token =
       req.cookies["access-token"] || req.headers?.authorization?.split(" ")[1];
 
+      console.log("Token in line 18",token)
+
 
     if (!token) {
       return res

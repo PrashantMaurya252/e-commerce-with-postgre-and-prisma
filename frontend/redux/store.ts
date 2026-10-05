@@ -5,6 +5,8 @@ import { wishlistApi } from "./services/wishlistApi";
 import { profileApi } from "./services/profileApi";
 
 
+import { injectStore } from "@/utils/interceptor";
+
 export const store = configureStore({
     reducer:{
         auth:authReducer,
@@ -14,6 +16,8 @@ export const store = configureStore({
     },
     middleware:(getDefaultMiddleWare)=>getDefaultMiddleWare().concat(cartApi.middleware, wishlistApi.middleware, profileApi.middleware)
 })
+
+injectStore(store);
 
 export type RootState = ReturnType <typeof store.getState>
 export type AppDispatch = typeof store.dispatch
